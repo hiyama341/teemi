@@ -35,21 +35,31 @@ teemi: Literate programming can streamline bioengineering workflows
 What is teemi?
 ~~~~~~~~~~~~~~~~~~
 
-**teemi** is an easy-to-use python package with functions that
-can be used in literate programming to simulate steps of a strain 
-construction cycle from generating genetic parts, to designing a 
-combinatorial library along with instructions for the assembly. 
-A fully integrated LIMS system is presented to keep track of samples 
-and allocation through both a commercial Benchling API and a low-level CSV file database. 
+**teemi**, named after the Greek goddess of fairness, is a python package designed
+to make microbial strain construction reproducible and FAIR (Findable, Accessible, 
+Interoperable, and Reusable). With teemi, you can simulate the steps of 
+a strain construction cycle, from generating genetic parts to designing 
+a combinatorial library and keeping track of samples through a commercial
+Benchling API and a low-level CSV file database. 
+This tool can be used in literate programming to 
+increase efficiency and speed in metabolic engineering tasks. 
+To try teemi, visit our Google Colab notebooks. 
 
-Here, we demonstrate the use of teemi in a complex machine learning-guided
-metabolic engineering task. We envision that literate programming for biology 
-can be adapted for any experimental workflow and be mixed and matched for the 
-benefit of the user. As this tool is built to be flexible through its open-source
-Python platform, future repetitive tasks can be automated and thus increase 
-the speed at which we engineer biology. 
 
-Curious about how you can build strains easier and faster? Head over to our `Google Colab notebooks <https://github.com/hiyama341/teemi/tree/main/colab_notebooks>`__
+teemi not only simplifies the strain construction process but also offers the 
+flexibility to adapt to different experimental workflows through its open-source
+Python platform. This allows for efficient automation of repetitive tasks and
+a faster pace in metabolic engineering.
+
+Our demonstration of teemi in a complex machine learning-guided
+metabolic engineering task showcases its efficiency 
+and speed by debottlenecking a crucial step in the strictosidine pathway. 
+This highlights the versatility and usefulness of this tool in various  
+biological applications. To see teemi in action, check out our Google 
+Colab notebooks.
+
+Curious about how you can build strains easier and faster? 
+Head over to our `Google Colab notebooks <https://github.com/hiyama341/teemi/tree/main/colab_notebooks>`__
 and give it a try.
 
 Please cite our paper (link tba) if you've used teemi in a scientific publication.
@@ -94,7 +104,8 @@ These workflows should serve as a guide or a help to build your own workflows an
 Specifically, in this study we present how teemi and literate programming to build simulation-guided, iterative,
 and evolution-guided laboratory workflows for optimizing strictosidine production in yeast.
 
-Below you can find all the notebooks developed in this work. Just click the Google colab badge to start the workflows. 
+Below you can find all the notebooks developed in this work. 
+Just click the Google colab badge to start the workflows. 
 
 First DBTL cycle
 ~~~~~~~~~~~~~~~~
