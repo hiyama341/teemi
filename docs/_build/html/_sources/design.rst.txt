@@ -1,0 +1,5 @@
+Documentation for the design module
+===================================
+
+
+.. automodule:: constrain/design

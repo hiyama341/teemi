@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>constrain.lab.PCR &mdash; ConStrain 0.2.7+64.g928ed1e.dirty documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> ConStrain
+          </a>
+              <div class="version">
+                0.2.7+64.g928ed1e.dirty
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html">ConStrain: Literate programming can streamline bioengineering workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html#features">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html#credits">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../history.html">History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">ConStrains modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../colab_notebooks.html">Colab notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../constrain.design.html">Design module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../constrain.lab.html">Lab module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../constrain.lims.html">LIMS module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../constrain.test.html">TEST module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ConStrain</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>constrain.lab.PCR</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for constrain.lab.PCR</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># MIT License</span>
+<span class="c1"># Copyright (c) 2022, Technical University of Denmark (DTU)</span>
+<span class="c1">#</span>
+<span class="c1"># Permission is hereby granted, free of charge, to any person obtaining a copy</span>
+<span class="c1"># of this software and associated documentation files (the &quot;Software&quot;), to deal</span>
+<span class="c1"># in the Software without restriction, including without limitation the rights</span>
+<span class="c1"># to use, copy, modify, merge, publish, distribute, sublicense, and/or sell</span>
+<span class="c1"># copies of the Software, and to permit persons to whom the Software is</span>
+<span class="c1"># furnished to do so, subject to the following conditions:</span>
+<span class="c1">#</span>
+<span class="c1"># The above copyright notice and this permission notice shall be included in all</span>
+<span class="c1"># copies or substantial portions of the Software.</span>
+
+<span class="sd">&quot;&quot;&quot; This part of the lab module is used for simulating and calculating PCR reactions.&quot;&quot;&quot;</span>
+
+<span class="c1"># standard libraries</span>
+<span class="kn">import</span> <span class="nn">textwrap</span> <span class="k">as</span> <span class="nn">_textwrap</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">csv</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="c1"># Extra</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">pydna._pretty</span> <span class="kn">import</span> <span class="n">pretty_str</span> <span class="k">as</span> <span class="n">_pretty_str</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+
+
+<div class="viewcode-block" id="primer_tm_neb"><a class="viewcode-back" href="../../../constrain.lab.html#constrain.lab.PCR.primer_tm_neb">[docs]</a><span class="k">def</span> <span class="nf">primer_tm_neb</span><span class="p">(</span><span class="n">primer</span><span class="p">,</span> <span class="n">conc</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">prodcode</span><span class="o">=</span><span class="s2">&quot;q5-0&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Calculates a single primers melting temp from NEB.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    primer1 : str</span>
+<span class="sd">    conc : float</span>
+<span class="sd">    prodcode : str</span>
+<span class="sd">        find product codes on nebswebsite: https://tmapi.neb.com/docs/productcodes</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    tm : int</span>
+<span class="sd">        primer melting temperature</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://tmapi.neb.com/tm/batch&quot;</span>
+    <span class="n">seqpairs</span> <span class="o">=</span> <span class="p">[[</span><span class="n">primer</span><span class="p">]]</span>
+
+    <span class="nb">input</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;seqpairs&quot;</span><span class="p">:</span> <span class="n">seqpairs</span><span class="p">,</span> <span class="s2">&quot;conc&quot;</span><span class="p">:</span> <span class="n">conc</span><span class="p">,</span> <span class="s2">&quot;prodcode&quot;</span><span class="p">:</span> <span class="n">prodcode</span><span class="p">}</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;content-type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">}</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="nb">input</span><span class="p">),</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+
+    <span class="n">r</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">r</span><span class="p">[</span><span class="s2">&quot;success&quot;</span><span class="p">]:</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">r</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;tm1&quot;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;request failed&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="primer_ta_neb"><a class="viewcode-back" href="../../../constrain.lab.html#constrain.lab.PCR.primer_ta_neb">[docs]</a><span class="k">def</span> <span class="nf">primer_ta_neb</span><span class="p">(</span><span class="n">primer1</span><span class="p">,</span> <span class="n">primer2</span><span class="p">,</span> <span class="n">conc</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">prodcode</span><span class="o">=</span><span class="s2">&quot;q5-0&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Calculates primer pair melting temp TA,  from NEB.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    primer1 : str</span>
+<span class="sd">        first primer to be used for finding the optimal ta</span>
+<span class="sd">    primer2 : str</span>
+<span class="sd">        second primer to be used for finding the optimal ta</span>
+<span class="sd">    conc : float</span>
+<span class="sd">    prodcode : str</span>
+<span class="sd">        find product codes on nebswebsite: https://tmapi.neb.com/docs/productcodes</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ta : int</span>
+<span class="sd">        primer pair annealing temp</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://tmapi.neb.com/tm/batch&quot;</span>
+    <span class="n">seqpairs</span> <span class="o">=</span> <span class="p">[[</span><span class="n">primer1</span><span class="p">,</span> <span class="n">primer2</span><span class="p">]]</span>
+
+    <span class="nb">input</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;seqpairs&quot;</span><span class="p">:</span> <span class="n">seqpairs</span><span class="p">,</span> <span class="s2">&quot;conc&quot;</span><span class="p">:</span> <span class="n">conc</span><span class="p">,</span> <span class="s2">&quot;prodcode&quot;</span><span class="p">:</span> <span class="n">prodcode</span><span class="p">}</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;content-type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">}</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="nb">input</span><span class="p">),</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+
+    <span class="n">r</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">r</span><span class="p">[</span><span class="s2">&quot;success&quot;</span><span class="p">]:</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">r</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;ta&quot;</span><span class="p">]</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;request failed&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="grouper"><a class="viewcode-back" href="../../../constrain.lab.html#constrain.lab.PCR.grouper">[docs]</a><span class="k">def</span> <span class="nf">grouper</span><span class="p">(</span><span class="n">iterable</span><span class="p">,</span> <span class="n">max_diff</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Groups objects into distinct groups based on differences&quot;&quot;&quot;</span>
+    <span class="n">prev</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">iterable</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">prev</span> <span class="ow">or</span> <span class="n">item</span> <span class="o">-</span> <span class="n">prev</span> <span class="o">&lt;=</span> <span class="n">max_diff</span><span class="p">:</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">group</span>
+            <span class="n">group</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span><span class="p">]</span>
+        <span class="n">prev</span> <span class="o">=</span> <span class="n">item</span>
+    <span class="k">if</span> <span class="n">group</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="n">group</span></div>
+
+
+<div class="viewcode-block" id="pcr_volumes"><a class="viewcode-back" href="../../../constrain.lab.html#constrain.lab.PCR.pcr_volumes">[docs]</a><span class="k">def</span> <span class="nf">pcr_volumes</span><span class="p">(</span>
+    <span class="n">vol_p_reac</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">no_of_reactions</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">standard_reagents</span><span class="o">=</span><span class="p">[],</span> <span class="n">standard_volumes</span><span class="o">=</span><span class="p">[]</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Can make a reaction scheme for PCR master mixes.</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    vol_p_reac : int</span>
+<span class="sd">    no_of_reactions : int</span>
+<span class="sd">    standard_reagents : list</span>
+<span class="sd">    standard_volumes : list</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pd.DataFrame</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    pcr_volumes(vol_p_reac = 10,</span>
+<span class="sd">                no_of_reactions = 6,</span>
+<span class="sd">                standard_reagents = [&quot;DNA&quot;,&quot;Buffer, Cutsmart&quot;,&quot;H20&quot;,&quot;Enz, USER&quot;],</span>
+<span class="sd">                standard_volumes = [1,1,7,1])</span>
+
+<span class="sd">     The following reaction scheme will be made:</span>
+<span class="sd">     -------------------------</span>
+<span class="sd">                     vol_p_reac	vol_p_x_reac</span>
+<span class="sd">     DNA	            1.0	        6.0</span>
+<span class="sd">     Buffer, Cutsmart	1.0	        6.0</span>
+<span class="sd">     H20	            7.0	        42.0</span>
+<span class="sd">     Enz, USER	        1.0	        6.0</span>
+<span class="sd">     Total	            10.0      	60.0</span>
+<span class="sd">     -------------------------</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">standard_total_volume</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">standard_volumes</span><span class="p">)</span>
+    <span class="n">volumes_p_x</span> <span class="o">=</span> <span class="p">[</span><span class="n">val</span> <span class="o">/</span> <span class="n">standard_total_volume</span> <span class="o">*</span> <span class="n">vol_p_reac</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">standard_volumes</span><span class="p">]</span>
+    <span class="n">volumes_p_x_p_y_reactions</span> <span class="o">=</span> <span class="p">[</span><span class="n">val</span> <span class="o">*</span> <span class="n">no_of_reactions</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">volumes_p_x</span><span class="p">]</span>
+
+    <span class="n">volumes_p_x_plus_total</span> <span class="o">=</span> <span class="n">volumes_p_x</span> <span class="o">+</span> <span class="p">[</span><span class="nb">sum</span><span class="p">(</span><span class="n">volumes_p_x</span><span class="p">)]</span>
+    <span class="n">volumes_p_x_p_y_reactions_plus_total</span> <span class="o">=</span> <span class="n">volumes_p_x_p_y_reactions</span> <span class="o">+</span> <span class="p">[</span>
+        <span class="nb">sum</span><span class="p">(</span><span class="n">volumes_p_x_p_y_reactions</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="n">reagents_plus_total</span> <span class="o">=</span> <span class="n">standard_reagents</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;Total&quot;</span><span class="p">]</span>
+
+    <span class="n">volumes_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+        <span class="n">data</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;vol_p_reac&quot;</span><span class="p">:</span> <span class="n">volumes_p_x_plus_total</span><span class="p">,</span>
+            <span class="s2">&quot;vol_p_&quot;</span>
+            <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">no_of_reactions</span><span class="p">)</span>
+            <span class="o">+</span> <span class="s2">&quot;_reac&quot;</span><span class="p">:</span> <span class="n">volumes_p_x_p_y_reactions_plus_total</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="n">index</span><span class="o">=</span><span class="n">reagents_plus_total</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">volumes_df</span></div>
+
+
+<div class="viewcode-block" id="det_proc_speed"><a class="viewcode-back" href="../../../constrain.lab.html#constrain.lab.PCR.det_proc_speed">[docs]</a><span class="k">def</span> <span class="nf">det_proc_speed</span><span class="p">(</span><span class="n">amplicon</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Determines process speed based on the which polymerase is used.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    amplicon : pydna.amplicon</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Adds annotations to the amplicon object dependent on which polymerase was used</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    The amplicon needs to have the following dict incorporated:</span>
+<span class="sd">    amplicon.annotations[&quot;polymerase&quot;]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="s2">&quot;proc_speed&quot;</span> <span class="ow">in</span> <span class="n">amplicon</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">annotations</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;proc_speed already set&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">amplicon</span>
+
+    <span class="c1"># proc_speed units are seconds/kb</span>
+    <span class="k">if</span> <span class="n">amplicon</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;polymerase&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;OneTaq Hot Start&quot;</span><span class="p">:</span>
+        <span class="n">proc_speed</span> <span class="o">=</span> <span class="mi">60</span>
+    <span class="k">elif</span> <span class="n">amplicon</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;polymerase&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Q5 Hot Start&quot;</span><span class="p">:</span>
+        <span class="n">proc_speed</span> <span class="o">=</span> <span class="mi">30</span>
+    <span class="k">elif</span> <span class="n">amplicon</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;polymerase&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Phusion&quot;</span><span class="p">:</span>
+        <span class="n">proc_speed</span> <span class="o">=</span> <span class="mi">30</span>
+
+    <span class="n">amplicon</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;proc_speed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">proc_speed</span>
+
+    <span class="k">return</span> <span class="n">amplicon</span></div>
+
+
+<div class="viewcode-block" id="det_elon_time"><a class="viewcode-back" href="../../../constrain.lab.html#constrain.lab.PCR.det_elon_time">[docs]</a><span class="k">def</span> <span class="nf">det_elon_time</span><span class="p">(</span><span class="n">amplicon</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Determines elongation time for an amplicon</span>
+<span class="sd">    and add the elongation time to the amplicon annotations</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    amplicon : pydna.amplicon</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Adds the elongation time to the amplicon annotations</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    The amplicon needs to have a dict called proc_speed shown as follows:</span>
+<span class="sd">    amplicon.annotations[&quot;proc_speed&quot;]</span>
+<span class="sd">    This dict within the annotations can be made with the function proc_speed.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="s2">&quot;elongation_time&quot;</span> <span class="ow">in</span> <span class="n">amplicon</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">annotations</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;elongation_time already set&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">amplicon</span>
+
+    <span class="c1"># elongation_time units are seconds</span>
+    <span class="n">elongation_time</span> <span class="o">=</span> <span class="n">amplicon</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;proc_speed&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">amplicon</span><span class="p">)</span> <span class="o">/</span> <span class="mi">1000</span>
+    <span class="n">amplicon</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;elongation_time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">elongation_time</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">amplicon</span></div>
+
+
+<div class="viewcode-block" id="det_no_of_thermal_cyclers"><a class="viewcode-back" href="../../../constrain.lab.html#constrain.lab.PCR.det_no_of_thermal_cyclers">[docs]</a><span class="k">def</span> <span class="nf">det_no_of_thermal_cyclers</span><span class="p">(</span><span class="n">amplicons</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">polymerase</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">elong_time_max_diff</span><span class="o">=</span><span class="mi">15</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Determines the number of thermalcyclers that is needed</span>
+<span class="sd">    based on elongation time differences</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    amplicons : list</span>
+<span class="sd">        of pydna.amplicon objects</span>
+<span class="sd">    polymerase : str</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pd.DataFrame</span>
+<span class="sd">        dataframe of grouped amplicons</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">amp_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">amplicon</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">amplicon</span> <span class="ow">in</span> <span class="n">amplicons</span><span class="p">]</span>
+    <span class="n">elong_times</span> <span class="o">=</span> <span class="p">[</span><span class="n">amplicon</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;elongation_time&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">amplicon</span> <span class="ow">in</span> <span class="n">amplicons</span><span class="p">]</span>
+    <span class="n">tas</span> <span class="o">=</span> <span class="p">[</span><span class="n">amplicon</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;ta &quot;</span> <span class="o">+</span> <span class="n">polymerase</span><span class="p">]</span> <span class="k">for</span> <span class="n">amplicon</span> <span class="ow">in</span> <span class="n">amplicons</span><span class="p">]</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">amplicons</span><span class="p">)))</span>
+
+    <span class="n">list_of_tuples</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">amp_names</span><span class="p">,</span> <span class="n">tas</span><span class="p">,</span> <span class="n">elong_times</span><span class="p">,</span> <span class="n">order</span><span class="p">))</span>
+
+    <span class="n">list_of_tuples</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+
+    <span class="n">groups</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">enumerate</span><span class="p">(</span><span class="n">grouper</span><span class="p">(</span><span class="n">elong_times</span><span class="p">,</span> <span class="n">elong_time_max_diff</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span>
+
+    <span class="n">list_of_lists</span> <span class="o">=</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">elem</span><span class="p">)</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">list_of_tuples</span><span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">gNo</span><span class="p">,</span> <span class="n">gTimes</span> <span class="ow">in</span> <span class="n">groups</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="c1"># print(gNo, gTimes)</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">lst</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">list_of_lists</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">lst</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="ow">in</span> <span class="n">gTimes</span><span class="p">:</span>
+                <span class="n">list_of_lists</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">gTimes</span><span class="p">)</span>
+
+    <span class="n">thermal_cyclers</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+        <span class="n">list_of_lists</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;amplicons&quot;</span><span class="p">,</span> <span class="s2">&quot;tas&quot;</span><span class="p">,</span> <span class="s2">&quot;elong_times&quot;</span><span class="p">,</span> <span class="s2">&quot;order&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">thermal_cyclers</span> <span class="o">=</span> <span class="n">thermal_cyclers</span><span class="o">.</span><span class="n">sort_values</span><span class="p">([</span><span class="s2">&quot;order&quot;</span><span class="p">])</span>
+    <span class="n">thermal_cyclers</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">thermal_cyclers</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">&quot;tas&quot;</span><span class="p">,</span> <span class="s2">&quot;elong_times&quot;</span><span class="p">])[</span><span class="s2">&quot;amplicons&quot;</span><span class="p">]</span>
+        <span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">thermal_cyclers</span></div>
+
+
+<div class="viewcode-block" id="pcr_locations"><a class="viewcode-back" href="../../../constrain.lab.html#constrain.lab.PCR.pcr_locations">[docs]</a><span class="k">def</span> <span class="nf">pcr_locations</span><span class="p">(</span><span class="n">amplicons</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Obtain information annotation information from amplicons.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    amplicon : list</span>
+<span class="sd">        List of amplicon objects `pydna.amplicon`() # check this</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pd.DataFrame</span>
+<span class="sd">        Pandas dataframe with locations of your amplicons</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># initialization</span>
+    <span class="n">product_loc</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">product_names</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">template_loc</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">fw_loc</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">rv_loc</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">amplicons</span><span class="p">)):</span>
+        <span class="n">product_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="c1"># Test if batches is present</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="s2">&quot;batches&quot;</span> <span class="ow">in</span> <span class="n">amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">template</span><span class="o">.</span><span class="n">annotations</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">template</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;batches&quot;</span><span class="p">])</span> <span class="o">!=</span> <span class="mi">0</span>
+        <span class="p">):</span>
+            <span class="n">product_loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">template</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;batches&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;location&quot;</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="n">template_loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">template</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;batches&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;location&quot;</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="s2">&quot;batches&quot;</span> <span class="ow">in</span> <span class="n">amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">annotations</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;batches&quot;</span><span class="p">])</span> <span class="o">!=</span> <span class="mi">0</span>
+        <span class="p">):</span>
+            <span class="n">product_loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;batches&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;location&quot;</span><span class="p">])</span>
+            <span class="n">template_loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;batches&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;location&quot;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">product_loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Empty&quot;</span><span class="p">)</span>
+            <span class="n">template_loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Empty&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="s2">&quot;No batches were found for &quot;</span>
+                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="o">+</span> <span class="s2">&quot;. Please check the object.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Save primer locations</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="s2">&quot;batches&quot;</span> <span class="ow">in</span> <span class="n">amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">annotations</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;batches&quot;</span><span class="p">])</span> <span class="o">!=</span> <span class="mi">0</span>
+        <span class="p">):</span>
+            <span class="n">fw_loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;batches&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;location&quot;</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fw_loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Empty&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;: Foward primer location was not found&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="s2">&quot;batches&quot;</span> <span class="ow">in</span> <span class="n">amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">reverse_primer</span><span class="o">.</span><span class="n">annotations</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">reverse_primer</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;batches&quot;</span><span class="p">])</span> <span class="o">!=</span> <span class="mi">0</span>
+        <span class="p">):</span>
+            <span class="n">rv_loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">reverse_primer</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;batches&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;location&quot;</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rv_loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Empty&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;: Reverse primer location was not found&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Save information as dataframe</span>
+    <span class="n">df_pcr</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+        <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">product_loc</span><span class="p">,</span> <span class="n">product_names</span><span class="p">,</span> <span class="n">template_loc</span><span class="p">,</span> <span class="n">fw_loc</span><span class="p">,</span> <span class="n">rv_loc</span><span class="p">)),</span>
+        <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;location&quot;</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;template&quot;</span><span class="p">,</span> <span class="s2">&quot;fw&quot;</span><span class="p">,</span> <span class="s2">&quot;rv&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">df_pcr</span></div>
+
+
+<div class="viewcode-block" id="nanophotometer_concentrations"><a class="viewcode-back" href="../../../constrain.lab.html#constrain.lab.PCR.nanophotometer_concentrations">[docs]</a><span class="k">def</span> <span class="nf">nanophotometer_concentrations</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;../data/raw/005_Nanophotometer/2021-03-29_G8H_CPR_library_part_concentrations.csv&quot;</span><span class="p">,</span>
+<span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Reads a CSV file with nanophotometer concentraions</span>
+<span class="sd">    and returns the concentrations in a list</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    path : str</span>
+<span class="sd">        path to file</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    concentrations : list</span>
+<span class="sd">        list of concentrations from the file as floats</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">concentrations</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;Latin1&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">tsvfile</span><span class="p">:</span>
+        <span class="n">reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">tsvfile</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">next</span><span class="p">(</span><span class="n">reader</span><span class="p">)[</span><span class="mi">4</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
+            <span class="n">conc</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="s2">&quot;.&quot;</span><span class="p">))</span>
+            <span class="n">concentrations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">conc</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">concentrations</span></div>
+
+
+<div class="viewcode-block" id="amplicon_by_name"><a class="viewcode-back" href="../../../constrain.lab.html#constrain.lab.PCR.amplicon_by_name">[docs]</a><span class="k">def</span> <span class="nf">amplicon_by_name</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">amplicons_lst</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns amplicon with specified name</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">    amplicons_lst : list</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    amplicon : pydna.amplicon</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">amplicon</span> <span class="ow">in</span> <span class="n">amplicons_lst</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">amplicon</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">name</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">amplicon</span></div>
+
+
+<div class="viewcode-block" id="simple_PCR_program"><a class="viewcode-back" href="../../../constrain.lab.html#constrain.lab.PCR.simple_PCR_program">[docs]</a><span class="k">def</span> <span class="nf">simple_PCR_program</span><span class="p">(</span><span class="n">amplicon</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Simple PCR program designed to give a quick visual representations.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    amplicon : pydna.amplicon</span>
+<span class="sd">        pydna amplicon object</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        schematic representation of a Q5 program</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Determine elongation time and process speed.</span>
+    <span class="n">amplicon</span> <span class="o">=</span> <span class="n">det_elon_time</span><span class="p">(</span><span class="n">amplicon</span><span class="p">)</span>
+    <span class="n">amplicon</span> <span class="o">=</span> <span class="n">det_proc_speed</span><span class="p">(</span><span class="n">amplicon</span><span class="p">)</span>
+
+    <span class="c1"># ta</span>
+    <span class="n">amplicon</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;ta Q5 Hot Start&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">primer_ta_neb</span><span class="p">(</span>
+        <span class="nb">str</span><span class="p">(</span><span class="n">amplicon</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">seq</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">amplicon</span><span class="o">.</span><span class="n">reverse_primer</span><span class="o">.</span><span class="n">seq</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="c1"># tm forward and reverse</span>
+    <span class="n">amplicon</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;tm Q5 Hot Start&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">primer_tm_neb</span><span class="p">(</span>
+        <span class="nb">str</span><span class="p">(</span><span class="n">amplicon</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">seq</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">amplicon</span><span class="o">.</span><span class="n">reverse_primer</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;tm Q5 Hot Start&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">primer_tm_neb</span><span class="p">(</span>
+        <span class="nb">str</span><span class="p">(</span><span class="n">amplicon</span><span class="o">.</span><span class="n">reverse_primer</span><span class="o">.</span><span class="n">seq</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns a string containing a text representation of a suggested</span>
+<span class="sd">    PCR program using Taq or similar polymerase.</span>
+<span class="sd">    ::</span>
+<span class="sd">     |98°C|98°C               |    |tmf:59.5</span>
+<span class="sd">     |____|_____          72°C|72°C|tmr:59.7</span>
+<span class="sd">     |30s |10s  \ 59.1°C _____|____|30s/kb</span>
+<span class="sd">     |    |      \______/ 0:32|5min|GC 51%</span>
+<span class="sd">     |    |       30s         |    |1051bp</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">formated</span> <span class="o">=</span> <span class="n">_textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">                            |98°C|98°C               |    |tmf:{tmf:.1f}</span>
+<span class="sd">                            |____|_____          72°C|72°C|tmr:{tmr:.1f}</span>
+<span class="sd">                            |30 s|10s  \ {ta:.1f}°C _____|____|{rate}s/kb</span>
+<span class="sd">                            |    |      \______/{0:2}:{1:2}|2min|GC {GC_prod}%</span>
+<span class="sd">                            |    |       20s         |    |{size}bp</span>
+<span class="sd">                            &quot;&quot;&quot;</span><span class="p">[</span>
+            <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">rate</span><span class="o">=</span><span class="n">amplicon</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;proc_speed&quot;</span><span class="p">],</span>
+            <span class="n">size</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">amplicon</span><span class="o">.</span><span class="n">seq</span><span class="p">),</span>
+            <span class="n">ta</span><span class="o">=</span><span class="n">amplicon</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;ta Q5 Hot Start&quot;</span><span class="p">],</span>
+            <span class="n">tmf</span><span class="o">=</span><span class="n">amplicon</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;tm Q5 Hot Start&quot;</span><span class="p">],</span>
+            <span class="n">tmr</span><span class="o">=</span><span class="n">amplicon</span><span class="o">.</span><span class="n">reverse_primer</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;tm Q5 Hot Start&quot;</span><span class="p">],</span>
+            <span class="n">GC_prod</span><span class="o">=</span><span class="nb">round</span><span class="p">(</span><span class="n">amplicon</span><span class="o">.</span><span class="n">gc</span><span class="p">()</span> <span class="o">*</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+            <span class="o">*</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">amplicon</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;elongation_time&quot;</span><span class="p">],</span> <span class="mi">60</span><span class="p">)),</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">_pretty_str</span><span class="p">(</span><span class="n">formated</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Technical University of Denmark (DTU).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

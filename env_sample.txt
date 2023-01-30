@@ -1,0 +1,4 @@
+# in order to benifit from the benchling API you need to add your api key below and change the name of this file to: .env
+
+API_KEY = 'YOUR_KEY_HERE'
+HOME  = 'Your_benchling_website_URL' # fx "https://organisation.benchling.com/api/v2"

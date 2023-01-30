@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>teemi.test.genotyping &mdash; teemi 0.3.0+20.g1b653f4.dirty documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> teemi
+          </a>
+              <div class="version">
+                0.3.0+20.g1b653f4.dirty
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html">teemi: Literate programming can streamline bioengineering workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html#features">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html#colab-notebooks">Colab notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html#credits">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../history.html">History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../history.html#id1">0.1.0 (2023-01-02)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">teemis modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../colab_notebooks.html">Colab notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../teemi.design.html">Design module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../teemi.build.html">Build module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../teemi.test.html">Test module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../teemi.learn.html">Learn module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../teemi.lims.html">LIMS module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">teemi</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>teemi.test.genotyping</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for teemi.test.genotyping</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># MIT License</span>
+<span class="c1"># Copyright (c) 2022, Technical University of Denmark (DTU)</span>
+<span class="c1">#</span>
+<span class="c1"># Permission is hereby granted, free of charge, to any person obtaining a copy</span>
+<span class="c1"># of this software and associated documentation files (the &quot;Software&quot;), to deal</span>
+<span class="c1"># in the Software without restriction, including without limitation the rights</span>
+<span class="c1"># to use, copy, modify, merge, publish, distribute, sublicense, and/or sell</span>
+<span class="c1"># copies of the Software, and to permit persons to whom the Software is</span>
+<span class="c1"># furnished to do so, subject to the following conditions:</span>
+<span class="c1">#</span>
+<span class="c1"># The above copyright notice and this permission notice shall be included in all</span>
+<span class="c1"># copies or substantial portions of the Software.</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">Bio</span> <span class="kn">import</span> <span class="n">pairwise2</span>
+
+
+<div class="viewcode-block" id="slicing_and_naming_seq_plates"><a class="viewcode-back" href="../../../teemi.test.html#teemi.test.genotyping.slicing_and_naming_seq_plates">[docs]</a><span class="k">def</span> <span class="nf">slicing_and_naming_seq_plates</span><span class="p">(</span><span class="n">sequencing_plates</span><span class="p">,</span> <span class="n">where_to_slice</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Slices rows of a list of dataframes and changes the names.</span>
+<span class="sd">    Is used to ease pre-processing of Plate2seq excel files</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sequencing_plates : list of pd.DataFrames</span>
+<span class="sd">        Plate2seq pd.dataframes</span>
+<span class="sd">    where_to_slice : int</span>
+<span class="sd">        indicate where to slice the dataframe</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    list of plates sliced pd.DataFrames</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># changing column names and slicing</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sequencing_plates</span><span class="p">)):</span>
+        <span class="n">sequencing_plates</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;Number&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Sample-Name&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;AvgQual&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Length&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;GoodQualFrom&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;GoodQualTo&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;used&quot;</span><span class="p">,</span>
+        <span class="p">)</span>  <span class="c1"># sequencing_plates[0].iloc[6]</span>
+        <span class="n">sequencing_plates</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">sequencing_plates</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">where_to_slice</span><span class="p">:]</span>
+
+    <span class="k">return</span> <span class="n">sequencing_plates</span></div>
+
+
+<div class="viewcode-block" id="plat_seq_data_wrangler"><a class="viewcode-back" href="../../../teemi.test.html#teemi.test.genotyping.plat_seq_data_wrangler">[docs]</a><span class="k">def</span> <span class="nf">plat_seq_data_wrangler</span><span class="p">(</span><span class="n">sequencing_plates</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Makes list of Plate2Seq pd.DataFrames into numeric</span>
+<span class="sd">    values and removes nan values.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sequencing_plates : list of pd.DataFrames</span>
+<span class="sd">        Sliced Plate2seq pd.dataframes</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Plate2Seq pd.DataFrames with numeric values</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">list_with_dfs</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sequencing_plates</span><span class="p">)):</span>
+        <span class="c1"># taking only a subset of the dataframe:</span>
+        <span class="n">numeric_values</span> <span class="o">=</span> <span class="n">sequencing_plates</span><span class="p">[</span><span class="n">i</span><span class="p">][</span>
+            <span class="p">[</span><span class="s2">&quot;AvgQual&quot;</span><span class="p">,</span> <span class="s2">&quot;Length&quot;</span><span class="p">,</span> <span class="s2">&quot;GoodQualFrom&quot;</span><span class="p">,</span> <span class="s2">&quot;GoodQualTo&quot;</span><span class="p">,</span> <span class="s2">&quot;used&quot;</span><span class="p">]</span>
+        <span class="p">]</span>
+
+        <span class="c1"># if values are non nummeric make them NaN</span>
+        <span class="n">numeric_values</span> <span class="o">=</span> <span class="n">numeric_values</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;n.a.&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span><span class="p">)</span>
+
+        <span class="c1"># Making them numeric</span>
+        <span class="n">numeric_values</span> <span class="o">=</span> <span class="n">numeric_values</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;coerce&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Adding names column</span>
+        <span class="n">name_column</span> <span class="o">=</span> <span class="n">sequencing_plates</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;Sample-Name&quot;</span><span class="p">]</span>
+        <span class="n">number_column</span> <span class="o">=</span> <span class="n">sequencing_plates</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;Number&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Adding them to the dataframe</span>
+        <span class="n">data1</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">number_column</span><span class="p">,</span> <span class="n">name_column</span><span class="p">,</span> <span class="n">numeric_values</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">list_with_dfs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data1</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">list_with_dfs</span></div>
+
+
+<div class="viewcode-block" id="plate_AvgQual"><a class="viewcode-back" href="../../../teemi.test.html#teemi.test.genotyping.plate_AvgQual">[docs]</a><span class="k">def</span> <span class="nf">plate_AvgQual</span><span class="p">(</span><span class="n">list_of_dfs_numeric</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">Avg_qual</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">used_bases</span><span class="o">=</span><span class="mi">25</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Filters out rows that doesnt follow the criteria.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    list_of_dfs_numeric : list of pd.DataFrames</span>
+<span class="sd">        Sliced and Plate2seq pd.dataframes</span>
+<span class="sd">    Avg_qual : int</span>
+<span class="sd">    used_bases : int</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Plate2Seq pd.DataFrames with that follows Avg_qual and used_bases criteria</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Initialize</span>
+    <span class="n">filtered_plates</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">list_of_dfs_numeric</span><span class="p">)):</span>
+        <span class="c1"># Filter</span>
+        <span class="n">filter_Avg_qual</span> <span class="o">=</span> <span class="n">list_of_dfs_numeric</span><span class="p">[</span><span class="n">i</span><span class="p">][</span>
+            <span class="n">list_of_dfs_numeric</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;AvgQual&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">Avg_qual</span>
+        <span class="p">]</span>
+        <span class="n">filer_used_bases</span> <span class="o">=</span> <span class="n">filter_Avg_qual</span><span class="p">[</span><span class="n">filter_Avg_qual</span><span class="p">[</span><span class="s2">&quot;used&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">used_bases</span><span class="p">]</span>
+        <span class="c1"># Save the filtered plates</span>
+        <span class="n">filtered_plates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">filer_used_bases</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">filtered_plates</span></div>
+
+
+<div class="viewcode-block" id="split_df_names"><a class="viewcode-back" href="../../../teemi.test.html#teemi.test.genotyping.split_df_names">[docs]</a><span class="k">def</span> <span class="nf">split_df_names</span><span class="p">(</span>
+    <span class="n">df_names_column</span><span class="p">,</span> <span class="n">which_column_to_split1</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">which_column_to_split2</span><span class="o">=</span><span class="mi">2</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Splits sample names from plate2seq pd.dataframes into plate and well columns&quot;&quot;&quot;</span>
+    <span class="n">df_with_names_split</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df_names_column</span><span class="p">)):</span>
+        <span class="c1"># splitting</span>
+        <span class="n">df_filter_plates</span> <span class="o">=</span> <span class="n">df_names_column</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;Sample-Name&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="n">expand</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># selecting</span>
+        <span class="n">column1</span> <span class="o">=</span> <span class="n">df_filter_plates</span><span class="p">[</span><span class="n">which_column_to_split1</span><span class="p">]</span>
+        <span class="n">column2</span> <span class="o">=</span> <span class="n">df_filter_plates</span><span class="p">[</span><span class="n">which_column_to_split2</span><span class="p">]</span>
+
+        <span class="c1"># concating</span>
+        <span class="n">concatenated</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">df_names_column</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">column1</span><span class="p">,</span> <span class="n">column2</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+
+        <span class="c1"># changing names</span>
+        <span class="n">concatenated</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;Number&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Sample-Name&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;AvgQual&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Length&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;GoodQualFrom&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;GoodQualTo&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;used&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;plate&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;well&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># save</span>
+        <span class="n">df_with_names_split</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">concatenated</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">df_with_names_split</span></div>
+
+
+<div class="viewcode-block" id="concatenating_list_of_dfs"><a class="viewcode-back" href="../../../teemi.test.html#teemi.test.genotyping.concatenating_list_of_dfs">[docs]</a><span class="k">def</span> <span class="nf">concatenating_list_of_dfs</span><span class="p">(</span><span class="n">list_of_dfs</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Concatenating a list of daframes into one pd.dataframe by rows&quot;&quot;&quot;</span>
+    <span class="n">assembled_dfs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">list_of_dfs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">assembled_dfs</span></div>
+
+
+<div class="viewcode-block" id="pairwise_alignment_of_templates"><a class="viewcode-back" href="../../../teemi.test.html#teemi.test.genotyping.pairwise_alignment_of_templates">[docs]</a><span class="k">def</span> <span class="nf">pairwise_alignment_of_templates</span><span class="p">(</span>
+    <span class="n">reads</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">templates</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">primers</span><span class="p">:</span> <span class="nb">list</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Infers relationship of templates to reads based on highest</span>
+<span class="sd">    score from a pairwise alignment.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    reads: list of Bio.SeqRecord.SeqRecord</span>
+<span class="sd">        these are .ab1 files made into Bio.SeqRecord.SeqRecord objects</span>
+<span class="sd">    templates: list of Bio.SeqRecord.SeqRecord</span>
+<span class="sd">        Templates for inferring relationship with - could be plasmid fx</span>
+<span class="sd">    primers: list of Bio.SeqRecord.SeqRecord</span>
+<span class="sd">        list of primers to be for finding were the read should start</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pd.Dataframe in the following way:</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    &lt;&lt;&lt;df_alignment = pairwise_alignment_of_templates(reads,templates, primers_for_seq)</span>
+
+<span class="sd">    &lt;&lt;&lt; df_alignment</span>
+
+<span class="sd">    Sample-Name	inf_promoter_name	align_score	inf_promoter</span>
+<span class="sd">    132	yp53re_cpr_A10_A10-pad_cpr_fw	pCCW12	634.0	5</span>
+<span class="sd">    188	yp53re_cpr_A11_A11-pad_cpr_fw	pTPI1	904.0	6</span>
+<span class="sd">    247	yp53re_cpr_A12_A12-pad_cpr_fw	pTPI1	851.0	6</span>
+<span class="sd">    93	yp53re_cpr_A1_A01-pad_cpr_fw	pCCW12	543.0	5</span>
+<span class="sd">    41	yp53re_cpr_A2_A02-pad_cpr_fw	pCCW12	636.0	5</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    If you want inf_part_number column then change your the description</span>
+<span class="sd">    of the Bio.SeqRecord.SeqRecord as follows:</span>
+
+<span class="sd">    pCCW12.description = &#39;1&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">best_scores</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">read_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">template_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">template_number_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">reads</span><span class="p">)):</span>
+
+        <span class="n">sample</span> <span class="o">=</span> <span class="n">reads</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">seq</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;N&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+        <span class="c1"># If we see the primers in the sample we the alignment will start from there</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">primers</span><span class="p">)):</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">sample</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">primers</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">seq</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">start</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">sample</span><span class="p">[</span><span class="n">start</span><span class="p">:]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+        <span class="c1"># Aling with templates</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">25</span><span class="p">:</span>
+            <span class="n">score</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">templates</span><span class="p">)):</span>
+                <span class="n">template</span> <span class="o">=</span> <span class="n">templates</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">seq</span>
+
+                <span class="c1"># Align # identical = 1, non-identical = -2 , gap = -2 , extending gap = -2</span>
+                <span class="c1"># alignments = pairwise2.align.globalms(template, sample,2, -2, -3, -3)</span>
+                <span class="n">alignment_score</span> <span class="o">=</span> <span class="n">pairwise2</span><span class="o">.</span><span class="n">align</span><span class="o">.</span><span class="n">localxx</span><span class="p">(</span>
+                    <span class="n">template</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">score_only</span><span class="o">=</span><span class="kc">True</span>
+                <span class="p">)</span>
+
+                <span class="c1"># Get the best alignment of them all</span>
+                <span class="k">if</span> <span class="n">alignment_score</span> <span class="o">&gt;</span> <span class="n">score</span><span class="p">:</span>
+                    <span class="n">score</span> <span class="o">=</span> <span class="n">alignment_score</span>
+                    <span class="n">temp_name</span> <span class="o">=</span> <span class="n">templates</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
+                    <span class="n">temp_number</span> <span class="o">=</span> <span class="n">templates</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">description</span>
+                    <span class="n">read_name</span> <span class="o">=</span> <span class="n">reads</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
+
+        <span class="c1"># Saving the alignmets and their names</span>
+        <span class="n">best_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">score</span><span class="p">)</span>
+        <span class="n">read_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">read_name</span><span class="p">)</span>
+        <span class="n">template_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">temp_name</span><span class="p">)</span>
+        <span class="n">template_number_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">temp_number</span><span class="p">)</span>
+
+    <span class="c1"># Making a pandas. dataframe</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;Sample-Name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">read_list</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;inf_part_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">template_list</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;align_score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">best_scores</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;inf_part_number&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">template_number_list</span>
+
+    <span class="k">return</span> <span class="n">df</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Technical University of Denmark (DTU).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

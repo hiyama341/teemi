@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>teemi: Literate programming can streamline bioengineering workflows &mdash; teemi 0.3.0+20.g1b653f4.dirty documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation" href="installation.html" />
+    <link rel="prev" title="Welcome to teemi’s documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> teemi
+          </a>
+              <div class="version">
+                0.3.0+20.g1b653f4.dirty
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">teemi: Literate programming can streamline bioengineering workflows</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#what-is-teemi">What is teemi?</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#features">Features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#getting-started">Getting started</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#colab-notebooks">Colab notebooks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#first-dbtl-cycle">First DBTL cycle</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#second-dbtl-cycle">Second DBTL cycle</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#documentation-and-examples">Documentation and Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#contributions">Contributions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#license">License</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#credits">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="history.html">History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="history.html#id1">0.1.0 (2023-01-02)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">teemis modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="colab_notebooks.html">Colab notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="teemi.design.html">Design module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="teemi.build.html">Build module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="teemi.test.html">Test module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="teemi.learn.html">Learn module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="teemi.lims.html">LIMS module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">teemi</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>teemi: Literate programming can streamline bioengineering workflows</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/readme.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<a class="reference internal image-reference" href="https://raw.githubusercontent.com/hiyama341/teemi/main/pictures/teemi1.svg?token=GHSAT0AAAAAABTYCY2LIAJ7B7ZTWBR4NMHIYZUJQ4A"><img alt="teemi logo" src="https://raw.githubusercontent.com/hiyama341/teemi/main/pictures/teemi1.svg?token=GHSAT0AAAAAABTYCY2LIAJ7B7ZTWBR4NMHIYZUJQ4A" style="width: 400px;" /></a>
+<section id="teemi-literate-programming-can-streamline-bioengineering-workflows">
+<h1>teemi: Literate programming can streamline bioengineering workflows<a class="headerlink" href="#teemi-literate-programming-can-streamline-bioengineering-workflows" title="Permalink to this heading"></a></h1>
+<a class="reference external image-reference" href="https://badge.fury.io/py/teemi"><img alt="https://badge.fury.io/py/teemi.svg" src="https://badge.fury.io/py/teemi.svg" /></a>
+<a class="reference external image-reference" href="https://github.com/hiyama341/teemi/actions"><img alt="https://github.com/hiyama341/teemi/actions/workflows/main.yml/badge.svg" src="https://github.com/hiyama341/teemi/actions/workflows/main.yml/badge.svg" /></a>
+<a class="reference external image-reference" href="https://teemi.readthedocs.io/en/latest/?version=latest"><img alt="Documentation Status" src="https://readthedocs.org/projects/teemi/badge/?version=latest" /></a>
+<a class="reference external image-reference" href="https://github.com/hiyama341/teemi/blob/main/LICENSE"><img alt="https://img.shields.io/github/license/hiyama341/teemi" src="https://img.shields.io/github/license/hiyama341/teemi" /></a>
+<a class="reference external image-reference" href="https://pypi.org/project/teemi/"><img alt="Supported Python Versions" src="https://img.shields.io/pypi/pyversions/teemi.svg" /></a>
+<a class="reference external image-reference" href="https://codecov.io/gh/hiyama341/teemi"><img alt="https://codecov.io/gh/hiyama341/teemi/branch/main/graph/badge.svg?token=P4457QACUY" src="https://codecov.io/gh/hiyama341/teemi/branch/main/graph/badge.svg?token=P4457QACUY" /></a>
+<a class="reference external image-reference" href="https://black.readthedocs.io/en/stable/"><img alt="https://img.shields.io/badge/code%20style-black-black" src="https://img.shields.io/badge/code%20style-black-black" /></a>
+<section id="what-is-teemi">
+<h2>What is teemi?<a class="headerlink" href="#what-is-teemi" title="Permalink to this heading"></a></h2>
+<p><strong>teemi</strong> is an easy-to-use python package with functions that
+can be used in literate programming to simulate steps of a strain
+construction cycle from generating genetic parts, to designing a
+combinatorial library along with instructions for the assembly.
+A fully integrated LIMS system is presented to keep track of samples
+and allocation through both a commercial Benchling API and a low-level CSV file database.</p>
+<p>Here, we demonstrate the use of teemi in a complex machine learning-guided
+metabolic engineering task. We envision that literate programming for biology
+can be adapted for any experimental workflow and be mixed and matched for the
+benefit of the user. As this tool is built to be flexible through its open-source
+Python platform, future repetitive tasks can be automated and thus increase
+the speed at which we engineer biology.</p>
+<p>Curious about how you can build strains easier and faster? Head over to our <a class="reference external" href="https://github.com/hiyama341/teemi/tree/main/colab_notebooks">Google Colab notebooks</a>
+and give it a try.</p>
+<p>Please cite our paper (link tba) if you’ve used teemi in a scientific publication.</p>
+</section>
+</section>
+<section id="features">
+<h1>Features<a class="headerlink" href="#features" title="Permalink to this heading"></a></h1>
+<ul class="simple">
+<li><p>Combinatorial library generation</p></li>
+<li><p>HT cloning and transformation workflows</p></li>
+<li><p>Flowbot One instructions</p></li>
+<li><p>CSV-based LIMS system as well as integration to Benchling</p></li>
+<li><p>Genotyping of microbial strains</p></li>
+<li><p>Advanced Machine Learning of biological datasets with the AutoML <a class="reference external" href="https://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html">H2O</a></p></li>
+<li><p>Workflows for selecting enzyme homologs</p></li>
+<li><p>Promoter selection workflows from RNA-seq datasets</p></li>
+<li><p>Data analysis of large LC-MS datasets along with workflows for analysis</p></li>
+</ul>
+<a class="reference internal image-reference" href="https://raw.githubusercontent.com/hiyama341/teemi/main/pictures/DBTL_teemi_with_modules1.svg"><img alt="Overview of teemi's features throughout the DBTL cycle." src="https://raw.githubusercontent.com/hiyama341/teemi/main/pictures/DBTL_teemi_with_modules1.svg" width="800" /></a>
+<section id="getting-started">
+<h2>Getting started<a class="headerlink" href="#getting-started" title="Permalink to this heading"></a></h2>
+<p>To get started with making microbial strains in an HT manner please follow the steps below:</p>
+<ol class="arabic simple">
+<li><p>Install teemi. You will find the necessary information below for installation.</p></li>
+<li><p>Check out our <a class="reference external" href="https://github.com/hiyama341/teemi/tree/main/colab_notebooks">notebooks</a> for inspiration to make HT strain construction with teemi.</p></li>
+<li><p>You can start making your own workflows by importing teemi into either Google colab or Jupyter lab/notebooks.</p></li>
+</ol>
+</section>
+</section>
+<section id="colab-notebooks">
+<h1>Colab notebooks<a class="headerlink" href="#colab-notebooks" title="Permalink to this heading"></a></h1>
+<p>As a proof of concept we show how teemi and literate programming can be used to streamline bioengineering workflows.
+These workflows should serve as a guide or a help to build your own workflows and thereby harnessing the power of literate programming with teemi.</p>
+<p>Specifically, in this study we present how teemi and literate programming to build simulation-guided, iterative,
+and evolution-guided laboratory workflows for optimizing strictosidine production in yeast.</p>
+<p>Below you can find all the notebooks developed in this work. Just click the Google colab badge to start the workflows.</p>
+<section id="first-dbtl-cycle">
+<h2>First DBTL cycle<a class="headerlink" href="#first-dbtl-cycle" title="Permalink to this heading"></a></h2>
+<p><strong>DESIGN:</strong></p>
+<ol class="arabic simple" start="0">
+<li><p>Describes how we can automatically fetch homologs from NCBI from a query in a standardizable and repeatable way <a class="reference external" href="https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/00_1_DESIGN_Homologs.ipynb"><img alt="Notebook 00" src="https://colab.research.google.com/assets/colab-badge.svg" /></a>.</p></li>
+<li><p>Describes how promoters can be selected from RNAseq data and fetched from online database with various quality measurements implemented <a class="reference external" href="https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/01_1_DESIGN_Promoters.ipynb"><img alt="Notebook 01" src="https://colab.research.google.com/assets/colab-badge.svg" /></a>.</p></li>
+<li><p>Describes how a combinatorial library can be generated with the DesignAssembly class along with robot executable intructions <a class="reference external" href="https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/02_1_DESIGN_Combinatorial_library.ipynb"><img alt="Notebook 02" src="https://colab.research.google.com/assets/colab-badge.svg" /></a>.</p></li>
+</ol>
+<p><strong>BUILD:</strong></p>
+<ol class="arabic simple" start="3">
+<li><p>Describes the assembly of a CRISPR plasmid with USER cloning <a class="reference external" href="https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/03_1_BUILD_USER_gRNA_plasmid.ipynb"><img alt="Notebook 03" src="https://colab.research.google.com/assets/colab-badge.svg" /></a>.</p></li>
+<li><p>Describes the construction of the background strain by K/O of G8H and CPR <a class="reference external" href="https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/04_1_BUILD_Background_strain.ipynb"><img alt="Notebook 04" src="https://colab.research.google.com/assets/colab-badge.svg" /></a>.</p></li>
+<li><p>Shows how the first combinatorial library was generated for 1280 possible combinations <a class="reference external" href="https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/05_1_BUILD_CombinatorialLibrary_AllStrains.ipynb"><img alt="Notebook 05" src="https://colab.research.google.com/assets/colab-badge.svg" /></a>.</p></li>
+</ol>
+<p><strong>TEST:</strong></p>
+<ol class="arabic simple" start="6">
+<li><p>Describes data processing of LC-MS data and genotyping of the generated strains <a class="reference external" href="https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/06_1_TEST_LibraryCharacterisation.ipynb"><img alt="Notebook 06" src="https://colab.research.google.com/assets/colab-badge.svg" /></a>.</p></li>
+</ol>
+<p><strong>LEARN:</strong></p>
+<ol class="arabic simple" start="7">
+<li><p>Describes how we use AutoML to predict the best combinations for a targeted second round of library construction <a class="reference external" href="https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/07_1_LEARN_DataAnalysis.ipynb"><img alt="Notebook 07" src="https://colab.research.google.com/assets/colab-badge.svg" /></a>.</p></li>
+</ol>
+</section>
+<section id="second-dbtl-cycle">
+<h2>Second DBTL cycle<a class="headerlink" href="#second-dbtl-cycle" title="Permalink to this heading"></a></h2>
+<p><strong>DESIGN:</strong></p>
+<ol class="arabic simple" start="8">
+<li><p>Shows how results from the ML can be translated into making a target library of strains <a class="reference external" href="https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/09_BUILD_Library2.ipynb"><img alt="Notebook 08" src="https://colab.research.google.com/assets/colab-badge.svg" /></a>.</p></li>
+</ol>
+<p><strong>BUILD:</strong></p>
+<ol class="arabic simple" start="9">
+<li><p>Shows the construction of a targeted library of strains <a class="reference external" href="https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/09_2_BUILD_CombinatorialLibrary.ipynb"><img alt="Notebook 09" src="https://colab.research.google.com/assets/colab-badge.svg" /></a>.</p></li>
+</ol>
+<p><strong>TEST:</strong></p>
+<ol class="arabic simple" start="10">
+<li><p>Describes the data processing of LC-MS data like in notebook 7 <a class="reference external" href="https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/10_2_TEST_Library_Characterization.ipynb"><img alt="Notebook 10" src="https://colab.research.google.com/assets/colab-badge.svg" /></a>.</p></li>
+</ol>
+<p><strong>LEARN:</strong></p>
+<ol class="arabic simple" start="11">
+<li><p>Second ML cycle of ML showing how the model increased performance and saturation of best performing strains <a class="reference external" href="https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/11_2_LEARN_DataAnalysisML.ipynb"><img alt="Notebook 11" src="https://colab.research.google.com/assets/colab-badge.svg" /></a>.</p></li>
+</ol>
+</section>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h2>
+<p>Use pip to install teemi from <a class="reference external" href="https://pypi.org/project/teemi/">PyPI</a>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pip install teemi
+</pre></div>
+</div>
+<p>If you want to develop or if you cloned the repository from our <a class="reference external" href="https://github.com/hiyama341/teemi/">GitHub</a>
+you can install teemi in the following way.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pip install -e &lt;path-to-teemi-repo&gt;
+</pre></div>
+</div>
+<p>You might need to run these commands with administrative
+privileges if you’re not using a virtual environment (using <code class="docutils literal notranslate"><span class="pre">sudo</span></code> for example).
+Please check the <a class="reference external" href="https://teemi.readthedocs.io/en/latest/installation.html#">documentation</a>
+for further details.</p>
+</section>
+<section id="documentation-and-examples">
+<h2>Documentation and Examples<a class="headerlink" href="#documentation-and-examples" title="Permalink to this heading"></a></h2>
+<p>Documentation is available on through numerous Google Colab notebooks with
+examples on how to use teemi and how we use these notebooks for strain
+construnction. The Colab notebooks can be found here
+<a class="reference external" href="https://github.com/hiyama341/teemi/tree/main/colab_notebooks">teemi.notebooks</a>.</p>
+<ul class="simple">
+<li><p>Documentation: <a class="reference external" href="https://teemi.readthedocs.io">https://teemi.readthedocs.io</a>.</p></li>
+</ul>
+</section>
+<section id="contributions">
+<h2>Contributions<a class="headerlink" href="#contributions" title="Permalink to this heading"></a></h2>
+<p>Contributions are very welcome! Check our <a class="reference external" href="https://teemi.readthedocs.io/en/latest/contributing.html">guidelines</a> for instructions how to contribute.</p>
+</section>
+<section id="license">
+<h2>License<a class="headerlink" href="#license" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p>Free software: MIT license</p></li>
+</ul>
+</section>
+</section>
+<section id="credits">
+<h1>Credits<a class="headerlink" href="#credits" title="Permalink to this heading"></a></h1>
+<ul class="simple">
+<li><p>This package was created with <a class="reference external" href="https://github.com/audreyr/cookiecutter">Cookiecutter</a> and the <a class="reference external" href="https://github.com/audreyr/cookiecutter-pypackage">audreyr/cookiecutter-pypackage</a> project template.</p></li>
+</ul>
+<ul class="simple">
+<li><p>teemis logo was made by Jonas Krogh Fischer. Check out his <a class="reference external" href="http://jkfischerproductions.com/kea/portfolio/index.html">website</a>.</p></li>
+</ul>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to teemi’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="installation.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Technical University of Denmark (DTU).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

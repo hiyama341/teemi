@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>constrain.lims.benchling_api &mdash; ConStrain 0.2.7+57.gfc7687b.dirty documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> ConStrain
+          </a>
+              <div class="version">
+                0.2.7+57.gfc7687b.dirty
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html">ConStrain: Literate programming can streamline bioengineering workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html#features">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html#credits">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../history.html">History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../colab_notebooks.html">Colab notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../constrain.design.html">constrain.design package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../constrain.lab.html">constrain.lab package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../constrain.lims.html">constrain.lims package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../constrain.test.html">constrain.test package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ConStrain</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>constrain.lims.benchling_api</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for constrain.lims.benchling_api</h1><div class="highlight"><pre>
+<span></span><span class="c1"># MIT License</span>
+<span class="c1"># Copyright (c) 2022, Technical University of Denmark (DTU)</span>
+<span class="c1">#</span>
+<span class="c1"># Permission is hereby granted, free of charge, to any person obtaining a copy</span>
+<span class="c1"># of this software and associated documentation files (the &quot;Software&quot;), to deal</span>
+<span class="c1"># in the Software without restriction, including without limitation the rights</span>
+<span class="c1"># to use, copy, modify, merge, publish, distribute, sublicense, and/or sell</span>
+<span class="c1"># copies of the Software, and to permit persons to whom the Software is</span>
+<span class="c1"># furnished to do so, subject to the following conditions:</span>
+<span class="c1">#</span>
+<span class="c1"># The above copyright notice and this permission notice shall be included in all</span>
+<span class="c1"># copies or substantial portions of the Software.</span>
+
+<span class="sd">&quot;&quot;&quot; Easy to use benchling functions to fetch sequences and objects&quot;&quot;&quot;</span>
+
+
+<span class="c1">#!/usr/bin/env python</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">benchlingapi</span> <span class="kn">import</span> <span class="n">Session</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">Bio</span>
+<span class="kn">from</span> <span class="nn">Bio.SeqFeature</span> <span class="kn">import</span> <span class="n">SeqFeature</span>
+<span class="kn">import</span> <span class="nn">pydna</span>
+
+<span class="c1"># Fetching API key from env file  - the function can find the env file in the root folder</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">dotenv</span> <span class="kn">import</span> <span class="n">load_dotenv</span><span class="p">,</span> <span class="n">find_dotenv</span>
+
+<span class="n">load_dotenv</span><span class="p">(</span><span class="n">find_dotenv</span><span class="p">())</span>
+
+<span class="c1"># Initializing session</span>
+<span class="n">api_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;API_KEY&quot;</span><span class="p">)</span>
+
+<span class="c1"># Add your benchling home environment here</span>
+<span class="n">home_url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;HOME_url&quot;</span><span class="p">)</span>
+
+<span class="c1"># print(home_url, api_key)</span>
+
+<span class="n">session</span> <span class="o">=</span> <span class="n">Session</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">,</span> <span class="n">home</span><span class="o">=</span><span class="n">home_url</span><span class="p">)</span>
+
+
+<span class="sd">&quot;&quot;&quot; This part of the LIMS module is used for importing sequences and exporting sequences to benchling</span>
+
+<span class="sd">-----------------</span>
+<span class="sd">HELPER FUNCTIONS: </span>
+<span class="sd">-----------------</span>
+<span class="sd">sequence_to_benchling</span>
+<span class="sd">from_benchling</span>
+<span class="sd">update_loc_vol_conc</span>
+<span class="sd">unnest_dict</span>
+<span class="sd">nest_dict</span>
+<span class="sd">SE_to_CLoc</span>
+<span class="sd">split_based_on_keys</span>
+<span class="sd">rename_dict_keys</span>
+<span class="sd">Compound_to_SE()</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="sequence_to_benchling"><a class="viewcode-back" href="../../../constrain.lims.html#constrain.lims.benchling_api.sequence_to_benchling">[docs]</a><span class="k">def</span> <span class="nf">sequence_to_benchling</span><span class="p">(</span><span class="n">folder_name</span><span class="p">,</span> <span class="n">oligo_name</span><span class="p">,</span> <span class="n">oligo_bases</span><span class="p">,</span> <span class="n">schema</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;This function uploads sequences to benchlong</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">folder</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">Folder</span><span class="o">.</span><span class="n">find_by_name</span><span class="p">(</span><span class="n">folder_name</span><span class="p">)</span>
+    <span class="n">dna</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">dna</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">DNASequence</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="n">oligo_name</span><span class="p">,</span> <span class="n">bases</span><span class="o">=</span><span class="n">oligo_bases</span><span class="p">,</span> <span class="n">folder_id</span><span class="o">=</span><span class="n">folder</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">is_circular</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span>
+
+    <span class="c1"># save the dna to Benchling account</span>
+    <span class="n">dna</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+
+    <span class="n">schemas</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;Primer&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;DNA Fragment&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Plasmid&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Gene&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;gRNA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Marker&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Promoter&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Terminator&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Tag&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Origin of Replication&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">schema</span> <span class="ow">in</span> <span class="n">schemas</span><span class="p">:</span>
+        <span class="n">dna</span><span class="o">.</span><span class="n">set_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
+
+    <span class="n">dna</span><span class="o">.</span><span class="n">register</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="from_benchling"><a class="viewcode-back" href="../../../constrain.lims.html#constrain.lims.benchling_api.from_benchling">[docs]</a><span class="k">def</span> <span class="nf">from_benchling</span><span class="p">(</span><span class="n">bname</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Extract information of object on benchling.</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># retrieve benchling sequence dict</span>
+    <span class="n">bench_dict</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">DNASequence</span><span class="o">.</span><span class="n">find_by_name</span><span class="p">(</span><span class="n">bname</span><span class="p">)</span><span class="o">.</span><span class="n">dump</span><span class="p">()</span>
+
+    <span class="c1"># Convert benchling sequence dict into Biopython/Genbank object</span>
+    <span class="c1">## rename keys from Benchling to Biopython/Genbank</span>
+    <span class="n">trans_dict</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;bases&quot;</span><span class="p">:</span> <span class="s2">&quot;seq&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;id&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;annotations&quot;</span><span class="p">:</span> <span class="s2">&quot;features&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;fields&quot;</span><span class="p">:</span> <span class="s2">&quot;annotations&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="n">trans_bench_dict</span> <span class="o">=</span> <span class="n">rename_dict_keys</span><span class="p">(</span><span class="n">bench_dict</span><span class="p">,</span> <span class="n">trans_dict</span><span class="p">)</span>
+
+    <span class="c1">## Select most import information</span>
+    <span class="n">translated_bench_dict_sel</span><span class="p">,</span> <span class="n">translated_bench_dict_other</span> <span class="o">=</span> <span class="n">split_based_on_keys</span><span class="p">(</span>
+        <span class="n">trans_bench_dict</span><span class="p">,</span> <span class="n">trans_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+    <span class="p">)</span>
+
+    <span class="c1">## Add Benchling custom fields and isCircular to fields dict in Biopython annotations.</span>
+    <span class="n">translated_bench_dict_sel</span><span class="p">[</span><span class="s2">&quot;annotations&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+        <span class="n">translated_bench_dict_other</span><span class="p">[</span><span class="s2">&quot;customFields&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">translated_bench_dict_sel</span><span class="p">[</span><span class="s2">&quot;annotations&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;topology&quot;</span><span class="p">:</span> <span class="n">translated_bench_dict_other</span><span class="p">[</span><span class="s2">&quot;isCircular&quot;</span><span class="p">]}</span>
+    <span class="p">)</span>
+
+    <span class="c1">##</span>
+    <span class="n">date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2">-%b-%Y&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+    <span class="c1"># comment is renamed to commentary as Bio.IO.write provides an error when this key is in the annotation dict.</span>
+    <span class="n">comment</span> <span class="o">=</span> <span class="n">translated_bench_dict_sel</span><span class="p">[</span><span class="s2">&quot;annotations&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;comment&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="n">translated_bench_dict_sel</span><span class="p">[</span><span class="s2">&quot;annotations&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;data_file_division&quot;</span><span class="p">:</span> <span class="s2">&quot;PLN&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;date&quot;</span><span class="p">:</span> <span class="n">date</span><span class="p">,</span>
+            <span class="s2">&quot;molecule_type&quot;</span><span class="p">:</span> <span class="s2">&quot;DNA&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;location&quot;</span><span class="p">:</span> <span class="s2">&quot;unknown&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;commentary&quot;</span><span class="p">:</span> <span class="n">comment</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="p">)</span>
+
+    <span class="c1">## Convert values</span>
+    <span class="c1">### Seq</span>
+    <span class="n">translated_bench_dict_sel</span><span class="p">[</span><span class="s2">&quot;seq&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Bio</span><span class="o">.</span><span class="n">Seq</span><span class="o">.</span><span class="n">Seq</span><span class="p">(</span><span class="n">translated_bench_dict_sel</span><span class="p">[</span><span class="s2">&quot;seq&quot;</span><span class="p">])</span>
+
+    <span class="c1">### Features</span>
+    <span class="n">seq_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">translated_bench_dict_sel</span><span class="p">[</span><span class="s2">&quot;seq&quot;</span><span class="p">])</span>
+
+    <span class="c1">#### Translate start end to compound locations object</span>
+    <span class="n">translated_bench_dict_sel</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">SE_to_CLoc</span><span class="p">(</span><span class="n">feature_dict</span><span class="p">,</span> <span class="n">seq_length</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">feature_dict</span> <span class="ow">in</span> <span class="n">translated_bench_dict_sel</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">]</span>
+    <span class="p">]</span>
+
+    <span class="c1">#### Add &quot;label&quot; feature.qualifier dict for CLC workbench visualization</span>
+    <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">translated_bench_dict_sel</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">]:</span>
+        <span class="n">feature</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="n">feature</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)})</span>
+
+    <span class="c1">#### Move non Biopython features to qualifier subdict</span>
+    <span class="n">translated_bench_dict_sel</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">nest_dict</span><span class="p">(</span>
+            <span class="n">feature_dict</span><span class="p">,</span>
+            <span class="n">first_order_keys</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;location&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;strand&quot;</span><span class="p">],</span>
+            <span class="n">key_for_nested_dict</span><span class="o">=</span><span class="s2">&quot;qualifiers&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">feature_dict</span> <span class="ow">in</span> <span class="n">translated_bench_dict_sel</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">]</span>
+    <span class="p">]</span>
+
+    <span class="c1">#### Create SeqFeatures</span>
+    <span class="n">translated_bench_dict_sel</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">Bio</span><span class="o">.</span><span class="n">SeqFeature</span><span class="o">.</span><span class="n">SeqFeature</span><span class="p">(</span><span class="o">**</span><span class="n">feature_dict</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">feature_dict</span> <span class="ow">in</span> <span class="n">translated_bench_dict_sel</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">]</span>
+    <span class="p">]</span>
+
+    <span class="n">seqRecord</span> <span class="o">=</span> <span class="n">Bio</span><span class="o">.</span><span class="n">SeqRecord</span><span class="o">.</span><span class="n">SeqRecord</span><span class="p">(</span><span class="o">**</span><span class="n">translated_bench_dict_sel</span><span class="p">)</span>
+    <span class="n">seqRecord</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">bname</span>
+    <span class="n">seqRecord</span> <span class="o">=</span> <span class="n">update_loc_vol_conc</span><span class="p">(</span><span class="n">seqRecord</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">schema</span> <span class="o">==</span> <span class="s2">&quot;Primer&quot;</span><span class="p">:</span>
+        <span class="n">seqRecord</span> <span class="o">=</span> <span class="n">pydna</span><span class="o">.</span><span class="n">primer</span><span class="o">.</span><span class="n">Primer</span><span class="p">(</span><span class="n">seqRecord</span><span class="p">)</span>
+
+    <span class="c1"># return object</span>
+    <span class="k">return</span> <span class="n">seqRecord</span></div>
+
+
+<div class="viewcode-block" id="update_loc_vol_conc"><a class="viewcode-back" href="../../../constrain.lims.html#constrain.lims.benchling_api.update_loc_vol_conc">[docs]</a><span class="k">def</span> <span class="nf">update_loc_vol_conc</span><span class="p">(</span><span class="n">seqRecord</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Update with location volume and concentration</span>
+<span class="sd">    information downloaded from benchling if possible.</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    take Bio.SeqRecord.SeqRecord</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">DBpath</span> <span class="o">=</span> <span class="s2">&quot;../data/external/benchlingBoxes_sorted.csv&quot;</span>
+
+    <span class="n">DB</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">DBpath</span><span class="p">)</span>
+
+    <span class="n">seqRecord</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;batches&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">DB</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;batchEntId&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">seqRecord</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+            <span class="n">location</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;parentBoxPlateName&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;parentBoxPlatePos&quot;</span><span class="p">]</span>
+            <span class="n">seqRecord</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;batches&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;box&quot;</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;parentBoxPlateName&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;parentBoxPlatePos&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;volume&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;volume&quot;</span><span class="p">]),</span>
+                    <span class="s2">&quot;concentration&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;Concentration (ng/ul)&quot;</span><span class="p">]),</span>
+                    <span class="s2">&quot;location&quot;</span><span class="p">:</span> <span class="n">location</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">pass</span>
+    <span class="k">return</span> <span class="n">seqRecord</span></div>
+
+
+<div class="viewcode-block" id="unnest_dict"><a class="viewcode-back" href="../../../constrain.lims.html#constrain.lims.benchling_api.unnest_dict">[docs]</a><span class="k">def</span> <span class="nf">unnest_dict</span><span class="p">(</span><span class="n">dictionary</span><span class="p">,</span> <span class="n">key_unnest_dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">nested_dict</span> <span class="o">=</span> <span class="n">dictionary</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key_unnest_dict</span><span class="p">)</span>
+
+    <span class="n">unnested_dictionary</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">dictionary</span><span class="p">,</span> <span class="o">**</span><span class="n">nested_dict</span><span class="p">}</span>
+
+    <span class="k">if</span> <span class="s2">&quot;label&quot;</span> <span class="ow">in</span> <span class="n">unnested_dictionary</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">unnested_dictionary</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">unnested_dictionary</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;label&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">unnested_dictionary</span></div>
+
+
+<div class="viewcode-block" id="nest_dict"><a class="viewcode-back" href="../../../constrain.lims.html#constrain.lims.benchling_api.nest_dict">[docs]</a><span class="k">def</span> <span class="nf">nest_dict</span><span class="p">(</span><span class="n">dictionary</span><span class="p">,</span> <span class="n">key_for_nested_dict</span><span class="p">,</span> <span class="n">first_order_keys</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">first_order_keys</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">first_order_keys</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">first_order_keys</span> <span class="o">=</span> <span class="n">first_order_keys</span>
+
+    <span class="n">first_order_dict</span><span class="p">,</span> <span class="n">second_order_dict</span> <span class="o">=</span> <span class="n">split_based_on_keys</span><span class="p">(</span>
+        <span class="n">dictionary</span><span class="p">,</span> <span class="n">first_order_keys</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Create qualifer dict</span>
+    <span class="n">dict_to_be_nested</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">dict_to_be_nested</span><span class="p">[</span><span class="n">key_for_nested_dict</span><span class="p">]</span> <span class="o">=</span> <span class="n">second_order_dict</span>
+
+    <span class="c1"># Merge dictionaries by nesting qualifer dict</span>
+    <span class="n">nested_dictionary</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">first_order_dict</span><span class="p">,</span> <span class="o">**</span><span class="n">dict_to_be_nested</span><span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">nested_dictionary</span></div>
+
+
+<div class="viewcode-block" id="SE_to_CLoc"><a class="viewcode-back" href="../../../constrain.lims.html#constrain.lims.benchling_api.SE_to_CLoc">[docs]</a><span class="k">def</span> <span class="nf">SE_to_CLoc</span><span class="p">(</span><span class="n">dictionary</span><span class="p">,</span> <span class="n">length</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Start and End Key Value pair to Compound Location Key Value pair.</span>
+
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">dictionary</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;start&quot;</span><span class="p">)</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="n">dictionary</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;end&quot;</span><span class="p">)</span>
+    <span class="n">start_pos</span> <span class="o">=</span> <span class="n">Bio</span><span class="o">.</span><span class="n">SeqFeature</span><span class="o">.</span><span class="n">ExactPosition</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
+    <span class="n">end_pos</span> <span class="o">=</span> <span class="n">Bio</span><span class="o">.</span><span class="n">SeqFeature</span><span class="o">.</span><span class="n">ExactPosition</span><span class="p">(</span><span class="n">end</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">start_pos</span> <span class="o">&lt;</span> <span class="n">end_pos</span><span class="p">:</span>
+        <span class="n">location</span> <span class="o">=</span> <span class="n">Bio</span><span class="o">.</span><span class="n">SeqFeature</span><span class="o">.</span><span class="n">FeatureLocation</span><span class="p">(</span><span class="n">start_pos</span><span class="p">,</span> <span class="n">end_pos</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">f1</span> <span class="o">=</span> <span class="n">Bio</span><span class="o">.</span><span class="n">SeqFeature</span><span class="o">.</span><span class="n">FeatureLocation</span><span class="p">(</span><span class="n">start_pos</span><span class="p">,</span> <span class="n">length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">f2</span> <span class="o">=</span> <span class="n">Bio</span><span class="o">.</span><span class="n">SeqFeature</span><span class="o">.</span><span class="n">FeatureLocation</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">end_pos</span><span class="p">)</span>
+        <span class="n">location</span> <span class="o">=</span> <span class="n">Bio</span><span class="o">.</span><span class="n">SeqFeature</span><span class="o">.</span><span class="n">CompoundLocation</span><span class="p">([</span><span class="n">f1</span><span class="p">,</span> <span class="n">f2</span><span class="p">])</span>
+
+    <span class="n">dictionary</span><span class="p">[</span><span class="s2">&quot;location&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">location</span>
+    <span class="k">return</span> <span class="n">dictionary</span></div>
+
+
+<div class="viewcode-block" id="split_based_on_keys"><a class="viewcode-back" href="../../../constrain.lims.html#constrain.lims.benchling_api.split_based_on_keys">[docs]</a><span class="k">def</span> <span class="nf">split_based_on_keys</span><span class="p">(</span><span class="n">dictionary</span><span class="p">,</span> <span class="n">key_list</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Split dictionary based on key list&quot;&quot;&quot;</span>
+    <span class="c1"># Split keys</span>
+    <span class="n">first_keys</span> <span class="o">=</span> <span class="n">key_list</span>
+    <span class="n">other_keys</span> <span class="o">=</span> <span class="p">[</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">dictionary</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">first_keys</span><span class="p">]</span>
+
+    <span class="c1"># Create dicts</span>
+    <span class="n">first_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">dictionary</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">first_keys</span><span class="p">}</span>
+    <span class="n">other_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">dictionary</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">other_keys</span><span class="p">}</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">first_dict</span><span class="p">,</span> <span class="n">other_dict</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="rename_dict_keys"><a class="viewcode-back" href="../../../constrain.lims.html#constrain.lims.benchling_api.rename_dict_keys">[docs]</a><span class="k">def</span> <span class="nf">rename_dict_keys</span><span class="p">(</span><span class="n">dictionary</span><span class="p">,</span> <span class="n">trans_dictionary</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;rename the keys of a dictionary using another dictionary</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">keys</span> <span class="o">=</span> <span class="n">dictionary</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="n">dictionary</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+
+    <span class="n">new_keys</span> <span class="o">=</span> <span class="p">[</span><span class="n">trans_dictionary</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">]</span>
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">new_keys</span><span class="p">,</span> <span class="n">values</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="Compoundloc_to_SE"><a class="viewcode-back" href="../../../constrain.lims.html#constrain.lims.benchling_api.Compoundloc_to_SE">[docs]</a><span class="k">def</span> <span class="nf">Compoundloc_to_SE</span><span class="p">(</span><span class="n">dictionary</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;location :</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">     CompoundLocation to start : v ,</span>
+<span class="sd">     end : v</span>
+<span class="sd">     strand : v key value pairs&quot;&quot;&quot;</span>
+
+    <span class="n">Compoundloc</span> <span class="o">=</span> <span class="n">dictionary</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;location&quot;</span><span class="p">)</span>
+
+    <span class="n">dictionary</span><span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Compoundloc</span><span class="o">.</span><span class="n">start</span><span class="o">.</span><span class="n">real</span>
+    <span class="n">dictionary</span><span class="p">[</span><span class="s2">&quot;end&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Compoundloc</span><span class="o">.</span><span class="n">end</span><span class="o">.</span><span class="n">real</span>
+    <span class="n">dictionary</span><span class="p">[</span><span class="s2">&quot;strand&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Compoundloc</span><span class="o">.</span><span class="n">strand</span>
+
+    <span class="k">return</span> <span class="n">dictionary</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Technical University of Denmark (DTU).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

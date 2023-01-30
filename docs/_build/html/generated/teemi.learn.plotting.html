@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>teemi.learn.plotting &mdash; teemi 0.3.0+20.g1b653f4.dirty documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="teemi.lims" href="teemi.lims.html" />
+    <link rel="prev" title="teemi.learn.auto_ml" href="teemi.learn.auto_ml.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> teemi
+          </a>
+              <div class="version">
+                0.3.0+20.g1b653f4.dirty
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../readme.html">teemi: Literate programming can streamline bioengineering workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../readme.html#features">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../readme.html#colab-notebooks">Colab notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../readme.html#credits">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../history.html">History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../history.html#id1">0.1.0 (2023-01-02)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">teemis modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../colab_notebooks.html">Colab notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../teemi.design.html">Design module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../teemi.build.html">Build module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../teemi.test.html">Test module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../teemi.learn.html">Learn module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../teemi.lims.html">LIMS module</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="teemi.html">teemi</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="teemi.build.html">teemi.build</a></li>
+<li class="toctree-l3"><a class="reference internal" href="teemi.design.html">teemi.design</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="teemi.learn.html">teemi.learn</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="teemi.learn.auto_ml.html">teemi.learn.auto_ml</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">teemi.learn.plotting</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="teemi.lims.html">teemi.lims</a></li>
+<li class="toctree-l3"><a class="reference internal" href="teemi.test.html">teemi.test</a></li>
+<li class="toctree-l3"><a class="reference internal" href="teemi.utils.html">teemi.utils</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">teemi</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../api.html">API</a> &raquo;</li>
+          <li><a href="teemi.html">teemi</a> &raquo;</li>
+          <li><a href="teemi.learn.html">teemi.learn</a> &raquo;</li>
+      <li>teemi.learn.plotting</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/teemi.learn.plotting.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<section id="module-teemi.learn.plotting">
+<span id="teemi-learn-plotting"></span><h1>teemi.learn.plotting<a class="headerlink" href="#module-teemi.learn.plotting" title="Permalink to this heading"></a></h1>
+<p>Module used for producing/reproducing plots</p>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../teemi.learn.html#teemi.learn.plotting.bar_plot" title="teemi.learn.plotting.bar_plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bar_plot</span></code></a>(x, y[, error_bar, horisontal_line, ...])</p></td>
+<td><p>Plotting a bar_plot .</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../teemi.learn.html#teemi.learn.plotting.bar_plot_w_hue" title="teemi.learn.plotting.bar_plot_w_hue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bar_plot_w_hue</span></code></a>(dataframe, x, y[, save_pdf, ...])</p></td>
+<td><p>Plotting a correlation_plot.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../teemi.learn.html#teemi.learn.plotting.carpet_barplot" title="teemi.learn.plotting.carpet_barplot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">carpet_barplot</span></code></a>(pd_dataframe_cross_tab_prop, ...)</p></td>
+<td><p>Plotting stacked barplots from a pandas dataframe cross tab df</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../teemi.learn.html#teemi.learn.plotting.color_range_dict" title="teemi.learn.plotting.color_range_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">color_range_dict</span></code></a>()</p></td>
+<td><p>Returns a dictionary of color ranges.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../teemi.learn.html#teemi.learn.plotting.correlation_plot" title="teemi.learn.plotting.correlation_plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">correlation_plot</span></code></a>(dataframe, x, y[, ...])</p></td>
+<td><p>Plotting a correlation_plot.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../teemi.learn.html#teemi.learn.plotting.grouped_bar_plot" title="teemi.learn.plotting.grouped_bar_plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">grouped_bar_plot</span></code></a>(x, y, colors, category_labels)</p></td>
+<td><p>Create a grouped bar plot from input data and save the plot in a pdf format</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../teemi.learn.html#teemi.learn.plotting.horisontal_bar_plot" title="teemi.learn.plotting.horisontal_bar_plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">horisontal_bar_plot</span></code></a>(x, y[, vertical_line, ...])</p></td>
+<td><p>Plotting a horisontal_bar_plot .</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../teemi.learn.html#teemi.learn.plotting.plot_ml_learning_curve" title="teemi.learn.plotting.plot_ml_learning_curve"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_ml_learning_curve</span></code></a>(x_partitioned_data, ...)</p></td>
+<td><p>Plotting a learning curve from partitioned dataframes.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../teemi.learn.html#teemi.learn.plotting.plot_phylo_tree" title="teemi.learn.plotting.plot_phylo_tree"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_phylo_tree</span></code></a>(alignment_file[, save_pdf, ...])</p></td>
+<td><p>Plotting a phylogenetic tree.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../teemi.learn.html#teemi.learn.plotting.plot_stacked_barplot_with_labels" title="teemi.learn.plotting.plot_stacked_barplot_with_labels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_stacked_barplot_with_labels</span></code></a>(df, colors)</p></td>
+<td><p>Plots a stacked barplot from a dataframe.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="teemi.learn.auto_ml.html" class="btn btn-neutral float-left" title="teemi.learn.auto_ml" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="teemi.lims.html" class="btn btn-neutral float-right" title="teemi.lims" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Technical University of Denmark (DTU).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

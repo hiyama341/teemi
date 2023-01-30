@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Colab notebooks &mdash; teemi 0.3.0+20.g1b653f4.dirty documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Lab module" href="teemi.build.html" />
+    <link rel="prev" title="TEST module" href="teemi.test.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> teemi
+          </a>
+              <div class="version">
+                0.3.0+20.g1b653f4.dirty
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="readme.html">teemi: Literate programming can streamline bioengineering workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#features">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#colab-notebooks">Colab notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#credits">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="history.html">History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="history.html#id1">0.1.0 (2023-01-02)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">teemis modules</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Colab notebooks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#design">DESIGN:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#build">BUILD:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#test">TEST:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#learn">LEARN:</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="teemi.design.html">Design module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="teemi.build.html">Lab module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="teemi.lims.html">LIMS module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="teemi.test.html">TEST module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">teemi</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Colab notebooks</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/colab_notebooks.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<section id="colab-notebooks">
+<h1>Colab notebooks<a class="headerlink" href="#colab-notebooks" title="Permalink to this heading"></a></h1>
+<p>Welcome to the Colab notebook section. Here we will show how teemi can be used in the DBTL cycle.</p>
+<section id="design">
+<h2>DESIGN:<a class="headerlink" href="#design" title="Permalink to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>The <a class="reference external" href="https://github.com/hiyama341/teemi/blob/main/colab_notebooks/00_DESIGN_HomologSelection.ipynb">HomologSelection</a> notebook describes how we automatically can fetch homologs from NCBI from a query in a standardizable and repeatable way.</p></li>
+<li><p>The <a class="reference external" href="https://github.com/hiyama341/teemi/blob/main/colab_notebooks/01_DESIGN_PromoterSelection_colab.ipynb">PromoterSelection</a> notebook describes how promoters can be selected from RNAseq data and fetched from online database with various quality measurements implemented.</p></li>
+<li><p>The <a class="reference external" href="https://github.com/hiyama341/teemi/blob/main/colab_notebooks/02_Combinatorial_library_with_DesignAssembly.ipynb">Combinatorial_library_with_DesignAssembly</a> notebook describes how a combinatorial library can be generated with the DesignAssembly class along with robot executable intructions.</p></li>
+</ol>
+</section>
+<section id="build">
+<h2>BUILD:<a class="headerlink" href="#build" title="Permalink to this heading"></a></h2>
+<ol class="arabic simple" start="4">
+<li><p>The <a class="reference external" href="https://github.com/hiyama341/teemi/blob/main/colab_notebooks/03_BUILD_USER_gRNA_plasmid.ipynb">USER_gRNA_plasmid</a> notebook describes the assembly of a CRISPR plasmid with USER cloning.</p></li>
+<li><p>The <a class="reference external" href="https://github.com/hiyama341/teemi/blob/main/colab_notebooks/04_BUILD_Background_strain.ipynb">Background_strain</a> notebook describes the construction of the background strain by K/O of G8H and CPR</p></li>
+<li><p>The <a class="reference external" href="https://github.com/hiyama341/teemi/blob/main/colab_notebooks/05_BUILD_croStrains_test_build.ipynb">croStrains_test_build</a> notebook describes how a smaller combinatorial library was build and test the method before moving on to a larger library.</p></li>
+<li><p>The <a class="reference external" href="https://github.com/hiyama341/teemi/blob/main/colab_notebooks/06_BUILD_CombinatorialLibrary.ipynb">CombinatorialLibrary</a> notebook shows how the first large combinatorial library was generated for 1440 possible combinations.</p></li>
+</ol>
+</section>
+<section id="test">
+<h2>TEST:<a class="headerlink" href="#test" title="Permalink to this heading"></a></h2>
+<ol class="arabic simple" start="8">
+<li><p>The <a class="reference external" href="https://github.com/hiyama341/teemi/blob/main/colab_notebooks/07_TEST_LibraryCharacterisation.ipynb">LibraryCharacterisation</a> notebook describes Con data processing of LC-MS data and genotyping of the generated strains.</p></li>
+</ol>
+</section>
+<section id="learn">
+<h2>LEARN:<a class="headerlink" href="#learn" title="Permalink to this heading"></a></h2>
+<ol class="arabic simple" start="9">
+<li><p>The <a class="reference external" href="https://github.com/hiyama341/teemi/blob/main/colab_notebooks/08_LEARN_DataAnalysis.ipynb">DataAnalysisML</a> notebook describes how we use AutoML to predict the best combinations for a targeted second round of library construction.</p></li>
+</ol>
+<p>For more information head over to our <a class="reference external" href="https://github.com/hiyama341/teemi/blob/main/colab_notebooks/08_LEARN_DataAnalysis.ipynb">publication</a> describing the use of teemi in a literate programming context.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="teemi.test.html" class="btn btn-neutral float-left" title="TEST module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="teemi.build.html" class="btn btn-neutral float-right" title="Lab module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Technical University of Denmark (DTU).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

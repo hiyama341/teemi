@@ -1,0 +1,329 @@
+LOCUS       PCR_UP_tADH1_01          609 bp    DNA     linear   UNK 01-JAN-1980
+DEFINITION  pcr_product_description_description.
+ACCESSION   609bp_WeHdSqbejiSYdwlsg7N77nfqjoA
+VERSION     609bp_WeHdSqbejiSYdwlsg7N77nfqjoA
+KEYWORDS    .
+SOURCE      .
+  ORGANISM  .
+            .
+FEATURES             Location/Qualifiers
+     PCR_product     1..609
+                     /label="609bp_WeHdSqbejiSYdwlsg7N77nfqjoA"
+                     /name="609bp_WeHdSqbejiSYdwlsg7N77nfqjoA"
+     primer_bind     1..18
+                     /label="PR_UP_tADH1_05"
+                     /name="PR_UP_tADH1_05"
+     primer_bind     complement(553..609)
+                     /label="PR_UP_tADH1_06"
+                     /name="PR_UP_tADH1_06"
+ORIGIN
+        1 gaggattttc gatggagcag gatgaggaga aatagtacca catgtatata tccattacaa
+       61 aaaggtttat atacaattac aatagaccct tgttggggtt tctgaaaaaa gaagtagtcg
+      121 atgccatcgg caataatacg gaattacgag aaacacaatc ccgatccttt tttgggtaat
+      181 tacttcaccg attctaccga tttatcatgc caaaaaaaat tcaccgtggg ttctagaagt
+      241 gccctttgag gattgtagcc actctaaccc acacggcctc cttactagct gactaaggtg
+      301 acaaaaccgc aaggactgga aagtcgccac tcatctgaaa attctcaagt ttttcactac
+      361 tgagtttatg ctttcgaatt tttttgttcg gtaatagcac ggcggttcga ttcaattccg
+      421 ccgctccgag cgatgctccg caaaactcag taataagctt tctgatggtt cacccctttt
+      481 ttagcacgcg gggtgtaact caacagaaaa atgtgccata gaacaagact aggcaaaagc
+      541 caaggagcgt ttgccatgaa cttccacaag agcgacctca tgctatacct gagaaagcaa
+      601 cctgaccta
+//
+LOCUS       PCR_G8H_21              1737 bp    DNA     linear   UNK 01-JAN-1980
+DEFINITION  pcr_product_description_description.
+ACCESSION   1737bp_ZRpeF2F-1BJtIp1FGlr1h0G1bXg
+VERSION     1737bp_ZRpeF2F-1BJtIp1FGlr1h0G1bXg
+KEYWORDS    .
+SOURCE      .
+  ORGANISM  .
+            .
+FEATURES             Location/Qualifiers
+     terminator      complement(1..195)
+                     /label="T ADH1"
+                     /ApEinfo_revcolor="#ffef86"
+                     /ApEinfo_fwdcolor="#ffef86"
+                     /name="T ADH1"
+     CDS             complement(214..1695)
+                     /label="CroG8O"
+                     /ApEinfo_revcolor="#c7b0e3"
+                     /ApEinfo_fwdcolor="#c7b0e3"
+                     /name="CroG8O"
+     PCR_product     1..1737
+                     /label="1737bp_ZRpeF2F-1BJtIp1FGlr1h0G1bXg"
+                     /name="1737bp_ZRpeF2F-1BJtIp1FGlr1h0G1bXg"
+     primer_bind     1..19
+                     /label="PR_G8H_01"
+                     /name="PR_G8H_01"
+     primer_bind     complement(1670..1737)
+                     /label="PR_G8H_22"
+                     /name="PR_G8H_22"
+ORIGIN
+        1 gagcgacctc atgctatacc tgagaaagca acctgaccta caggaaagag ttactcaaga
+       61 ataagaattt tcgttttaaa acctaagagt cactttaaaa tttgtataca cttatttttt
+      121 ttataactta tttaataata aaaatcataa atcataagaa attcgcttat ttagaagtgt
+      181 caacaacgta tctaccaacg gaatgcgtgc gatttacaaa gttgagggca cagccctcaa
+      241 aggatgcgct ttttgcaaag ttataccgaa tttttcttcc atgtcaagat ccttgggagc
+      301 cataccacct tctaacttcc agttaaaact gtttagcaaa gaacctaaca tcaacggaac
+      361 cgttcttaga gccaagggca acccggggca gattcttctc cctgctccga acgggatcag
+      421 ttcgaaatct ctgcctctaa tatctagttc ggattccata aatctttccg gcttgaaagc
+      481 cagagcatca tcccacacag tttcatctct accaattgcc caagcattaa ctaatacttg
+      541 tgatccttta ggaacgttgt atccgcaaac ctcgacggac tgttcaactt ttcttggtat
+      601 caaaaagggt actggtgggt ggatcctcaa cgtctctttc atcacacatc ttaagtatgg
+      661 taacctgttt atatctgatt cttcaatggt cttacctcta cctatgactt gggcaagttc
+      721 atcttgggtt ttcttcattt tgtctgggtt ctttaacatt tcggacatag cccattctaa
+      781 ggtagaagat gttgtatccg tgccagcaac aaataaatcc aaacacattc tttcaatatg
+      841 ggtcctatca atctcttccg gagattcttg agaagtagtt aataaaacat ccagtacgtc
+      901 atttttctca cccttacttc tcctctgttc aagacgctcg tttaccaaac ctccaaaaag
+      961 tttaaggacc tctccaaaat gtattgtcat tctatgtctt attccttgtg gatctacctt
+     1021 ttctaataga ggaaaaaaat caaccaaatt gggcttgccc gcctcaacca ttatattcca
+     1081 taccaaatct ttaaattctt tcgcggagtc tgaatatgga tctgttaaat ccttactaaa
+     1141 gatcaagttt gacagcaaat tcaatgaggt tctgaatgca gccctaccaa cgtcaacggc
+     1201 ttcaccgctt tggctattct ttctacagta cgctattagt tcttggacct tacgcgtcct
+     1261 caaatgttga tttgcatcca acctgttacc ggagaaaatg ttagagttta gcacctttct
+     1321 caaagatctc catcttgatg caaccggcaa ccagacgacg gaaaacttaa actggttatg
+     1381 agcatgcaaa gcatttggga ctgatctaga actgaatgct aagtcttgct tttgcagtac
+     1441 ctctttagcc attgtagaag aagaaataac gatagttgta atttggccta gtttcagaga
+     1501 catgataggt ccatgtttct tagataactt agccaatgat ttatggggtt ggtcgcctaa
+     1561 cagatgcaaa gacccgataa atggcaacgg ggaaggtcca ggaggaagat ttttagttct
+     1621 acgtgataag tagctgaaag cttcatacaa tgttaaagcg aacaacaacg ttaggataat
+     1681 tgtaaggtaa tccattgttt ttattaattt agtgtgtgta tttgtgtttg tgtgtct
+//
+LOCUS       PCR_PRO_01              1033 bp    DNA     linear   UNK 01-JAN-1980
+DEFINITION  pcr_product_description_description.
+ACCESSION   pCYC1
+VERSION     pCYC1
+KEYWORDS    .
+SOURCE      .
+  ORGANISM  .
+            .
+FEATURES             Location/Qualifiers
+     promoter        complement(7..993)
+                     /name="pCYC1"
+                     /color="#D6B295"
+                     /label="pCYC1"
+     PCR_product     1..1033
+                     /label="pCYC1"
+                     /name="pCYC1"
+     primer_bind     1..35
+                     /label="PR_PRO_01"
+                     /name="PR_PRO_01"
+     primer_bind     complement(975..1033)
+                     /label="PR_PRO_02"
+                     /name="PR_PRO_02"
+ORIGIN
+        1 tgtttttatt aatttagtgt gtgtatttgt gtttgtgtgt ctatagaagt atagtaattt
+       61 atgctgcaaa ggtcctaatg tataaggaaa gaatatttag agaaaagaag aaaacaagag
+      121 ttttatatac atacagagca catgcatgcc atatgatcat gtgtcgtcgc acacatatat
+      181 atatgcctgt atgtgtcagc actaaagttg cctggccatc cacgctatat atacacgcct
+      241 ggcggatctg ctcgaggatt gcctacgcgt gggcttgatc caccaaccaa cgctcgccaa
+      301 atgaactggc gctttggtct tctgccatcg tccgtaaacc ccggccaaag agaccggaaa
+      361 gatcggtgaa aacatcttga tcttgctccc gggaatttta gattcaggta ggaaattgat
+      421 tacatcaata ctgttaccct gaatcatatt cgacgatgtc gtctcacacg gaaatataat
+      481 tcatttcttg gttttccaaa aaaattttca ttttttttca cttttttgtt tcgtcctcct
+      541 tttttttttt ttttttttat tttttttcct gtgttcacct tttttttttt cagttgacat
+      601 ctttctgcat tcttttctgt gttttttttt ttttttttcg tttttccatt gttcgttcgt
+      661 tgcctgtttt ttcgccctat tgttctcgag cctaaaaatt ttttcctttc ctgctttcct
+      721 ttcttcgttc aaagtttcct attccattgt tctctttggt aaactcattg ttgtcggaac
+      781 tcagatatat tcaggtcaat ttactgtact tcaattgact tttttcttga aatttcaact
+      841 tgccttttca acttgttctt cttttttaat cttattctac actttagttc ccttaccttg
+      901 ttcctaatta ttgtctagca aaaagaaaac atacacctat ttcattcaca cactaaaaca
+      961 tgtctgacga agaacacacc tttgaaaatg ctgtgcctta tcgaatgggc atgctcggcg
+     1021 tatggacctg tct
+//
+LOCUS       PCR_PRO_02              1023 bp    DNA     linear   UNK 01-JAN-1980
+DEFINITION  pcr_product_description_description.
+ACCESSION   10289
+VERSION     10289
+KEYWORDS    .
+SOURCE      .
+  ORGANISM  .
+            .
+FEATURES             Location/Qualifiers
+     promoter        37..1016
+                     /name="pCCW12"
+                     /color="#B7E6D7"
+                     /label="pCCW12"
+     PCR_product     1..1023
+                     /label="pCCW12"
+                     /name="pCCW12"
+     primer_bind     1..60
+                     /label="PR_PRO_03"
+                     /name="PR_PRO_03"
+     primer_bind     complement(990..1023)
+                     /label="PR_PRO_04"
+                     /name="PR_PRO_04"
+ORIGIN
+        1 ttatcgaatg ggcatgctcg gcgtatggac ctgtctaaag aaacttaata cgttatgccg
+       61 taatgaaggg ctaccaaaaa cgataatctc aactgtaaac aggtacaatg cggacccttt
+      121 tgccacaaaa catacatcat tcattgccgg aaaaagaaag aagtgaagac agcagtgcag
+      181 ccagccatgt tgcgccaatc taattataga tgctggtgcc ctgaggatgt atctggagcc
+      241 agccatggca tcatgcgcta ccgccggatg taaaatccga cacgcaaaag aaaaccttcg
+      301 aggttgcgca cttcgcccac ccatgaacca cacggttagt ccaaaagggg cagttcagat
+      361 tccagatgcg ggaattagct tgctgccacc ctcacctcac taacgctgcg gtgtgcggat
+      421 acttcatgct atttatagac gcgcgtgtcg gaatcagcac gcgcaagaac caaatgggaa
+      481 aatcggaatg ggtccagaac tgctttgagt gctggctatt ggcgtctgat ttccgttttg
+      541 ggaatccttt gccgcgcgcc cctctcaaaa ctccgcacaa gtcccagaaa gcgggaaaga
+      601 aataaaacgc caccaaaaaa aaaaaaataa aagccaatcc tcgaagcgtg ggtggtaggc
+      661 cctggattat cccgtacaag tatttctcag gagtaaaaaa accgtttgtt ttggaattcc
+      721 ccatttcgcg gccacctacg ccgctatctt tgcaacaact atctgcgata actcagcaaa
+      781 ttttgcatat tcgtgttgca gtattgcgat aatgggagtc ttacttccaa cataacggca
+      841 gaaagaaatg tgagaaaatt ttgcatcctt tgcctccgtt caagtatata aagtcggcat
+      901 gcttgataat ctttctttcc atcctacatt gttctaatta ttcttattct cctttattct
+      961 ttcctaacat accaagaaat taatcttctg tcattcgctt aaacactata tcaatataaa
+     1021 aca
+//
+LOCUS       PCR_CPR_31              2364 bp    DNA     linear   UNK 01-JAN-1980
+DEFINITION  pcr_product_description_description.
+ACCESSION   10282
+VERSION     10282
+KEYWORDS    .
+SOURCE      .
+  ORGANISM  .
+            .
+FEATURES             Location/Qualifiers
+     CDS             37..2178
+                     /label="Cro CPR"
+                     /ApEinfo_revcolor="#faac61"
+                     /ApEinfo_fwdcolor="#faac61"
+                     /name="Cro CPR"
+     misc_feature    complement(2181..2188)
+                     /label="G2_Rv"
+                     /ApEinfo_revcolor="#d59687"
+                     /ApEinfo_fwdcolor="#d59687"
+                     /name="G2_Rv"
+     terminator      2194..2364
+                     /label="T CYC1"
+                     /ApEinfo_revcolor="#d59687"
+                     /ApEinfo_fwdcolor="#d59687"
+                     /name="T CYC1"
+     misc_feature    complement(2199..2219)
+                     /label="Primer 225"
+                     /ApEinfo_revcolor="#b1ff67"
+                     /ApEinfo_fwdcolor="#b1ff67"
+                     /name="Primer 225"
+     PCR_product     1..2364
+                     /label="2364bp_hMV2AGVXnpclUwToSKkk2Z3FeYU"
+                     /name="2364bp_hMV2AGVXnpclUwToSKkk2Z3FeYU"
+     primer_bind     1..54
+                     /label="PR_CPR_30"
+                     /name="PR_CPR_30"
+     primer_bind     complement(2345..2364)
+                     /label="PR_CPR_02"
+                     /name="PR_CPR_02"
+ORIGIN
+        1 ctgtcattcg cttaaacact atatcaatat aaaacaatgg actcatcctc cgagaagttg
+       61 tcaccattcg aacttatgtc agcaattctt aagggagcca agctggacgg tagtaacagt
+      121 tctgattccg gtgtcgctgt atcacctgct gttatggcaa tgttactaga aaataaagag
+      181 ttagtaatga tattgacgac atctgtcgct gtcttgattg gttgcgtcgt tgtgctaatt
+      241 tggcgtagat cttcagggtc cggtaagaag gttgtggagc cacccaagtt gatagtccca
+      301 aaaagtgtag tggagccaga agaaatagat gaaggaaaaa aaaaattcac tatcttcttt
+      361 ggtacacaaa ctgggacagc tgaaggtttt gctaaggctt tagccgaaga agcaaaggct
+      421 agatacgaaa aggcagttat aaaagtaatc gatattgacg attatgcagc agacgatgag
+      481 gagtatgagg aaaaattcag aaaagagact ttggccttct ttatattggc aacatatggc
+      541 gatggtgagc ctactgataa cgctgcaagg ttttacaaat ggtttgtaga gggtaatgat
+      601 agaggtgact ggcttaagaa cttacagtat ggcgtcttcg gtttgggcaa tagacagtat
+      661 gaacatttca ataagattgc aaaagttgta gatgaaaagg ttgccgagca aggagggaag
+      721 aggatagtgc ctttagtttt aggagacgat gatcaatgta ttgaagatga ctttgctgca
+      781 tggagagaaa acgtctggcc tgaactggat aatctgctaa gagacgagga tgatactaca
+      841 gtgtctacta cctatacagc cgctatacca gaatacagag ttgttttccc tgataaaagt
+      901 gattctttga tttctgaggc caacggccac gctaacggct atgcgaacgg caatactgta
+      961 tacgatgctc aacacccttg ccgtagtaac gtcgctgtca ggaaagagtt acatacccca
+     1021 gcttctgata ggtcttgtac acatttggat tttgatatag cgggtactgg attatcatat
+     1081 ggtacaggag atcacgtcgg tgtctattgt gacaatttat ctgagaccgt agaagaagca
+     1141 gaaaggttgt tgaacttgcc ccctgaaacg tatttcagtt tgcacgctga taaagaagat
+     1201 ggtactccat tagcaggatc atcattgccc cctccttttc ctccgtgcac attgaggact
+     1261 gcccttacta gatatgctga tctgctgaat accccaaaaa agtccgcctt gctggctcta
+     1321 gctgcttatg caagcgatcc aaatgaggct gatcgtttga agtacttggc aagcccagct
+     1381 ggcaaagacg agtatgctca atctttggta gctaatcaga gaagcctgct agaagtaatg
+     1441 gctgaatttc cttccgccaa gccaccgtta ggtgtattct tcgcagcaat agctcccaga
+     1501 ttacaaccca gattctactc tatatcttct agcccaagga tggccccttc cagaattcat
+     1561 gtcacttgcg ctctagttta tgagaaaact ccaggcggga ggattcataa aggcgtatgt
+     1621 tcaacttgga tgaagaacgc tattcctctg gaggaatctc gtgattgtag ctgggcaccg
+     1681 atctttgtga gacagtctaa ctttaagctg cctgccgatc caaaagttcc tgtaatcatg
+     1741 ataggtccag gcaccgggct agcacctttt agaggtttcc ttcaagaaag acttgctctg
+     1801 aaagaggaag gagctgaatt aggaactgct gtattttttt ttgggtgtag gaacagaaaa
+     1861 atggattata tatatgaaga tgaattgaat catttcttgg aaatcggcgc gttatcagaa
+     1921 ttgctggttg cattcagtag ggaaggtcct actaagcaat atgttcaaca caaaatggcc
+     1981 gaaaaagcca gtgatatttg gcgtatgatc tctgatggtg cttatgttta tgtctgcgga
+     2041 gatgccaagg gcatggccag agacgttcat aggacattac acactatagc tcaagagcaa
+     2101 ggatcaatgg actctactca ggccgaagga tttgtgaaaa acttacaaat gaccggtaga
+     2161 tatttaagag acgtatggta atcgcgtgca ttcatccgct ctaaccgaaa aggaaggagt
+     2221 tagacaacct gaagtctagg tccctattta tttttttata gttatgttag tattaagaac
+     2281 gttatttata tttcaaattt ttcttttttt tctgtacaga cgcgtgtacg catgtaacat
+     2341 tatactgaaa accttgcttg agaa
+//
+LOCUS       PCR_TRP1-DW_01          1451 bp    DNA     linear   UNK 01-JAN-1980
+DEFINITION  pcr_product_description_description.
+ACCESSION   1451bp_R92eR9HJd0EtZ0MFRN6iF0teg1c
+VERSION     1451bp_R92eR9HJd0EtZ0MFRN6iF0teg1c
+KEYWORDS    .
+SOURCE      .
+  ORGANISM  .
+            .
+FEATURES             Location/Qualifiers
+     PCR_product     1..1451
+                     /label="1451bp_R92eR9HJd0EtZ0MFRN6iF0teg1c"
+                     /name="1451bp_R92eR9HJd0EtZ0MFRN6iF0teg1c"
+     primer_bind     1..61
+                     /label="PR_TRP1-DW_01"
+                     /name="PR_TRP1-DW_01"
+     primer_bind     complement(1434..1451)
+                     /label="PR_TRP1-DW_02"
+                     /name="PR_TRP1-DW_02"
+ORIGIN
+        1 cgcatgtaac attatactga aaaccttgct tgagaaagac ggtcacagct tgtctgtaag
+       61 cggatgccgg gagcagacaa gcccgtcagg gcgcgtcagc gggtgttggc gggtgtcggg
+      121 gctggcttaa ctatgcggca tcagagcaga ttgtactgag agtgcaccat aaacgacatt
+      181 actatatata taatatagga agcatttaat agacagcatc gtaatatatg tgtactttgc
+      241 agttatgacg ccagatggca gtagtggaag atattcttta ttgaaaaata gcttgtcacc
+      301 ttacgtacaa tcttgatccg gagcttttct ttttttgccg attaagaatt aattcggtcg
+      361 aaaaaagaaa aggagagggc caagagggag ggcattggtg actattgagc acgtgagtat
+      421 acgtgattaa gcacacaaag gcagcttgga gtatgtctgt tattaatttc acaggtagtt
+      481 ctggtccatt ggtgaaagtt tgcggcttgc agagcacaga ggccgcagaa tgtgctctag
+      541 attccgatgc tgacttgctg ggtattatat gtgtgcccaa tagaaagaga acaattgacc
+      601 cggttattgc aaggaaaatt tcaagtcttg taaaagcata taaaaatagt tcaggcactc
+      661 cgaaatactt ggttggcgtg tttcgtaatc aacctaagga ggatgttttg gctctggtca
+      721 atgattacgg cattgatatc gtccaactgc atggagatga gtcgtggcaa gaataccaag
+      781 agttcctcgg tttgccagtt attaaaagac tcgtatttcc aaaagactgc aacatactac
+      841 tcagtgcagc ttcacagaaa cctcattcgt ttattccctt gtttgattca gaagcaggtg
+      901 ggacaggtga acttttggat tggaactcga tttctgactg ggttggaagg caagagagcc
+      961 ccgaaagctt acattttatg ttagctggtg gactgacgcc agaaaatgtt ggtgatgcgc
+     1021 ttagattaaa tggcgttatt ggtgttgatg taagcggagg tgtggagaca aatggtgtaa
+     1081 aagactctaa caaaatagca aatttcgtca aaaatgctaa gaaataggtt attactgagt
+     1141 agtatttatt taagtattgt ttgtgcactt gcctatgcgg tgtgaaatac cgcacagatg
+     1201 cgtaaggaga aaataccgca tcaggaaatt gtaaacgtta atattttgtt aaaattcgcg
+     1261 ttaaattttt gttaaatcag ctcatttttt aaccaatagg ccgaaatcgg caaaatccct
+     1321 tataaatcaa aagaatagac cgagataggg ttgagtgttg ttccagtttg gaacaagagt
+     1381 ccactattaa agaacgtgga ctccaacgtc aaagggcgaa aaaccgtcta tcagggcgat
+     1441 ggcccactac g
+//
+LOCUS       PCR_TRP1-DW_02           599 bp    DNA     linear   UNK 01-JAN-1980
+DEFINITION  pcr_product_description_description.
+ACCESSION   599bp_2nb7UxnrwDWbAk9SL-77W1MBK-4
+VERSION     599bp_2nb7UxnrwDWbAk9SL-77W1MBK-4
+KEYWORDS    .
+SOURCE      .
+  ORGANISM  .
+            .
+FEATURES             Location/Qualifiers
+     PCR_product     1..599
+                     /label="599bp_2nb7UxnrwDWbAk9SL-77W1MBK-4"
+                     /name="599bp_2nb7UxnrwDWbAk9SL-77W1MBK-4"
+     primer_bind     1..51
+                     /label="PR_TRP1-DW_05"
+                     /name="PR_TRP1-DW_05"
+     primer_bind     complement(584..599)
+                     /label="PR_TRP1-DW_06"
+                     /name="PR_TRP1-DW_06"
+ORIGIN
+        1 gcgaaaaacc gtctatcagg gcgatggccc actacgcaca cgactagcgc tttcagatat
+       61 taaaaagttt agatgtaggt tttagcggta acagttatat aaatcgtgtt tcttctcttg
+      121 atgaaacaaa aaaatgctag aaaaactttg tcgtttctta cttttggtgc gctttgcagt
+      181 tttcgtggct agacttagaa tcatttctcc tcagatttct tgattaaagt ttggtgcgaa
+      241 gccctactct aacattggtg ttcttctttt cattcacgca agttaagtcc aggaaggtga
+      301 gcaaatgctc atccttctgt tcatgcgtga cggctgaatt atccttatct ggcgtacccg
+      361 tgcagccgtt tccgtgcctc ggttcctccg agatatcctt agggaccgcc agggaccatg
+      421 attgcgtcaa ctgttgtcac cgctccagag gatcctctgt aaccttttca accataaaaa
+      481 tagaaagggc acagggttgg ggtatttgaa tttttttttt gggttttttc gtattactta
+      541 ttacttacct tcttttctat ataattttgt ttttccctgg tagagcggaa tcttcccac
+//

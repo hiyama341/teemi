@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LIMS module &mdash; teemi 0.3.0+20.g1b653f4.dirty documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Colab notebooks" href="colab_notebooks.html" />
+    <link rel="prev" title="Learn module" href="teemi.learn.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> teemi
+          </a>
+              <div class="version">
+                0.3.0+20.g1b653f4.dirty
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="readme.html">teemi: Literate programming can streamline bioengineering workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#features">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#colab-notebooks">Colab notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#credits">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="history.html">History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="history.html#id1">0.1.0 (2023-01-02)</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">teemis modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="teemi.html">teemi package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="teemi.html#sub-modules">Sub modules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="teemi.design.html">Design module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="teemi.build.html">Build module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="teemi.test.html">Test module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="teemi.learn.html">Learn module</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">LIMS module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="colab_notebooks.html">Colab notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="teemi.design.html">Design module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="teemi.build.html">Build module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="teemi.test.html">Test module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="teemi.learn.html">Learn module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">LIMS module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-teemi.lims.benchling_api">Benchling API module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-teemi.lims.csv_database">CSV database module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">teemi</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">teemis modules</a> &raquo;</li>
+          <li><a href="teemi.html">teemi package</a> &raquo;</li>
+      <li>LIMS module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/teemi.lims.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<section id="lims-module">
+<h1>LIMS module<a class="headerlink" href="#lims-module" title="Permalink to this heading"></a></h1>
+<section id="module-teemi.lims.benchling_api">
+<span id="benchling-api-module"></span><h2>Benchling API module<a class="headerlink" href="#module-teemi.lims.benchling_api" title="Permalink to this heading"></a></h2>
+<p>Easy to use benchling functions to fetch sequences and objects</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="teemi.lims.benchling_api.from_benchling">
+<span class="sig-prename descclassname"><span class="pre">teemi.lims.benchling_api.</span></span><span class="sig-name descname"><span class="pre">from_benchling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">schema</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/teemi/lims/benchling_api.html#from_benchling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#teemi.lims.benchling_api.from_benchling" title="Permalink to this definition"></a></dt>
+<dd><p>Extract information of object on benchling.
+:param bname: The name of the object on Benchling.
+:type bname: str
+:param schema: The schema of the object, by default “”
+:type schema: str, optional</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The extracted object from Benchling.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="teemi.lims.benchling_api.sequence_to_benchling">
+<span class="sig-prename descclassname"><span class="pre">teemi.lims.benchling_api.</span></span><span class="sig-name descname"><span class="pre">sequence_to_benchling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oligo_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oligo_bases</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">schema</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/teemi/lims/benchling_api.html#sequence_to_benchling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#teemi.lims.benchling_api.sequence_to_benchling" title="Permalink to this definition"></a></dt>
+<dd><p>This function uploads sequences to Benchling.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>folder_name</strong> (<em>str</em>) – The name of the folder in which to upload the sequence.</p></li>
+<li><p><strong>oligo_name</strong> (<em>str</em>) – The name of the oligo.</p></li>
+<li><p><strong>oligo_bases</strong> (<em>str</em>) – The base sequence of the oligo.</p></li>
+<li><p><strong>schema</strong> (<em>str</em>) – The schema to use for the oligo. Should be one of the following:
+“Primer”, “DNA Fragment”, “Plasmid”, “Gene”, “gRNA”, “Marker”,”Promoter”,
+“Terminator”, “Tag”, “Origin of Replication”.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="teemi.lims.benchling_api.session">
+<span class="sig-prename descclassname"><span class="pre">teemi.lims.benchling_api.</span></span><span class="sig-name descname"><span class="pre">session</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;benchlingapi.session.Session</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#teemi.lims.benchling_api.session" title="Permalink to this definition"></a></dt>
+<dd><p>This part of the LIMS module is used for importing sequences and exporting sequences to benchling</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="teemi.lims.benchling_api.update_loc_vol_conc">
+<span class="sig-prename descclassname"><span class="pre">teemi.lims.benchling_api.</span></span><span class="sig-name descname"><span class="pre">update_loc_vol_conc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seqRecord</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">DBpath</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/teemi/lims/benchling_api.html#update_loc_vol_conc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#teemi.lims.benchling_api.update_loc_vol_conc" title="Permalink to this definition"></a></dt>
+<dd><p>Update with location volume and concentration
+information downloaded from benchling if possible.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>seqRecord</strong> (<em>Bio.SeqRecord.SeqRecord</em>) – The SeqRecord object to update.</p></li>
+<li><p><strong>DBpath</strong> (<em>str</em><em>, </em><em>optional</em>) – The path to the csv file containing the location, volume and concentration information.</p></li>
+<li><p><strong>Returns</strong> – </p></li>
+<li><p><strong>--------</strong> – </p></li>
+<li><p><strong>seqRecord</strong> – The updated SeqRecord object.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-teemi.lims.csv_database">
+<span id="csv-database-module"></span><h2>CSV database module<a class="headerlink" href="#module-teemi.lims.csv_database" title="Permalink to this heading"></a></h2>
+<p>Easy to use functions to fetch sequences and objects from local csv database</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="teemi.lims.csv_database.add_annotations">
+<span class="sig-prename descclassname"><span class="pre">teemi.lims.csv_database.</span></span><span class="sig-name descname"><span class="pre">add_annotations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">list_of_parts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concentration</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">volume</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comments</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/teemi/lims/csv_database.html#add_annotations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#teemi.lims.csv_database.add_annotations" title="Permalink to this definition"></a></dt>
+<dd><p>Adds the neccessary annotations to a list of
+SeqRecord objects to be uploaded to the database</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="teemi.lims.csv_database.add_sequences_to_dataframe">
+<span class="sig-prename descclassname"><span class="pre">teemi.lims.csv_database.</span></span><span class="sig-name descname"><span class="pre">add_sequences_to_dataframe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">list_of_DNA</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">csv_database_as_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/teemi/lims/csv_database.html#add_sequences_to_dataframe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#teemi.lims.csv_database.add_sequences_to_dataframe" title="Permalink to this definition"></a></dt>
+<dd><p>Adds sequences to local csv databse.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>list_of_DNA</strong> (<em>list</em>) – BioSeqrecord objects</p></li>
+<li><p><strong>csv_database_as_df</strong> (<em>pd.DataFrame</em>) – your temporary csv database made into a pandas dataframe</p></li>
+<li><p><strong>index</strong> (<em>int</em>) – designating which index you want the dna i.e could choose index= 288 which is plate 3 A1</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>updates the dateframe with your sequences</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="teemi.lims.csv_database.add_unique_ids">
+<span class="sig-prename descclassname"><span class="pre">teemi.lims.csv_database.</span></span><span class="sig-name descname"><span class="pre">add_unique_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">list_of_parts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../data/csv_database'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/teemi/lims/csv_database.html#add_unique_ids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#teemi.lims.csv_database.add_unique_ids" title="Permalink to this definition"></a></dt>
+<dd><p>Adds unique ids to a list of SeqRecords.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="teemi.lims.csv_database.change_row">
+<span class="sig-prename descclassname"><span class="pre">teemi.lims.csv_database.</span></span><span class="sig-name descname"><span class="pre">change_row</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">row_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">csv_database_as_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">biopython_object</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/teemi/lims/csv_database.html#change_row"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#teemi.lims.csv_database.change_row" title="Permalink to this definition"></a></dt>
+<dd><p>inserts a biopyton object into the database at a specific index</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="teemi.lims.csv_database.delete_row_df">
+<span class="sig-prename descclassname"><span class="pre">teemi.lims.csv_database.</span></span><span class="sig-name descname"><span class="pre">delete_row_df</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">row_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which_df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/teemi/lims/csv_database.html#delete_row_df"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#teemi.lims.csv_database.delete_row_df" title="Permalink to this definition"></a></dt>
+<dd><p>Deletes a row in the database without changing the namse of</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="teemi.lims.csv_database.get_box">
+<span class="sig-prename descclassname"><span class="pre">teemi.lims.csv_database.</span></span><span class="sig-name descname"><span class="pre">get_box</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">box_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">csv_database_as_df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/teemi/lims/csv_database.html#get_box"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#teemi.lims.csv_database.get_box" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the plate from a specified csv_database.
+:param box_number: designating which plate to fetch
+:type box_number: int
+:param csv_database_as_df: your temporary csv database made into a pandas dataframe
+:type csv_database_as_df: pd.DataFrame</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>dataframe with the specified plate</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>pd.Dataframe</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="teemi.lims.csv_database.get_database">
+<span class="sig-prename descclassname"><span class="pre">teemi.lims.csv_database.</span></span><span class="sig-name descname"><span class="pre">get_database</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../data/csv_database/'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/teemi/lims/csv_database.html#get_database"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#teemi.lims.csv_database.get_database" title="Permalink to this definition"></a></dt>
+<dd><p>Fetches the csv database as a pd.dataframe</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="teemi.lims.csv_database.get_dna_from_box_name">
+<span class="sig-prename descclassname"><span class="pre">teemi.lims.csv_database.</span></span><span class="sig-name descname"><span class="pre">get_dna_from_box_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">database_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">database_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../data/csv_database/'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">genbank_files_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../data/genbank_files/'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">genbank</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">SeqRecord</span></span></span><a class="reference internal" href="_modules/teemi/lims/csv_database.html#get_dna_from_box_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#teemi.lims.csv_database.get_dna_from_box_name" title="Permalink to this definition"></a></dt>
+<dd><p>fetch dna based on the name from the BOX database of choice.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – name of the sequence you want to fetch</p></li>
+<li><p><strong>database_name</strong> (<em>str</em>) – name of the database u want the sequence to be fetched from</p></li>
+<li><p><strong>genbank_files_path</strong> (<em>str</em>) – filepath to your genbank files</p></li>
+<li><p><strong>genbank</strong> (<em>bool</em>) – if True the function will fetch thegenbank file based on the unique ID.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>Record</strong> – biopython object with values attached to its instances.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Bio.SeqRecord</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="teemi.lims.csv_database.get_dna_from_plate_name">
+<span class="sig-prename descclassname"><span class="pre">teemi.lims.csv_database.</span></span><span class="sig-name descname"><span class="pre">get_dna_from_plate_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">database_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">database_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../data/csv_database/'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">genbank_files_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../data/genbank_files/'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">genbank</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">SeqRecord</span></span></span><a class="reference internal" href="_modules/teemi/lims/csv_database.html#get_dna_from_plate_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#teemi.lims.csv_database.get_dna_from_plate_name" title="Permalink to this definition"></a></dt>
+<dd><p>fetch dna based on the name from the PLATE database of choice.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – name of the sequence you want to fetch</p></li>
+<li><p><strong>database_name</strong> (<em>str</em>) – name of the database u want the sequence to be fetched from</p></li>
+<li><p><strong>genbank_files_path</strong> (<em>str</em>) – filepath to your genbank files</p></li>
+<li><p><strong>genbank</strong> (<em>bool</em>) – if True the function will fetch thegenbank file based on the unique ID.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>Record</strong> – biopython object with values attached to its instances.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Bio.SeqRecord</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="teemi.lims.csv_database.get_plate">
+<span class="sig-prename descclassname"><span class="pre">teemi.lims.csv_database.</span></span><span class="sig-name descname"><span class="pre">get_plate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">plate_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">csv_database_as_df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/teemi/lims/csv_database.html#get_plate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#teemi.lims.csv_database.get_plate" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the plate from a specified csv_database.
+:param plate_number: designating which plate to fetch
+:type plate_number: int
+:param csv_database_as_df: your temporary csv database made into a pandas dataframe
+:type csv_database_as_df: pd.DataFrame</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>dataframe with the specified plate</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>pd.Dataframe</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="teemi.lims.csv_database.get_unique_id">
+<span class="sig-prename descclassname"><span class="pre">teemi.lims.csv_database.</span></span><span class="sig-name descname"><span class="pre">get_unique_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../data/csv_database'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/teemi/lims/csv_database.html#get_unique_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#teemi.lims.csv_database.get_unique_id" title="Permalink to this definition"></a></dt>
+<dd><p>Makes a single unique ID from the csv_database files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – path to the local csv database</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>Unique_id</strong> – a unique ID starting from 10000</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="teemi.lims.csv_database.update_database">
+<span class="sig-prename descclassname"><span class="pre">teemi.lims.csv_database.</span></span><span class="sig-name descname"><span class="pre">update_database</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframe</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which_database</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../data/csv_database/'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/teemi/lims/csv_database.html#update_database"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#teemi.lims.csv_database.update_database" title="Permalink to this definition"></a></dt>
+<dd><p>Updates the database of choosing</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="teemi.learn.html" class="btn btn-neutral float-left" title="Learn module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="colab_notebooks.html" class="btn btn-neutral float-right" title="Colab notebooks" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Technical University of Denmark (DTU).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

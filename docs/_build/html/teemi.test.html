@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Test module &mdash; teemi 0.3.0+20.g1b653f4.dirty documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Learn module" href="teemi.learn.html" />
+    <link rel="prev" title="Build module" href="teemi.build.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> teemi
+          </a>
+              <div class="version">
+                0.3.0+20.g1b653f4.dirty
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="readme.html">teemi: Literate programming can streamline bioengineering workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#features">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#colab-notebooks">Colab notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#credits">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="history.html">History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="history.html#id1">0.1.0 (2023-01-02)</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">teemis modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="teemi.html">teemi package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="teemi.html#sub-modules">Sub modules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="teemi.design.html">Design module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="teemi.build.html">Build module</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Test module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="teemi.learn.html">Learn module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="teemi.lims.html">LIMS module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="colab_notebooks.html">Colab notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="teemi.design.html">Design module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="teemi.build.html">Build module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Test module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-teemi.test.genotyping">Genotyping module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="teemi.learn.html">Learn module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="teemi.lims.html">LIMS module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">teemi</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">teemis modules</a> &raquo;</li>
+          <li><a href="teemi.html">teemi package</a> &raquo;</li>
+      <li>Test module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/teemi.test.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<section id="test-module">
+<h1>Test module<a class="headerlink" href="#test-module" title="Permalink to this heading"></a></h1>
+<section id="module-teemi.test.genotyping">
+<span id="genotyping-module"></span><h2>Genotyping module<a class="headerlink" href="#module-teemi.test.genotyping" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="teemi.test.genotyping.concatenating_list_of_dfs">
+<span class="sig-prename descclassname"><span class="pre">teemi.test.genotyping.</span></span><span class="sig-name descname"><span class="pre">concatenating_list_of_dfs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">list_of_dfs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/teemi/test/genotyping.html#concatenating_list_of_dfs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#teemi.test.genotyping.concatenating_list_of_dfs" title="Permalink to this definition"></a></dt>
+<dd><p>Concatenating a list of daframes into one pd.dataframe by rows</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="teemi.test.genotyping.pairwise_alignment_of_templates">
+<span class="sig-prename descclassname"><span class="pre">teemi.test.genotyping.</span></span><span class="sig-name descname"><span class="pre">pairwise_alignment_of_templates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reads</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">templates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">primers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/teemi/test/genotyping.html#pairwise_alignment_of_templates"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#teemi.test.genotyping.pairwise_alignment_of_templates" title="Permalink to this definition"></a></dt>
+<dd><p>Infers relationship of templates to reads based on highest
+score from a pairwise alignment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reads</strong> (<em>list of Bio.SeqRecord.SeqRecord</em>) – these are .ab1 files made into Bio.SeqRecord.SeqRecord objects</p></li>
+<li><p><strong>templates</strong> (<em>list of Bio.SeqRecord.SeqRecord</em>) – Templates for inferring relationship with - could be plasmid fx</p></li>
+<li><p><strong>primers</strong> (<em>list of Bio.SeqRecord.SeqRecord</em>) – list of primers to be for finding were the read should start</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>pd.Dataframe in the following way</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p>&lt;&lt;&lt;df_alignment = pairwise_alignment_of_templates(reads,templates, primers_for_seq)</p>
+<p>&lt;&lt;&lt; df_alignment</p>
+<p>Sample-Name inf_promoter_name       align_score     inf_promoter
+132 yp53re_cpr_A10_A10-pad_cpr_fw   pCCW12  634.0   5
+188 yp53re_cpr_A11_A11-pad_cpr_fw   pTPI1   904.0   6
+247 yp53re_cpr_A12_A12-pad_cpr_fw   pTPI1   851.0   6
+93  yp53re_cpr_A1_A01-pad_cpr_fw    pCCW12  543.0   5
+41  yp53re_cpr_A2_A02-pad_cpr_fw    pCCW12  636.0   5</p>
+<p class="rubric">Notes</p>
+<p>If you want inf_part_number column then change your the description
+of the Bio.SeqRecord.SeqRecord as follows:</p>
+<p>pCCW12.description = ‘1’</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="teemi.test.genotyping.plat_seq_data_wrangler">
+<span class="sig-prename descclassname"><span class="pre">teemi.test.genotyping.</span></span><span class="sig-name descname"><span class="pre">plat_seq_data_wrangler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sequencing_plates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/teemi/test/genotyping.html#plat_seq_data_wrangler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#teemi.test.genotyping.plat_seq_data_wrangler" title="Permalink to this definition"></a></dt>
+<dd><p>Makes list of Plate2Seq pd.DataFrames into numeric
+values and removes nan values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>sequencing_plates</strong> (<em>list of pd.DataFrames</em>) – Sliced Plate2seq pd.dataframes</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Plate2Seq pd.DataFrames with numeric values</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="teemi.test.genotyping.plate_AvgQual">
+<span class="sig-prename descclassname"><span class="pre">teemi.test.genotyping.</span></span><span class="sig-name descname"><span class="pre">plate_AvgQual</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">list_of_dfs_numeric</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Avg_qual</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">used_bases</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/teemi/test/genotyping.html#plate_AvgQual"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#teemi.test.genotyping.plate_AvgQual" title="Permalink to this definition"></a></dt>
+<dd><p>Filters out rows that doesnt follow the criteria.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>list_of_dfs_numeric</strong> (<em>list of pd.DataFrames</em>) – Sliced and Plate2seq pd.dataframes</p></li>
+<li><p><strong>Avg_qual</strong> (<em>int</em>) – </p></li>
+<li><p><strong>used_bases</strong> (<em>int</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Plate2Seq pd.DataFrames with that follows Avg_qual and used_bases criteria</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="teemi.test.genotyping.slicing_and_naming_seq_plates">
+<span class="sig-prename descclassname"><span class="pre">teemi.test.genotyping.</span></span><span class="sig-name descname"><span class="pre">slicing_and_naming_seq_plates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sequencing_plates</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">where_to_slice</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/teemi/test/genotyping.html#slicing_and_naming_seq_plates"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#teemi.test.genotyping.slicing_and_naming_seq_plates" title="Permalink to this definition"></a></dt>
+<dd><p>Slices rows of a list of dataframes and changes the names.
+Is used to ease pre-processing of Plate2seq excel files</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sequencing_plates</strong> (<em>list of pd.DataFrames</em>) – Plate2seq pd.dataframes</p></li>
+<li><p><strong>where_to_slice</strong> (<em>int</em>) – indicate where to slice the dataframe</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>list of plates sliced pd.DataFrames</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="teemi.test.genotyping.split_df_names">
+<span class="sig-prename descclassname"><span class="pre">teemi.test.genotyping.</span></span><span class="sig-name descname"><span class="pre">split_df_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_names_column</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which_column_to_split1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which_column_to_split2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/teemi/test/genotyping.html#split_df_names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#teemi.test.genotyping.split_df_names" title="Permalink to this definition"></a></dt>
+<dd><p>Splits sample names from plate2seq pd.dataframes into plate and well columns</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="teemi.build.html" class="btn btn-neutral float-left" title="Build module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="teemi.learn.html" class="btn btn-neutral float-right" title="Learn module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Technical University of Denmark (DTU).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

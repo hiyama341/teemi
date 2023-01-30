@@ -1,0 +1,34 @@
+﻿teemi
+=========
+
+.. automodule:: teemi
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   teemi.design
+   teemi.build
+   teemi.lims
+   teemi.test
+

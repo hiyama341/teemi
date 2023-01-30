@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>teemi.learn.auto_ml &mdash; teemi 0.3.0+20.g1b653f4.dirty documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> teemi
+          </a>
+              <div class="version">
+                0.3.0+20.g1b653f4.dirty
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html">teemi: Literate programming can streamline bioengineering workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html#features">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html#colab-notebooks">Colab notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html#credits">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../history.html">History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../history.html#id1">0.1.0 (2023-01-02)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">teemis modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../colab_notebooks.html">Colab notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../teemi.design.html">Design module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../teemi.build.html">Build module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../teemi.test.html">Test module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../teemi.learn.html">Learn module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../teemi.lims.html">LIMS module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">teemi</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>teemi.learn.auto_ml</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for teemi.learn.auto_ml</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># MIT License</span>
+<span class="c1"># Copyright (c) 2022, Technical University of Denmark (DTU)</span>
+<span class="c1">#</span>
+<span class="c1"># Permission is hereby granted, free of charge, to any person obtaining a copy</span>
+<span class="c1"># of this software and associated documentation files (the &quot;Software&quot;), to deal</span>
+<span class="c1"># in the Software without restriction, including without limitation the rights</span>
+<span class="c1"># to use, copy, modify, merge, publish, distribute, sublicense, and/or sell</span>
+<span class="c1"># copies of the Software, and to permit persons to whom the Software is</span>
+<span class="c1"># furnished to do so, subject to the following conditions:</span>
+<span class="c1">#</span>
+<span class="c1"># The above copyright notice and this permission notice shall be included in all</span>
+<span class="c1"># copies or substantial portions of the Software.</span>
+
+<span class="sd">&quot;&quot;&quot; This module is focused on Machine Learning purposes. And simplifying these workflows&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">h2o</span>
+<span class="kn">from</span> <span class="nn">h2o.automl</span> <span class="kn">import</span> <span class="n">H2OAutoML</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+
+<div class="viewcode-block" id="autoML_on_partitioned_data"><a class="viewcode-back" href="../../../teemi.learn.html#teemi.learn.auto_ml.autoML_on_partitioned_data">[docs]</a><span class="k">def</span> <span class="nf">autoML_on_partitioned_data</span><span class="p">(</span>
+    <span class="n">feature_cols</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+    <span class="n">training_column</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">df_input_for_ml</span><span class="p">,</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">partitions</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">training_time</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">nfold</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Runs over a pandas dataframe and trains MLs according to specified partition lenght.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    feature_cols: list</span>
+<span class="sd">        the column you want to train on fx : feature_cols = [&#39;0&#39;, &#39;1&#39;, &#39;2&#39;, &#39;3&#39;]</span>
+<span class="sd">    training_column : str</span>
+<span class="sd">        the column you want the models to be able to predict</span>
+<span class="sd">    df_input_for_ml : pd.DataFrame</span>
+<span class="sd">        A pandas dataframe with your data</span>
+<span class="sd">    training_time : int</span>
+<span class="sd">        the amount of time you want to train the models.</span>
+<span class="sd">        If you set it to 0, it will not have a time limit and will train untill it reaches saturation i.e. best models</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    csv files in the specified path</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">all_mae</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># partitioning</span>
+    <span class="n">step</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df_input_for_ml</span><span class="p">)</span> <span class="o">/</span> <span class="n">partitions</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">partitions</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">df_input_for_ml</span><span class="p">),</span> <span class="n">step</span><span class="p">)]</span>
+
+    <span class="c1"># Partion columns  - used for getting the right output</span>
+    <span class="n">partitions_col</span> <span class="o">=</span> <span class="n">partitions</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="n">partitions_col</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df_input_for_ml</span><span class="p">))</span>
+
+    <span class="c1"># INCREASING THE SIZE OF THE DATASET</span>
+    <span class="n">partitions_list</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">df_input_for_ml</span><span class="p">[</span><span class="n">partitions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">:</span> <span class="n">partitions</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">partitions</span><span class="p">))</span>
+    <span class="p">]</span>
+    <span class="c1"># add the last_full partition</span>
+    <span class="n">partitions_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">df_input_for_ml</span><span class="p">[</span><span class="n">partitions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">:])</span>
+
+    <span class="c1">### Making the dataframes into h2o dfs</span>
+    <span class="n">list_of_df_test_frames</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">df</span> <span class="ow">in</span> <span class="n">partitions_list</span><span class="p">:</span>
+        <span class="c1"># initialize a h20 dataframe</span>
+        <span class="n">df_test</span> <span class="o">=</span> <span class="n">h2o</span><span class="o">.</span><span class="n">H2OFrame</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="s2">&quot;columns&quot;</span><span class="p">))</span>
+
+        <span class="c1"># changing columns to strings</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df_input_for_ml</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">col</span> <span class="o">!=</span> <span class="n">training_column</span><span class="p">:</span>
+                <span class="n">col</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+
+        <span class="c1"># making the dataframes categorical</span>
+        <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">df_test</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">col</span> <span class="o">!=</span> <span class="n">training_column</span><span class="p">:</span>
+                <span class="n">df_test</span><span class="p">[</span><span class="n">column</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_test</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">asfactor</span><span class="p">()</span>
+        <span class="n">list_of_df_test_frames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">df_test</span><span class="p">)</span>
+
+    <span class="c1">##### setting up ML</span>
+    <span class="n">autoML_dataclasses_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># Initialize 5 - H2O autoML class</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">list_of_df_test_frames</span><span class="p">)):</span>
+        <span class="n">AutoML</span> <span class="o">=</span> <span class="n">H2OAutoML</span><span class="p">(</span>
+            <span class="n">max_runtime_secs</span><span class="o">=</span><span class="n">training_time</span><span class="p">,</span>  <span class="c1"># 1 hour =int(3600 * 1) , if unlimited time is wanted then set this to zero = 0</span>
+            <span class="n">max_models</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># None =  no limit</span>
+            <span class="n">nfolds</span><span class="o">=</span><span class="n">nfold</span><span class="p">,</span>  <span class="c1"># number of folds for k-fold cross-validation (nfolds=0 disables cross-validation)</span>
+            <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>  <span class="c1"># Reproducibility</span>
+            <span class="n">sort_metric</span><span class="o">=</span><span class="s2">&quot;MAE&quot;</span><span class="p">,</span>
+            <span class="n">keep_cross_validation_predictions</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">autoML_dataclasses_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">AutoML</span><span class="p">)</span>
+
+    <span class="c1">##### Training the models on partitioned data</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">autoML_dataclasses_list</span><span class="p">)):</span>
+        <span class="c1"># for j in range(len(new_list_of_list_with_5x_models[i])):</span>
+        <span class="n">autoML_dataclasses_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">train</span><span class="p">(</span>
+            <span class="n">x</span><span class="o">=</span><span class="n">feature_cols</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">training_column</span><span class="p">,</span> <span class="n">training_frame</span><span class="o">=</span><span class="n">list_of_df_test_frames</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="s2">&quot;len of dataframes that are being trained on :&quot;</span><span class="p">,</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">list_of_df_test_frames</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span>
+        <span class="p">)</span>
+
+    <span class="c1">### getting the mae for each model</span>
+    <span class="n">model_name</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">cv_sd_mae</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">cv_mean_mae</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">best_models_mae</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">autoML_dataclasses_list</span><span class="p">:</span>
+        <span class="c1"># Mae for each model train</span>
+        <span class="n">best_model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_best_model</span><span class="p">()</span>
+        <span class="n">best_models_mae</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">best_model</span><span class="o">.</span><span class="n">mae</span><span class="p">())</span>
+
+        <span class="c1"># CV metrics</span>
+        <span class="n">best_model_cv_summary</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">best_model</span><span class="o">.</span><span class="n">cross_validation_metrics_summary</span><span class="p">()</span><span class="o">.</span><span class="n">as_data_frame</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="n">mean</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">best_model_cv_summary</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">][</span><span class="s2">&quot;mean&quot;</span><span class="p">])</span>
+        <span class="n">sd</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">best_model_cv_summary</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">][</span><span class="s2">&quot;sd&quot;</span><span class="p">])</span>
+        <span class="c1"># save ot</span>
+        <span class="n">cv_mean_mae</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mean</span><span class="p">)</span>
+        <span class="n">cv_sd_mae</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sd</span><span class="p">)</span>
+
+        <span class="c1">## save names</span>
+        <span class="n">model_name</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">best_model</span><span class="o">.</span><span class="n">model_id</span><span class="p">)</span>
+
+    <span class="c1"># saving ALL maes</span>
+    <span class="n">all_mae</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">best_models_mae</span><span class="p">)</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">all_mae</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">partitions_col</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="c1"># add cv mean mae and sd</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;CV_mean_MAE&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cv_mean_mae</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;CV_SD_MAE&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cv_sd_mae</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;Model_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">model_name</span>
+
+    <span class="c1"># getting a unique name</span>
+    <span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+
+    <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>  <span class="c1"># current date and time</span>
+    <span class="n">time</span> <span class="o">=</span> <span class="n">now</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y_%m_</span><span class="si">%d</span><span class="s2">_%H:%M&quot;</span><span class="p">)</span>
+
+    <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">path</span> <span class="o">+</span> <span class="n">time</span> <span class="o">+</span> <span class="s2">&quot;_ml_models_running_over_partioned_data.csv&quot;</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Technical University of Denmark (DTU).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>constrain.design.combinatorial_design &mdash; ConStrain 0.2.7+68.gdbe6b10.dirty documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> ConStrain
+          </a>
+              <div class="version">
+                0.2.7+68.gdbe6b10.dirty
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html">ConStrain: Literate programming can streamline bioengineering workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html#features">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html#credits">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../history.html">History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">ConStrains modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../colab_notebooks.html">Colab notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../constrain.design.html">Design module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../constrain.lab.html">Lab module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../constrain.lims.html">LIMS module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../constrain.test.html">TEST module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ConStrain</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>constrain.design.combinatorial_design</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for constrain.design.combinatorial_design</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># MIT License</span>
+<span class="c1"># Copyright (c) 2022, Technical University of Denmark (DTU)</span>
+<span class="c1">#</span>
+<span class="c1"># Permission is hereby granted, free of charge, to any person obtaining a copy</span>
+<span class="c1"># of this software and associated documentation files (the &quot;Software&quot;), to deal</span>
+<span class="c1"># in the Software without restriction, including without limitation the rights</span>
+<span class="c1"># to use, copy, modify, merge, publish, distribute, sublicense, and/or sell</span>
+<span class="c1"># copies of the Software, and to permit persons to whom the Software is</span>
+<span class="c1"># furnished to do so, subject to the following conditions:</span>
+<span class="c1">#</span>
+<span class="c1"># The above copyright notice and this permission notice shall be included in all</span>
+<span class="c1"># copies or substantial portions of the Software.</span>
+
+<span class="sd">&quot;&quot;&quot; This part of the design module is used for making combinatorial libraries from DNA fragments.&quot;&quot;&quot;</span>
+
+<span class="c1"># standard libraries</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="c1"># Pydna for the molecular bio</span>
+<span class="kn">from</span> <span class="nn">pydna.design</span> <span class="kn">import</span> <span class="n">primer_design</span>
+<span class="kn">from</span> <span class="nn">pydna.design</span> <span class="kn">import</span> <span class="n">assembly_fragments</span>
+<span class="kn">from</span> <span class="nn">pydna.assembly</span> <span class="kn">import</span> <span class="n">Assembly</span>
+<span class="kn">from</span> <span class="nn">pydna.tm</span> <span class="kn">import</span> <span class="n">tm_default</span> <span class="k">as</span> <span class="n">_tm_default</span>
+
+
+<div class="viewcode-block" id="combinatorial_list_maker"><a class="viewcode-back" href="../../../constrain.design.html#constrain.design.combinatorial_design.combinatorial_list_maker">[docs]</a><span class="k">def</span> <span class="nf">combinatorial_list_maker</span><span class="p">(</span>
+    <span class="n">listOflist_that_is_being_made_into_all_combinations</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Makes all possible combinations from a list of list.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    listOflist_that_is_being_made_into_all_combinations: list[list[any_type]]</span>
+<span class="sd">        can be of any type inside the list of lists</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    combinations: list[tuple(any_type)]</span>
+<span class="sd">        all possible combinations of the list of lists</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">combinations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+        <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="n">listOflist_that_is_being_made_into_all_combinations</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">combinations</span></div>
+
+
+<div class="viewcode-block" id="systematic_names_function"><a class="viewcode-back" href="../../../constrain.design.html#constrain.design.combinatorial_design.systematic_names_function">[docs]</a><span class="k">def</span> <span class="nf">systematic_names_function</span><span class="p">(</span><span class="n">List_of_list_parts</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns a list of list with systematic names i.e [1,1,1], [1,2,1]... etc</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    List_of_list_parts: list of list</span>
+<span class="sd">        can have anny type withing the list[list[any_type]]</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    combinatorial_list_of_indexes</span>
+<span class="sd">        list of tuples with the systematic names eg. [(1,1,1),(1,2,1)]</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># The number of parts of each fragment</span>
+    <span class="n">no_parts</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">l</span><span class="p">))</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">List_of_list_parts</span><span class="p">]</span>
+
+    <span class="c1">### For naming the strains systematically ### basicly making a list from the number of parts with indexes</span>
+    <span class="n">list_of_systematic</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">midlertidiglist</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">parts</span> <span class="ow">in</span> <span class="n">no_parts</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">parts</span><span class="p">):</span>
+            <span class="n">midlertidiglist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">list_of_systematic</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">midlertidiglist</span><span class="p">)</span>
+        <span class="n">midlertidiglist</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># Then we use itertools to make the right combinations</span>
+    <span class="n">combinatorial_list_of_indexes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="n">list_of_systematic</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">combinatorial_list_of_indexes</span></div>
+
+
+<div class="viewcode-block" id="empty_list_maker"><a class="viewcode-back" href="../../../constrain.design.html#constrain.design.combinatorial_design.empty_list_maker">[docs]</a><span class="k">def</span> <span class="nf">empty_list_maker</span><span class="p">(</span><span class="n">list_of_sequences</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;returns empty list in the length of seqs</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    list_of_sequences: list</span>
+<span class="sd">        could be any list with any types</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    EmptyList:list</span>
+<span class="sd">        an empty list with the same dimensions</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">EmptyList</span> <span class="o">=</span> <span class="p">[[]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">list_of_sequences</span><span class="p">))]</span>
+
+    <span class="k">return</span> <span class="n">EmptyList</span></div>
+
+
+<div class="viewcode-block" id="simple_amplicon_maker"><a class="viewcode-back" href="../../../constrain.design.html#constrain.design.combinatorial_design.simple_amplicon_maker">[docs]</a><span class="k">def</span> <span class="nf">simple_amplicon_maker</span><span class="p">(</span>
+    <span class="n">list_of_seqs</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">list_of_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">target_tm</span><span class="o">=</span><span class="mf">56.0</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">13</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Creates amplicons, updates their names</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    list_of_seqs : list[list[pydna.dseqrecord.Dseqrecord]]</span>
+<span class="sd">        List of the pydna.dseqrecord import Dseqrecord elements u want to made into amplicons</span>
+
+<span class="sd">    list_of_names : list[list[str]]</span>
+<span class="sd">        provide names for the sequences since pydna changes their names to amplicon</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    list_of_amplicons : list[pydna.amplicon.Amplicon]</span>
+<span class="sd">        list with the pydna.amplicon.Amplicon objects that have been made</span>
+
+<span class="sd">    list_of_amplicon_primers : list[list[(pydna.seq.Seq, pydna.seq.Seq)]]</span>
+<span class="sd">        a list of all the generated primers in tuples where index0 = forward primer</span>
+<span class="sd">        and index1=reverse primer. Both are pydna.seq.Seq objects</span>
+
+<span class="sd">    list_of_amplicon_primer_temps : list[list[(float, float)]]</span>
+<span class="sd">        a list of melting temperatures in tuples where index0 = forward primer melting temp</span>
+<span class="sd">        and index1=reverse primer melting temp.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Start by making an empty list</span>
+    <span class="n">list_of_amplicons</span> <span class="o">=</span> <span class="p">[[]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">list_of_seqs</span><span class="p">))]</span>
+    <span class="n">list_of_amplicon_primers</span> <span class="o">=</span> <span class="p">[[]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">list_of_seqs</span><span class="p">))]</span>
+    <span class="n">list_of_amplicon_primer_temps</span> <span class="o">=</span> <span class="p">[[]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">list_of_seqs</span><span class="p">))]</span>
+
+    <span class="c1">### HERE WE CALCULATE Amplicons, primers, and their temperatures</span>
+    <span class="c1"># Then we calculate the primers with the NEB calculator</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_of_seqs</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_of_seqs</span><span class="p">[</span><span class="n">i</span><span class="p">])):</span>
+            <span class="c1"># Append Amplicons</span>
+            <span class="n">amplicons</span> <span class="o">=</span> <span class="n">primer_design</span><span class="p">(</span>
+                <span class="n">list_of_seqs</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">],</span>
+                <span class="n">tm_func</span><span class="o">=</span><span class="n">_tm_default</span><span class="p">,</span>
+                <span class="n">target_tm</span><span class="o">=</span><span class="n">target_tm</span><span class="p">,</span>
+                <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span>
+            <span class="p">)</span>  <span class="c1">############## Can add NEB Calculator here: primer_TM ################# _tm_default i.e tm_func = _tm_default,</span>
+
+            <span class="c1"># Updating names</span>
+            <span class="n">amplicons</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">list_of_names</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span>
+            <span class="n">list_of_amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">amplicons</span><span class="p">)</span>
+
+            <span class="c1"># Save the primers</span>
+            <span class="n">primers</span> <span class="o">=</span> <span class="p">(</span><span class="n">amplicons</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">seq</span><span class="p">,</span> <span class="n">amplicons</span><span class="o">.</span><span class="n">reverse_primer</span><span class="o">.</span><span class="n">seq</span><span class="p">)</span>
+            <span class="n">list_of_amplicon_primers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">primers</span><span class="p">)</span>
+
+            <span class="c1"># Save melting temps</span>
+            <span class="c1">############## Can add NEB Calculator here: primer_TM #############################</span>
+            <span class="n">melting_temps</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">_tm_default</span><span class="p">(</span><span class="n">amplicons</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">seq</span><span class="p">),</span>
+                <span class="n">_tm_default</span><span class="p">(</span><span class="n">amplicons</span><span class="o">.</span><span class="n">reverse_primer</span><span class="o">.</span><span class="n">seq</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="n">list_of_amplicon_primer_temps</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">melting_temps</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">list_of_amplicons</span><span class="p">,</span> <span class="n">list_of_amplicon_primers</span><span class="p">,</span> <span class="n">list_of_amplicon_primer_temps</span></div>
+
+
+<div class="viewcode-block" id="get_primers"><a class="viewcode-back" href="../../../constrain.design.html#constrain.design.combinatorial_design.get_primers">[docs]</a><span class="k">def</span> <span class="nf">get_primers</span><span class="p">(</span>
+    <span class="n">List_of_assemblies</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+    <span class="n">combinatorial_list_of_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+    <span class="n">combinatorial_list_of_primer_tm</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns a list of ALL primers from the combinatorial library,</span>
+<span class="sd">    updates names and what they anneal to.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    List_of_assemblies : list[list[pydna.amplicon.Amplicon]]</span>
+<span class="sd">    combinatorial_list_of_names : list[(str)]</span>
+<span class="sd">    combinatorial_list_of_primer_tm : list[(float, float),..)...]</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    primers : list[list[[pydna.primer.Primer, pydna.primer.Primer]]</span>
+<span class="sd">        All primers that have been made for all assemblies</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">primers_temporary</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">primers</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">List_of_assemblies</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">])):</span>
+            <span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="c1"># Names</span>
+            <span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">combinatorial_list_of_names</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span>
+            <span class="c1"># Primers</span>
+            <span class="c1"># description ------ DESCRIBES what other part it overlaps-------------</span>
+            <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># START OF THE ASSEMBLY</span>
+                <span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s2">&quot;Anneals to &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">reverse_primer</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s2">&quot;Anneals to &quot;</span>
+                    <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                    <span class="o">+</span> <span class="s2">&quot;, overlaps to &quot;</span>
+                    <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">j</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1">#      # THE rest:</span>
+                <span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s2">&quot;Anneals to &quot;</span>
+                    <span class="o">+</span> <span class="nb">str</span><span class="p">(</span>
+                        <span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
+                        <span class="o">+</span> <span class="s2">&quot;, overlaps to &quot;</span>
+                        <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">reverse_primer</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s2">&quot;Anneals to &quot;</span>
+                    <span class="o">+</span> <span class="nb">str</span><span class="p">(</span>
+                        <span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
+                        <span class="o">+</span> <span class="s2">&quot;, overlaps to &quot;</span>
+                        <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># THE END OF THE ASSEMBLY</span>
+                <span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s2">&quot;Anneals to &quot;</span>
+                    <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                    <span class="o">+</span> <span class="s2">&quot;, overlaps to &quot;</span>
+                    <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">reverse_primer</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s2">&quot;Anneals to &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="p">)</span>
+
+            <span class="c1"># template it aneals to</span>
+            <span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+                <span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
+            <span class="p">)</span>
+            <span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">reverse_primer</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+                <span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Primer tm</span>
+            <span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">features</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span>
+                <span class="nb">float</span><span class="p">(</span><span class="n">combinatorial_list_of_primer_tm</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">][</span><span class="mi">0</span><span class="p">]),</span> <span class="mi">2</span>
+            <span class="p">)</span>
+            <span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">reverse_primer</span><span class="o">.</span><span class="n">features</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span>
+                <span class="nb">float</span><span class="p">(</span><span class="n">combinatorial_list_of_primer_tm</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">][</span><span class="mi">1</span><span class="p">]),</span> <span class="mi">2</span>
+            <span class="p">)</span>
+
+            <span class="n">fwd_rev_primers</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">forward_primer</span><span class="p">,</span>
+                <span class="n">List_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">reverse_primer</span><span class="p">,</span>
+            <span class="p">]</span>
+            <span class="n">primers_temporary</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fwd_rev_primers</span><span class="p">)</span>
+
+        <span class="n">primers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">primers_temporary</span><span class="p">)</span>
+        <span class="n">primers_temporary</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">return</span> <span class="n">primers</span></div>
+
+
+<div class="viewcode-block" id="assembly_maker"><a class="viewcode-back" href="../../../constrain.design.html#constrain.design.combinatorial_design.assembly_maker">[docs]</a><span class="k">def</span> <span class="nf">assembly_maker</span><span class="p">(</span><span class="n">combinatorial_list_of_amplicons</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="mi">35</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Assembles Amplicons with pad and makes new overlapping primers.</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    combinatorial_list_of_amplicons : list[[pydna.amplicon.Amplicon]]</span>
+<span class="sd">        the list of pydna.amplicon.Amplicon that you want generate</span>
+<span class="sd">        overlapping primers for.</span>
+
+<span class="sd">    overlap : int = 35</span>
+<span class="sd">        How many basepair overlaps</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    List_of_assemblies : list[[pydna.amplicon.Amplicon]]</span>
+<span class="sd">        amplicons that overlaps eachother with the specified overlap value.</span>
+
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">List_of_assemblies</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">combinatorial_list_of_amplicons</span><span class="p">)):</span>
+        <span class="n">List_of_assemblies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">assembly_fragments</span><span class="p">(</span><span class="n">combinatorial_list_of_amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">overlap</span><span class="p">,</span> <span class="n">maxlink</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">List_of_assemblies</span></div>
+
+
+<div class="viewcode-block" id="unique_primers"><a class="viewcode-back" href="../../../constrain.design.html#constrain.design.combinatorial_design.unique_primers">[docs]</a><span class="k">def</span> <span class="nf">unique_primers</span><span class="p">(</span><span class="n">primers</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">list_of_assemblies</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Finds unique primers from a list of assemblies</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    primers : list[list[[pydna.primer.Primer, pydna.primer.Primer]]</span>
+<span class="sd">        a list of all the primers made for the combinatorial library</span>
+
+<span class="sd">    list_of_assemblies: list[[pydna.amplicon.Amplicon]]</span>
+<span class="sd">        used here to update the names of the primers</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    unique_primers : list[list(ID,Anneals_to,Sequence,Annealing_temp,Length,Price(DKK))]</span>
+<span class="sd">        Relevant metrics for the unique primers of the combinatorial library.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">unikke_F_primers</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">unikke_R_primers</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">length_of_unique_primers</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">primer_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">primers</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">primers</span><span class="p">[</span><span class="n">i</span><span class="p">])):</span>
+            <span class="n">counter</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">primers</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">primers</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">unikke_F_primers</span><span class="p">:</span>
+                <span class="n">unikke_F_primers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">primers</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">primers</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">unikke_R_primers</span><span class="p">:</span>
+                <span class="n">unikke_R_primers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">primers</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">unique_forward_primers</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">unique_reverse_primers</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1">### CHANGING THE NAMES OF THE PRIMERS</span>
+    <span class="c1"># Forward primers</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">unikke_F_primers</span><span class="p">)):</span>
+        <span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">unikke_F_primers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="s2">&quot;F</span><span class="si">{number:03}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">number</span><span class="o">=</span><span class="n">counter</span><span class="p">)</span>
+        <span class="n">length_of_unique_primers</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">unikke_F_primers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">seq</span><span class="p">)</span>
+        <span class="n">U_f_primers</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">unikke_F_primers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="n">unikke_F_primers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">unikke_F_primers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">seq</span><span class="p">,</span>
+            <span class="n">unikke_F_primers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">features</span><span class="p">,</span>  <span class="c1"># anealing temp</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">unikke_F_primers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">seq</span><span class="p">),</span>  <span class="c1"># lenght</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">unikke_F_primers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">seq</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1.8</span><span class="p">,</span>  <span class="c1"># price</span>
+        <span class="p">]</span>
+        <span class="n">unique_forward_primers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">U_f_primers</span><span class="p">)</span>
+    <span class="c1"># Reverse primers</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">unikke_R_primers</span><span class="p">)):</span>
+        <span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">unikke_R_primers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="s2">&quot;R</span><span class="si">{number:03}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">number</span><span class="o">=</span><span class="n">counter</span><span class="p">)</span>
+        <span class="n">length_of_unique_primers</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">unikke_R_primers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">seq</span><span class="p">)</span>
+        <span class="n">U_r_primers</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">unikke_R_primers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="n">unikke_R_primers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">unikke_R_primers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">seq</span><span class="p">,</span>
+            <span class="n">unikke_R_primers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">features</span><span class="p">,</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">unikke_R_primers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">seq</span><span class="p">),</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">unikke_R_primers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">seq</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1.8</span><span class="p">,</span>  <span class="c1"># cost</span>
+        <span class="p">]</span>
+        <span class="n">unique_reverse_primers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">U_r_primers</span><span class="p">)</span>
+
+    <span class="n">primer_list</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">unique_forward_primers</span> <span class="o">+</span> <span class="n">unique_reverse_primers</span>
+    <span class="p">)</span>  <span class="c1"># COULD CONCATONATE THEM INTO: unique_forward_primers + unique_reverse_primers</span>
+
+    <span class="c1">### Updating primer names and removing duplicates</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_of_assemblies</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">])):</span>
+            <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">unikke_F_primers</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">list_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">seq</span>
+                    <span class="o">==</span> <span class="n">unikke_F_primers</span><span class="p">[</span><span class="n">l</span><span class="p">]</span><span class="o">.</span><span class="n">seq</span>
+                <span class="p">):</span>
+                    <span class="n">list_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">forward_primer</span> <span class="o">=</span> <span class="n">unikke_F_primers</span><span class="p">[</span><span class="n">l</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_reverse_primers</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">list_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">reverse_primer</span><span class="o">.</span><span class="n">seq</span>
+                    <span class="o">==</span> <span class="n">unikke_R_primers</span><span class="p">[</span><span class="n">m</span><span class="p">]</span><span class="o">.</span><span class="n">seq</span>
+                <span class="p">):</span>
+                    <span class="n">list_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">reverse_primer</span> <span class="o">=</span> <span class="n">unikke_R_primers</span><span class="p">[</span><span class="n">m</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">primer_list</span></div>
+
+
+<div class="viewcode-block" id="unique_amplicons"><a class="viewcode-back" href="../../../constrain.design.html#constrain.design.combinatorial_design.unique_amplicons">[docs]</a><span class="k">def</span> <span class="nf">unique_amplicons</span><span class="p">(</span><span class="n">list_of_assemblies</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Finds Unique amplicons from a list of assemblies</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    list_of_assemblies: list[[pydna.amplicon.Amplicon]]</span>
+<span class="sd">        list of the combinatorial libarary with overlapping ends</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">        unique_amplicons: list[pydna.amplicon.Amplicon]</span>
+<span class="sd">            returns a list of unique amplicons where relavant metrics</span>
+<span class="sd">            are added to the objects.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">### Unique amplicons</span>
+    <span class="n">unique_amplicons</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_of_assemblies</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">])):</span>
+            <span class="k">if</span> <span class="n">list_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">unique_amplicons</span><span class="p">:</span>
+                <span class="n">unique_amplicons</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">list_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">unique_amplicons</span></div>
+
+
+<div class="viewcode-block" id="making_assembly_objects"><a class="viewcode-back" href="../../../constrain.design.html#constrain.design.combinatorial_design.making_assembly_objects">[docs]</a><span class="k">def</span> <span class="nf">making_assembly_objects</span><span class="p">(</span><span class="n">list_of_assemblies</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Assembling amplicons into assembling class that shows</span>
+<span class="sd">    fragments, limit,nodes and which algorithm that was used</span>
+<span class="sd">    for assembling.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    list_of_assemblies: list[[pydna.amplicon.Amplicon]]</span>
+<span class="sd">        list of the combinatorial libarary with overlapping ends</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">        list_of_assembly_objects: list[pydna.assembly.Assembly]</span>
+<span class="sd">            shows which algorithm that was used, nodes, limit and fragments</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">list_of_assembly_objects</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_of_assemblies</span><span class="p">)):</span>
+        <span class="n">list_of_assembly_objects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Assembly</span><span class="p">((</span><span class="n">list_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="n">limit</span><span class="o">=</span><span class="mi">35</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">list_of_assembly_objects</span></div>
+
+
+<div class="viewcode-block" id="making_assembled_contigs"><a class="viewcode-back" href="../../../constrain.design.html#constrain.design.combinatorial_design.making_assembled_contigs">[docs]</a><span class="k">def</span> <span class="nf">making_assembled_contigs</span><span class="p">(</span><span class="n">list_of_assembly_objects</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Assembles a list of assembly object into</span>
+<span class="sd">    linear contigs.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    list_of_assembly_objects : list[pydna.assembly.Assembly]</span>
+<span class="sd">        these objects can be assembled into contigs</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    list_of_assembly_objects : list[]</span>
+<span class="sd">        list_of_assembly_objects have been assembled into contigs</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">contigs_assembled</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_of_assembly_objects</span><span class="p">)):</span>
+        <span class="n">contigs_assembled</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">list_of_assembly_objects</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">assemble_linear</span><span class="p">())</span>
+
+    <span class="k">return</span> <span class="n">list_of_assembly_objects</span></div>
+
+
+<div class="viewcode-block" id="DesignAssembly"><a class="viewcode-back" href="../../../constrain.design.html#constrain.design.combinatorial_design.DesignAssembly">[docs]</a><span class="k">class</span> <span class="nc">DesignAssembly</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Class able to make a combinatorial library from DNA fragments.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    list_of_seqs : list</span>
+<span class="sd">        A list of list of a constructs of choice.</span>
+<span class="sd">    list_of_names : list</span>
+<span class="sd">        A list of list of the names wanted for the construct of choice.</span>
+<span class="sd">    pad : pydna.Dseqrecord</span>
+<span class="sd">        A nucleotide sequence to be incorporated into the primers (Max is 40 bp)</span>
+<span class="sd">    position_of_pad : int</span>
+<span class="sd">        the position in the list of seqs where the pad is incorporated (zero indexed)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    constrain.design.combinatorial_design.DesignAssembly object</span>
+<span class="sd">        A powerfull class and a lot of information can be retrieved.</span>
+<span class="sd">        Such as: showing all the amplicons needed to construct a combinatorial library </span>
+<span class="sd">        with the simple method --&gt; PCR_list_to_dataframe or Primer_list_to_dataframe. </span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">list_of_seqs</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+        <span class="n">list_of_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+        <span class="n">pad</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">position_of_pad</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">target_tm</span><span class="o">=</span><span class="mf">56.0</span><span class="p">,</span>
+        <span class="n">limit</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span>
+    <span class="p">):</span>
+
+        <span class="c1">###  1.INITIALIZING ##</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">list_of_seqs</span> <span class="o">=</span> <span class="n">list_of_seqs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">list_of_names</span> <span class="o">=</span> <span class="n">list_of_names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pad</span> <span class="o">=</span> <span class="n">pad</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">position_of_pad</span> <span class="o">=</span> <span class="n">position_of_pad</span>
+
+        <span class="c1">### 2. Amplicons, primers, and their temperatures</span>
+        <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">list_of_amplicons</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">list_of_amplicon_primers</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">list_of_amplicon_primer_temps</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="n">simple_amplicon_maker</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">list_of_seqs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_of_names</span><span class="p">,</span> <span class="n">target_tm</span><span class="o">=</span><span class="n">target_tm</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Systematic names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">systematic_names</span> <span class="o">=</span> <span class="n">systematic_names_function</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">list_of_seqs</span><span class="p">)</span>
+
+        <span class="c1">### 3. COMBINATORIAL LISTS</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">combinatorial_list_of_amplicons</span> <span class="o">=</span> <span class="n">combinatorial_list_maker</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">list_of_amplicons</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">combinatorial_list_of_names</span> <span class="o">=</span> <span class="n">combinatorial_list_maker</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">list_of_names</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">combinatorial_list_of_primer_tm</span> <span class="o">=</span> <span class="n">combinatorial_list_maker</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">list_of_amplicon_primer_temps</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Making the combinations into a list so we can insert PADS later (They are tuples at this stage, and insert doesnt work for tuples)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">combinatorial_list_of_amplicons</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">combinatorial_list_of_amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">combinatorial_list_of_amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="p">)</span>
+
+        <span class="c1">#### 4. Adding PAD ###</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">combinatorial_list_of_amplicons</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">combinatorial_list_of_amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">position_of_pad</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad</span>
+            <span class="p">)</span>
+
+        <span class="c1">### 5. Assembling and making overlapping primers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">list_of_assemblies</span> <span class="o">=</span> <span class="n">assembly_maker</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">combinatorial_list_of_amplicons</span><span class="p">)</span>
+
+        <span class="c1">### 6. GETTING all primers, annotating, adding features</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">primers</span> <span class="o">=</span> <span class="n">get_primers</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">list_of_assemblies</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">combinatorial_list_of_names</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">combinatorial_list_of_primer_tm</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1">### 7. Getting Unique primers and re-annotating list_assemblies to get right names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unique_primers</span> <span class="o">=</span> <span class="n">unique_primers</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">primers</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_of_assemblies</span><span class="p">)</span>
+
+        <span class="c1">### 8. Unique amplicons</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unique_amplicons</span> <span class="o">=</span> <span class="n">unique_amplicons</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">list_of_assemblies</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DesignAssembly.ShowContigs"><a class="viewcode-back" href="../../../constrain.design.html#constrain.design.combinatorial_design.DesignAssembly.ShowContigs">[docs]</a>    <span class="k">def</span> <span class="nf">ShowContigs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a string of the contigs generated by the assembly&quot;&quot;&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Template, Primer, tm&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">list_of_assemblies</span><span class="p">)):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Contig&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">systematic_names</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">list_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">])):</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="s2">&quot;Template: &quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_of_assemblies</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">15</span><span class="p">]</span>
+                <span class="p">)</span>  <span class="c1"># , &#39;\t&#39;, self.primers[i][j][0].name,&#39;\t&#39;,self.primers[i][j][0].features)</span>
+        <span class="k">return</span></div>
+
+<div class="viewcode-block" id="DesignAssembly.ShowVariantsLibDF"><a class="viewcode-back" href="../../../constrain.design.html#constrain.design.combinatorial_design.DesignAssembly.ShowVariantsLibDF">[docs]</a>    <span class="k">def</span> <span class="nf">ShowVariantsLibDF</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a dataframe of all the variants&quot;&quot;&quot;</span>
+        <span class="n">combinatorial_lib_variants_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">combinatorial_list_of_names</span><span class="p">)</span>
+        <span class="n">systematic_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">systematic_names</span>
+        <span class="n">combinatorial_lib_variants_df</span><span class="p">[</span><span class="s2">&quot;Systematic_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">systematic_names</span>
+        <span class="n">combinatorial_lib_variants_df</span><span class="p">[</span><span class="s2">&quot;Variant&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">combinatorial_lib_variants_df</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">combinatorial_lib_variants_df</span></div>
+
+<div class="viewcode-block" id="DesignAssembly.print_primer_list"><a class="viewcode-back" href="../../../constrain.design.html#constrain.design.combinatorial_design.DesignAssembly.print_primer_list">[docs]</a>    <span class="k">def</span> <span class="nf">print_primer_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the list of transfers in human-readable format.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">primers</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">unique_primers</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">primers</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DesignAssembly.primer_list"><a class="viewcode-back" href="../../../constrain.design.html#constrain.design.combinatorial_design.DesignAssembly.primer_list">[docs]</a>    <span class="k">def</span> <span class="nf">primer_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the list of transfers in human-readable format.&quot;&quot;&quot;</span>
+        <span class="n">primer_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">primers</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">unique_primers</span><span class="p">:</span>
+            <span class="n">primer_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">primers</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">primer_list</span></div>
+
+<div class="viewcode-block" id="DesignAssembly.primer_list_to_dataframe"><a class="viewcode-back" href="../../../constrain.design.html#constrain.design.combinatorial_design.DesignAssembly.primer_list_to_dataframe">[docs]</a>    <span class="k">def</span> <span class="nf">primer_list_to_dataframe</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a pandas dataframe with list of primers.&quot;&quot;&quot;</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unique_primers</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;ID&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Anneals to&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Sequence&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Annealing temperature&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Length&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Price(DKK)&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">df</span></div>
+
+<div class="viewcode-block" id="DesignAssembly.print_PCR_list"><a class="viewcode-back" href="../../../constrain.design.html#constrain.design.combinatorial_design.DesignAssembly.print_PCR_list">[docs]</a>    <span class="k">def</span> <span class="nf">print_PCR_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Prints PCR_list&quot;&quot;&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;PCR#, Template,forward_primer, reverse primer, F_tm, R_tm&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unique_amplicons</span><span class="p">)):</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="s2">&quot;PCR</span><span class="si">{number}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">number</span><span class="o">=</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>
+                <span class="s2">&quot;,&quot;</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unique_amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="s2">&quot;,&quot;</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unique_amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                <span class="s2">&quot;,&quot;</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unique_amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">reverse_primer</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                <span class="s2">&quot;,&quot;</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unique_amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">features</span><span class="p">,</span>
+                <span class="s2">&quot;,&quot;</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unique_amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">reverse_primer</span><span class="o">.</span><span class="n">features</span><span class="p">,</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="DesignAssembly.PCR_list"><a class="viewcode-back" href="../../../constrain.design.html#constrain.design.combinatorial_design.DesignAssembly.PCR_list">[docs]</a>    <span class="k">def</span> <span class="nf">PCR_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a PCR_list&quot;&quot;&quot;</span>
+        <span class="n">pcr_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unique_amplicons</span><span class="p">)):</span>
+            <span class="n">PCR</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="s2">&quot;PCR</span><span class="si">{number}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">number</span><span class="o">=</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unique_amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unique_amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unique_amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">reverse_primer</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unique_amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">features</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unique_amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">reverse_primer</span><span class="o">.</span><span class="n">features</span><span class="p">,</span>
+            <span class="p">]</span>
+            <span class="n">pcr_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">PCR</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">pcr_list</span></div>
+
+<div class="viewcode-block" id="DesignAssembly.PCR_list_to_dataframe"><a class="viewcode-back" href="../../../constrain.design.html#constrain.design.combinatorial_design.DesignAssembly.PCR_list_to_dataframe">[docs]</a>    <span class="k">def</span> <span class="nf">PCR_list_to_dataframe</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Prints PCR_list into a pandas dataframe&quot;&quot;&quot;</span>
+        <span class="n">dataframe_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unique_amplicons</span><span class="p">)):</span>
+            <span class="n">lst</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="s2">&quot;PCR</span><span class="si">{number}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">number</span><span class="o">=</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unique_amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unique_amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unique_amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">reverse_primer</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unique_amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">features</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unique_amplicons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">reverse_primer</span><span class="o">.</span><span class="n">features</span><span class="p">,</span>
+            <span class="p">]</span>
+            <span class="n">dataframe_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lst</span><span class="p">)</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">dataframe_list</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;PCR#&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Template&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;forward_primer&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;reverse_primer&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;F_tm&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;R_tm&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">df</span></div>
+
+<div class="viewcode-block" id="DesignAssembly.graphical_representation_of_assemblies"><a class="viewcode-back" href="../../../constrain.design.html#constrain.design.combinatorial_design.DesignAssembly.graphical_representation_of_assemblies">[docs]</a>    <span class="k">def</span> <span class="nf">graphical_representation_of_assemblies</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Takes in the assembly object and returns graphical report of the</span>
+<span class="sd">        fragments assembled</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">graphical_representation</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assembly_object</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">assemble_linear</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">assembly_object</span><span class="p">))</span>
+        <span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">graphical_representation</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Technical University of Denmark (DTU).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

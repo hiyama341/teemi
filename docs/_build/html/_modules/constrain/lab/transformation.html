@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>constrain.lab.transformation &mdash; ConStrain 0.2.7+64.g928ed1e.dirty documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> ConStrain
+          </a>
+              <div class="version">
+                0.2.7+64.g928ed1e.dirty
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html">ConStrain: Literate programming can streamline bioengineering workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html#features">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html#credits">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../history.html">History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">ConStrains modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../colab_notebooks.html">Colab notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../constrain.design.html">Design module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../constrain.lab.html">Lab module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../constrain.lims.html">LIMS module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../constrain.test.html">TEST module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ConStrain</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>constrain.lab.transformation</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for constrain.lab.transformation</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># MIT License</span>
+<span class="c1"># Copyright (c) 2022, Technical University of Denmark (DTU)</span>
+<span class="c1">#</span>
+<span class="c1"># Permission is hereby granted, free of charge, to any person obtaining a copy</span>
+<span class="c1"># of this software and associated documentation files (the &quot;Software&quot;), to deal</span>
+<span class="c1"># in the Software without restriction, including without limitation the rights</span>
+<span class="c1"># to use, copy, modify, merge, publish, distribute, sublicense, and/or sell</span>
+<span class="c1"># copies of the Software, and to permit persons to whom the Software is</span>
+<span class="c1"># furnished to do so, subject to the following conditions:</span>
+<span class="c1">#</span>
+<span class="c1"># The above copyright notice and this permission notice shall be included in all</span>
+<span class="c1"># copies or substantial portions of the Software.</span>
+
+
+<span class="sd">&quot;&quot;&quot; This part of the lab module is used for making transformations&quot;&quot;&quot;</span>
+
+<span class="c1">#!/usr/bin/env python</span>
+<span class="c1"># standard libraries</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+
+<span class="c1"># for plotting with pyplot</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">&quot;seaborn-whitegrid&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ng_to_nmol"><a class="viewcode-back" href="../../../constrain.lab.html#constrain.lab.transformation.ng_to_nmol">[docs]</a><span class="k">def</span> <span class="nf">ng_to_nmol</span><span class="p">(</span><span class="n">ng</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">bp</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Calculates nanogrom to nanomol for transformation mixes.</span>
+
+<span class="sd">    To do a transformation it is important to have the right ratio</span>
+<span class="sd">    of plasmid to insert. In other words this is done by calculating</span>
+<span class="sd">    the nanomolar ratios and this tool can do that</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    ng : float</span>
+<span class="sd">        eg. nanogram</span>
+<span class="sd">    param: float</span>
+<span class="sd">        eg. number of basepairs. Can also be an int</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ng_to_nmol : float</span>
+
+<span class="sd">    Note</span>
+<span class="sd">    ----</span>
+<span class="sd">    It calculates the nmol in the following way:</span>
+<span class="sd">    nmol = ng/(bp*650)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">ng</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">bp</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ng</span> <span class="o">/</span> <span class="p">(</span><span class="n">bp</span> <span class="o">*</span> <span class="mi">650</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;non-valid_input&quot;</span></div>
+
+
+<div class="viewcode-block" id="ODtime"><a class="viewcode-back" href="../../../constrain.lab.html#constrain.lab.transformation.ODtime">[docs]</a><span class="k">def</span> <span class="nf">ODtime</span><span class="p">(</span><span class="n">initialOD</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Calculates the OD based on doupling time.</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    initialOD : float</span>
+<span class="sd">        in OD</span>
+<span class="sd">    time : float</span>
+<span class="sd">        in hours</span>
+<span class="sd">    td : float</span>
+<span class="sd">        doupling time i.e. td in h^-1</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    OD : float</span>
+<span class="sd">        the OD after a certain time()</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">initialOD</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">time</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">round</span><span class="p">(</span><span class="n">initialOD</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">**</span> <span class="p">(</span><span class="n">time</span> <span class="o">*</span> <span class="n">td</span><span class="p">),</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;non-valid_input&quot;</span></div>
+
+
+<div class="viewcode-block" id="time_to_inculate"><a class="viewcode-back" href="../../../constrain.lab.html#constrain.lab.transformation.time_to_inculate">[docs]</a><span class="k">def</span> <span class="nf">time_to_inculate</span><span class="p">(</span>
+    <span class="n">initialOD</span><span class="o">=</span><span class="mf">0.0025</span><span class="p">,</span> <span class="n">td</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">transformation_time</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span>
+<span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Calculates when a starter culture is ready to be inoculated</span>
+<span class="sd">     with a transformation mixture.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    initialOD : float</span>
+<span class="sd">    td : float</span>
+<span class="sd">        is doubling time</span>
+<span class="sd">    transformation_time : int</span>
+<span class="sd">        The time you want to transform</span>
+<span class="sd">    verbose : Bool</span>
+<span class="sd">        Provides extra information</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A plot of cell growth at different td</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    This is used to calculate when the cells should be used for transformation.</span>
+<span class="sd">    For example:</span>
+<span class="sd">    OD_1 = 1 * 10^7 cells / ml</span>
+<span class="sd">    For a succesfull S.cerevisiae transformation between 1 to 2 × 10^7 cells/ml should be used</span>
+<span class="sd">    Normal doupling time is between 3-6 hours</span>
+
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;GOAL: to get enough cells in exponential phase for transformation&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Assumed that: &quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="s2">&quot;- transformation time &quot;</span>
+        <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">transformation_time</span><span class="p">)</span>
+        <span class="o">+</span> <span class="s2">&quot; (reached OD=1 the day after)&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">times</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">37</span><span class="p">))</span>
+    <span class="n">ods_025_3</span> <span class="o">=</span> <span class="p">[</span><span class="n">ODtime</span><span class="p">(</span><span class="n">initialOD</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">td</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span> <span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="n">times</span><span class="p">]</span>
+    <span class="n">ods_025_input</span> <span class="o">=</span> <span class="p">[</span><span class="n">ODtime</span><span class="p">(</span><span class="n">initialOD</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">td</span><span class="o">=</span><span class="n">td</span><span class="p">)</span> <span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="n">times</span><span class="p">]</span>
+    <span class="n">ods_025_5</span> <span class="o">=</span> <span class="p">[</span><span class="n">ODtime</span><span class="p">(</span><span class="n">initialOD</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">td</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span> <span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="n">times</span><span class="p">]</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">()</span>
+
+    <span class="c1"># ax.set_xlim(lims)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mf">2.2</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">),</span> <span class="s2">&quot;r-&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;end of exponential phase&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">),</span> <span class="s2">&quot;k-&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;target&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">ods_025_3</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;iOD=&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">initialOD</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;, td=0.3&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">ods_025_input</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;iOD=&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">initialOD</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;, td=&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">td</span><span class="p">))</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">ods_025_5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;iOD=&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">initialOD</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;, td=0.5&quot;</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;time, h^-1&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;OD&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">inoculation_time</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">ods</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">find_closest</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+            <span class="c1"># A must be sorted</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">A</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">left</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">idx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="n">right</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+            <span class="n">idx</span> <span class="o">-=</span> <span class="n">target</span> <span class="o">-</span> <span class="n">left</span> <span class="o">&lt;</span> <span class="n">right</span> <span class="o">-</span> <span class="n">target</span>
+            <span class="k">return</span> <span class="n">idx</span>
+
+        <span class="c1"># In how many hours will the cells have reached OD 1?</span>
+        <span class="n">hours_to_OD1</span> <span class="o">=</span> <span class="n">times</span><span class="p">[</span><span class="n">find_closest</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ods</span><span class="p">),</span> <span class="mi">1</span><span class="p">)]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Hours to OD = 1: </span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">hours_to_OD1</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; hours&quot;</span><span class="p">)</span>
+
+        <span class="c1">### When do u need to innoculate?</span>
+        <span class="n">when_to_inoculate</span> <span class="o">=</span> <span class="n">transformation_time</span> <span class="o">-</span> <span class="n">hours_to_OD1</span>
+
+        <span class="k">if</span> <span class="n">when_to_inoculate</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Transformation time has been set to &quot;</span><span class="p">,</span> <span class="n">transformation_time</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="s2">&quot;Time of inoculation: </span><span class="se">\t</span><span class="s2">&quot;</span>
+                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">when_to_inoculate</span> <span class="o">+</span> <span class="mi">24</span><span class="p">)</span>
+                <span class="o">+</span> <span class="s2">&quot; (the day before)&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Transformation time has been set to &quot;</span><span class="p">,</span> <span class="n">transformation_time</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="s2">&quot;Time of inoculation: </span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">when_to_inoculate</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;(the day before)&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># If i innoculate now?</span>
+
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">If you innoculate now, the cells will have reached OD= 1 by:  &quot;</span><span class="p">,</span>
+            <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="n">hours_to_OD1</span><span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="n">inoculation_time</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">ods_025_input</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="s2">&quot;How to hit initialOD = 0.0025 (e.g. from colony)? Guess. Inoculate 9/10 + 1/10 &#39;normal&#39; colony per ~10 ml&quot;</span>
+        <span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;How much volume? ~2 ml per transformation&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="transformation_mix"><a class="viewcode-back" href="../../../constrain.lab.html#constrain.lab.transformation.transformation_mix">[docs]</a><span class="k">def</span> <span class="nf">transformation_mix</span><span class="p">(</span>
+    <span class="n">reaction_names</span><span class="p">,</span> <span class="n">reaction_participants</span><span class="p">,</span> <span class="n">wanted_amounts</span><span class="p">,</span> <span class="n">water_dna_p_reac</span><span class="p">,</span> <span class="n">media</span><span class="o">=</span><span class="s2">&quot;&quot;</span>
+<span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;This function makes a pandas dataframe of the parts(their location)</span>
+<span class="sd">     that needs to be put into the transformation mixes</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    reaction_names : list</span>
+<span class="sd">        list of reaction names</span>
+<span class="sd">    reaction_participants : list</span>
+<span class="sd">        list of pydna.Dseqrecord objects of Bio.seqrecord objects</span>
+<span class="sd">    wanted_concentrations : dict</span>
+<span class="sd">        dict of the names of the reactants with their calculated nmol</span>
+<span class="sd">    water_dna_p_reac : int</span>
+<span class="sd">        the amount of water wanted for the reaction</span>
+<span class="sd">    media : list</span>
+<span class="sd">        list of names of the media used. e.g. [&#39;LB_AMP&#39;]</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        with a transformation scheme showing which parts should be</span>
+<span class="sd">        mixed for each reaction including positive and negative</span>
+<span class="sd">        controls.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    # 1. Mention which reacion names you have</span>
+<span class="sd">    reaction_names = [&quot;insert&quot;, &quot;n.ctr&quot;, &quot;n.ctr&quot;, &quot;n.ctr&quot;, &quot;p. ctr&quot;]</span>
+
+<span class="sd">    # 2. Add reaction reaction_participants</span>
+<span class="sd">    reaction_participants = [[vector, gRNA1_pcr_prod,gRNA2_pcr_prod], #the insert we want</span>
+<span class="sd">                     [vector],                                        #negative control</span>
+<span class="sd">                     [gRNA1_pcr_prod],                                #negative control</span>
+<span class="sd">                     [gRNA2_pcr_prod],                                #negative control</span>
+<span class="sd">                     [LEU_plasmid]]                                   #positive control</span>
+
+<span class="sd">    # 2. Calculate nmol:</span>
+<span class="sd">    nmol_vector = ng_to_nmol(ng = 15, bp = len(vector))</span>
+<span class="sd">    nmol_gRNA = ng_to_nmol(ng = 30, bp = len(gRNA1_pcr_prod))</span>
+<span class="sd">    nmol_pctr = ng_to_nmol(ng = 10, bp = len(LEU_plasmid))</span>
+
+<span class="sd">    # 3. Add the concentrations</span>
+<span class="sd">    wanted_concentrations = {&#39;p0056\\(pESC-LEU-ccdB-USER)&#39; : nmol_vector,</span>
+<span class="sd">                     &#39;ATF1&#39;                        : nmol_gRNA,</span>
+<span class="sd">                     &#39;CroCPR&#39;                      : nmol_gRNA,</span>
+<span class="sd">                     &#39;LEU_plasmid&#39;                 : nmol_pctr}</span>
+
+<span class="sd">    # 4. what media the transformants are plated on (5 transformations here)</span>
+<span class="sd">    media = [&#39;LB_AMP&#39;] * 5</span>
+
+<span class="sd">    # 5. initate the function</span>
+<span class="sd">    transformation_mix(reaction_names, reaction_participants, wanted_amounts =</span>
+<span class="sd">    (wanted_concentrations, water_dna_p_reac = 7, media = media)</span>
+
+<span class="sd">    Return:</span>
+<span class="sd">                #these are freezer locations</span>
+<span class="sd">            name	l4_I06	l4_I07	l4_I08	p1_F06	water	plate on</span>
+<span class="sd">    0	insert	0.1	   0.6 	   0.6	    NaN	    5.7	    LB_AMP</span>
+<span class="sd">    1	n.ctr	0.1 	NaN    	NaN    	NaN    	6.9    	LB_AMP</span>
+<span class="sd">    2	n.ctr	NaN 	0.6    	NaN    	NaN    	6.4    	LB_AMP</span>
+<span class="sd">    3	n.ctr	NaN 	NaN    	0.6    	NaN    	6.4    	LB_AMP</span>
+<span class="sd">    4	p. ctr	NaN    	NaN    	NaN    	0.1    	6.9    	LB_AMP</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">df_comb</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">parts</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">reaction_names</span><span class="p">,</span> <span class="n">reaction_participants</span><span class="p">):</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">part</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">]</span>
+        <span class="n">locations</span> <span class="o">=</span> <span class="p">[</span><span class="n">part</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;batches&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;location&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">]</span>
+        <span class="n">concentrations</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">part</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;batches&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;concentration&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">parts</span>
+        <span class="p">]</span>  <span class="c1"># ng/ul</span>
+        <span class="n">part_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">part</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">]</span>  <span class="c1"># ng/ul</span>
+        <span class="n">sizes</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">part</span><span class="p">)</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">]</span>  <span class="c1"># in bp</span>
+
+        <span class="n">part_mass</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="nb">round</span><span class="p">(</span><span class="n">wanted_amounts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pname</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">size</span><span class="p">)</span> <span class="o">*</span> <span class="mi">650</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">pname</span><span class="p">,</span> <span class="n">size</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">part_names</span><span class="p">,</span> <span class="n">sizes</span><span class="p">)</span>
+        <span class="p">]</span>  <span class="c1"># in ng = nmol * bp * 650 ng/(nmol * bp)</span>
+
+        <span class="n">part_volume</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="nb">round</span><span class="p">(</span><span class="n">mass</span> <span class="o">/</span> <span class="n">con</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">mass</span><span class="p">,</span> <span class="n">con</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">part_mass</span><span class="p">,</span> <span class="n">concentrations</span><span class="p">)</span>
+        <span class="p">]</span>  <span class="c1"># in µl</span>
+
+        <span class="n">di</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">part_volume</span><span class="p">))</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">di</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>  <span class="c1"># ,index  = reagents_plus_total</span>
+
+        <span class="n">df_comb</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df_comb</span><span class="p">,</span> <span class="n">df</span><span class="p">],</span> <span class="n">sort</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">df_comb</span><span class="p">[</span><span class="s2">&quot;water&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">water_dna_p_reac</span> <span class="o">-</span> <span class="n">df_comb</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">df_comb</span> <span class="o">=</span> <span class="n">df_comb</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+
+    <span class="n">df_comb</span> <span class="o">=</span> <span class="n">df_comb</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="s2">&quot;name&quot;</span><span class="p">})</span>
+
+    <span class="k">if</span> <span class="n">media</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+        <span class="n">df_comb</span><span class="p">[</span><span class="s2">&quot;plate on&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">media</span>
+
+    <span class="k">return</span> <span class="n">df_comb</span></div>
+
+
+<div class="viewcode-block" id="wanted_mass"><a class="viewcode-back" href="../../../constrain.lab.html#constrain.lab.transformation.wanted_mass">[docs]</a><span class="k">def</span> <span class="nf">wanted_mass</span><span class="p">(</span><span class="n">wanted_moles</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    wanted_moles : int</span>
+<span class="sd">        wanted moles in nmol</span>
+<span class="sd">    size : int</span>
+<span class="sd">        size in bp</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    w_mass_rounded : int</span>
+<span class="sd">        in ng. Mass wanted for the reaction.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">w_mass</span> <span class="o">=</span> <span class="n">wanted_moles</span> <span class="o">*</span> <span class="n">size</span> <span class="o">*</span> <span class="mi">650</span>
+    <span class="n">w_mass_rounded</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">w_mass</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">w_mass_rounded</span></div>
+
+
+<div class="viewcode-block" id="wanted_volume"><a class="viewcode-back" href="../../../constrain.lab.html#constrain.lab.transformation.wanted_volume">[docs]</a><span class="k">def</span> <span class="nf">wanted_volume</span><span class="p">(</span><span class="n">wanted_mass</span><span class="p">,</span> <span class="n">actual_concentration</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    wanted_mass : int</span>
+<span class="sd">        wanted mass in ng</span>
+
+<span class="sd">    actual_concentration : int</span>
+<span class="sd">            actual_concentration in ng/ul</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    wanted_volume_rounded : int</span>
+<span class="sd">        return in ul</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">wanted_volume</span> <span class="o">=</span> <span class="n">wanted_mass</span> <span class="o">/</span> <span class="n">actual_concentration</span>
+    <span class="n">wanted_volume_rounded</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">wanted_volume</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">wanted_volume_rounded</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Technical University of Denmark (DTU).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

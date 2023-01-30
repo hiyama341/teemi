@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>teemi.design.cloning &mdash; teemi 0.3.0+20.g1b653f4.dirty documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> teemi
+          </a>
+              <div class="version">
+                0.3.0+20.g1b653f4.dirty
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html">teemi: Literate programming can streamline bioengineering workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html#features">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html#colab-notebooks">Colab notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html#credits">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../history.html">History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../history.html#id1">0.1.0 (2023-01-02)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">teemis modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../colab_notebooks.html">Colab notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../teemi.design.html">Design module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../teemi.build.html">Lab module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../teemi.lims.html">LIMS module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../teemi.test.html">TEST module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">teemi</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>teemi.design.cloning</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for teemi.design.cloning</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># MIT License</span>
+<span class="c1"># Copyright (c) 2022, Technical University of Denmark (DTU)</span>
+<span class="c1">#</span>
+<span class="c1"># Permission is hereby granted, free of charge, to any person obtaining a copy</span>
+<span class="c1"># of this software and associated documentation files (the &quot;Software&quot;), to deal</span>
+<span class="c1"># in the Software without restriction, including without limitation the rights</span>
+<span class="c1"># to use, copy, modify, merge, publish, distribute, sublicense, and/or sell</span>
+<span class="c1"># copies of the Software, and to permit persons to whom the Software is</span>
+<span class="c1"># furnished to do so, subject to the following conditions:</span>
+<span class="c1">#</span>
+<span class="c1"># The above copyright notice and this permission notice shall be included in all</span>
+<span class="c1"># copies or substantial portions of the Software.</span>
+
+
+<span class="sd">&quot;&quot;&quot; Module used for cloning of microbial strains.&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">pydna</span>
+<span class="kn">import</span> <span class="nn">Bio</span>
+<span class="kn">import</span> <span class="nn">Bio.SeqFeature</span>
+<span class="kn">import</span> <span class="nn">Bio.SeqRecord</span>
+<span class="kn">import</span> <span class="nn">Bio.SeqIO</span>
+<span class="kn">from</span> <span class="nn">Bio.Seq</span> <span class="kn">import</span> <span class="n">Seq</span>
+<span class="kn">from</span> <span class="nn">pydna.assembly</span> <span class="kn">import</span> <span class="n">Assembly</span>
+<span class="kn">from</span> <span class="nn">pydna.dseq</span> <span class="kn">import</span> <span class="n">Dseq</span>
+
+
+<div class="viewcode-block" id="CAS9_cutting"><a class="viewcode-back" href="../../../teemi.design.html#teemi.design.cloning.CAS9_cutting">[docs]</a><span class="k">def</span> <span class="nf">CAS9_cutting</span><span class="p">(</span><span class="n">gRNA_record</span><span class="p">,</span> <span class="n">background_record</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Simulates double-stranded-break by CAS9 given a gRNA.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gRNA_record: pydna.dseqrecord.</span>
+<span class="sd">        A 20 bp DNA sequence</span>
+<span class="sd">    background_record: pydna.dseqrecord.</span>
+<span class="sd">        The sequence of interest for CRISPR mediated DSB</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    1.pydna.dseqrecord.</span>
+<span class="sd">        Sequence upstream of the DSB: pydna.dseqrecord.</span>
+<span class="sd">    2. pydna.dseqrecord.</span>
+<span class="sd">        Sequence downstream of the DSB: pydna.dseqrecord.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">gRNA_sequence</span> <span class="o">=</span> <span class="n">gRNA_record</span><span class="o">.</span><span class="n">seq</span><span class="o">.</span><span class="n">watson</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+
+    <span class="n">background_sequence</span> <span class="o">=</span> <span class="n">background_record</span><span class="o">.</span><span class="n">seq</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+
+    <span class="n">gRNA_strand</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="k">if</span> <span class="n">background_sequence</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">gRNA_sequence</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+
+        <span class="n">gRNA_strand</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">gRNA_sequence</span> <span class="o">=</span> <span class="n">Seq</span><span class="p">(</span><span class="n">gRNA_sequence</span><span class="p">)</span>
+
+        <span class="n">gRNA_sequence</span> <span class="o">=</span> <span class="p">(</span><span class="n">gRNA_sequence</span><span class="p">)</span><span class="o">.</span><span class="n">reverse_complement</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">background_sequence</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">gRNA_sequence</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;not on -1, CAN&#39;T FIND THE CUT SITE IN YOUR SEQUENCE&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">gRNA_strand</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">cut_pos_rel_start</span> <span class="o">=</span> <span class="mi">17</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">cut_pos_rel_start</span> <span class="o">=</span> <span class="mi">3</span>
+
+    <span class="n">gRNA_start</span> <span class="o">=</span> <span class="n">background_sequence</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">gRNA_sequence</span><span class="p">)</span>
+
+    <span class="n">cut_site</span> <span class="o">=</span> <span class="n">gRNA_start</span> <span class="o">+</span> <span class="n">cut_pos_rel_start</span>
+
+    <span class="n">up</span> <span class="o">=</span> <span class="n">background_record</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">cut_site</span><span class="p">]</span>
+    <span class="n">dw</span> <span class="o">=</span> <span class="n">background_record</span><span class="p">[</span><span class="n">cut_site</span> <span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">background_sequence</span><span class="p">)]</span>
+
+    <span class="n">up</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;UP&quot;</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">gRNA_record</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">background_record</span><span class="o">.</span><span class="n">name</span>
+    <span class="n">dw</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;DW&quot;</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">gRNA_record</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">background_record</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="n">up_feature</span> <span class="o">=</span> <span class="n">Bio</span><span class="o">.</span><span class="n">SeqFeature</span><span class="o">.</span><span class="n">SeqFeature</span><span class="p">(</span>
+        <span class="n">Bio</span><span class="o">.</span><span class="n">SeqFeature</span><span class="o">.</span><span class="n">FeatureLocation</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">up</span><span class="p">)),</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;misc_feature&quot;</span><span class="p">,</span> <span class="n">strand</span><span class="o">=+</span><span class="mi">1</span>
+    <span class="p">)</span>
+    <span class="n">up_feature</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">up</span><span class="o">.</span><span class="n">name</span>
+    <span class="n">up</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">up_feature</span><span class="p">)</span>
+
+    <span class="n">dw_feature</span> <span class="o">=</span> <span class="n">Bio</span><span class="o">.</span><span class="n">SeqFeature</span><span class="o">.</span><span class="n">SeqFeature</span><span class="p">(</span>
+        <span class="n">Bio</span><span class="o">.</span><span class="n">SeqFeature</span><span class="o">.</span><span class="n">FeatureLocation</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">dw</span><span class="p">)),</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;misc_feature&quot;</span><span class="p">,</span> <span class="n">strand</span><span class="o">=+</span><span class="mi">1</span>
+    <span class="p">)</span>
+    <span class="n">dw_feature</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dw</span><span class="o">.</span><span class="n">name</span>
+    <span class="n">dw</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dw_feature</span><span class="p">)</span>
+
+    <span class="n">up</span> <span class="o">=</span> <span class="n">pydna</span><span class="o">.</span><span class="n">dseqrecord</span><span class="o">.</span><span class="n">Dseqrecord</span><span class="p">(</span>
+        <span class="n">up</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">dw</span> <span class="o">=</span> <span class="n">pydna</span><span class="o">.</span><span class="n">dseqrecord</span><span class="o">.</span><span class="n">Dseqrecord</span><span class="p">(</span><span class="n">dw</span><span class="p">)</span>
+
+    <span class="c1"># UPS more than one cut site?</span>
+    <span class="k">if</span> <span class="n">dw</span><span class="o">.</span><span class="n">seq</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">gRNA_sequence</span><span class="p">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;OBS&quot;</span><span class="p">,</span> <span class="n">gRNA_sequence</span><span class="p">,</span> <span class="s2">&quot;cuts more than one location!&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">up</span><span class="p">,</span> <span class="n">dw</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="extract_gRNAs"><a class="viewcode-back" href="../../../teemi.design.html#teemi.design.cloning.extract_gRNAs">[docs]</a><span class="k">def</span> <span class="nf">extract_gRNAs</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Extracts gRNAs from a template.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    template: pydna.dseqrecord or pydna.amplicon.Amplicon</span>
+<span class="sd">        a plasmid or piece of DNA</span>
+
+<span class="sd">    name: str</span>
+<span class="sd">        a string that would include the feature name for example: gRNA</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    list of pydna.dseqrecord or pydna.amplicon.Amplicon</span>
+<span class="sd">        list of with the found features and their sequences</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">gRNAs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">template</span><span class="o">.</span><span class="n">features</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">feature</span><span class="o">.</span><span class="n">qualifiers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+
+            <span class="n">gRNA</span> <span class="o">=</span> <span class="n">template</span><span class="p">[</span><span class="n">feature</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">start</span> <span class="p">:</span> <span class="n">feature</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">end</span><span class="p">]</span>
+            <span class="n">gRNA</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">qualifiers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">gRNAs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gRNA</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">gRNAs</span></div>
+
+
+<div class="viewcode-block" id="remove_features_with_negative_loc"><a class="viewcode-back" href="../../../teemi.design.html#teemi.design.cloning.remove_features_with_negative_loc">[docs]</a><span class="k">def</span> <span class="nf">remove_features_with_negative_loc</span><span class="p">(</span><span class="n">record</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Removes a SeqFeatures if negative.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    record: pydna.amplicon.Amplicon.</span>
+<span class="sd">        A amplicon with SeqFeature and locations</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    record: pydna.amplicon.Amplicon.</span>
+<span class="sd">        With the negative features deleted</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">features</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">features</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">start</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">record</span><span class="o">.</span><span class="n">features</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">end</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">del</span> <span class="n">record</span><span class="o">.</span><span class="n">features</span><span class="p">[</span><span class="n">i</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="extract_template_amplification_sites"><a class="viewcode-back" href="../../../teemi.design.html#teemi.design.cloning.extract_template_amplification_sites">[docs]</a><span class="k">def</span> <span class="nf">extract_template_amplification_sites</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">names</span><span class="p">,</span> <span class="n">terminator</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Extracts amplifications sites from a templates features</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    templates: list of Bio.SeqRecord.SeqRecord</span>
+<span class="sd">        list of Bio.SeqRecord.SeqRecord objects with SeqFeatures</span>
+
+<span class="sd">    names: list of strings</span>
+<span class="sd">        list of strings to be extracted</span>
+
+<span class="sd">    terminator: str</span>
+<span class="sd">        a string with the name of upstream terminator</span>
+
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    record: list of Bio.SeqRecord.SeqRecord</span>
+<span class="sd">        list of extracted elements</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">template_amplification_sites</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">template</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">templates</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">template</span><span class="o">.</span><span class="n">features</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">feature</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">name</span><span class="p">:</span>
+
+                <span class="n">CDS_strand</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">strand</span>
+                <span class="k">if</span> <span class="n">CDS_strand</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">start</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">start</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">end</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">end</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">end</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">feature</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">terminator</span><span class="p">):</span>
+                <span class="n">terminator_strand</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">strand</span>
+                <span class="k">if</span> <span class="n">terminator_strand</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">end</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">end</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">start</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">start</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
+
+        <span class="n">template_amplification_site</span> <span class="o">=</span> <span class="n">template</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="s2">&quot;batches&quot;</span> <span class="ow">in</span> <span class="n">template_amplification_site</span><span class="o">.</span><span class="n">annotations</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">template_amplification_site</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;batches&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">template</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;batches&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="p">)</span>  <span class="c1"># {&#39;location&#39;: template.annotations[&#39;batches&#39;][0][&#39;location&#39;]}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">template_amplification_site</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;batches&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">template_amplification_site</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="s2">&quot;batches&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">template</span><span class="o">.</span><span class="n">annotations</span>
+            <span class="p">)</span>  <span class="c1"># {&#39;location&#39;: template.annotations[&#39;batches&#39;][0][&#39;location&#39;]}</span>
+
+        <span class="n">template_amplification_sites</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">template_amplification_site</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">template_amplification_sites</span></div>
+
+
+<div class="viewcode-block" id="extract_sites"><a class="viewcode-back" href="../../../teemi.design.html#teemi.design.cloning.extract_sites">[docs]</a><span class="k">def</span> <span class="nf">extract_sites</span><span class="p">(</span><span class="n">annotations</span><span class="p">,</span> <span class="n">templates</span><span class="p">,</span> <span class="n">names</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This function extracts the sequences from annotated sequences based</span>
+<span class="sd">    on their names</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    annotations: list</span>
+<span class="sd">        list of annotations for sequences that will be extracted</span>
+
+<span class="sd">    templates: list of Bio.SeqRecord.SeqRecord</span>
+<span class="sd">        A list of Bio.SeqRecord.SeqRecord with SeqFeatures</span>
+
+<span class="sd">    names: str</span>
+<span class="sd">        name of the sequence that will be extracted</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    record: list of Bio.SeqRecord.SeqRecord</span>
+<span class="sd">        list of extracted sites</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">sites</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">anno</span><span class="p">,</span> <span class="n">template</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">annotations</span><span class="p">,</span> <span class="n">templates</span><span class="p">,</span> <span class="n">names</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">template</span><span class="o">.</span><span class="n">features</span><span class="p">:</span>
+            <span class="c1"># site = template[feature.location.start : feature.location.end]</span>
+            <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">feature</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="n">anno</span><span class="p">:</span>
+                <span class="n">site</span> <span class="o">=</span> <span class="n">template</span><span class="p">[</span><span class="n">feature</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">start</span> <span class="p">:</span> <span class="n">feature</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">end</span><span class="p">]</span>
+                <span class="n">site</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+
+                <span class="c1"># # If there is an batch anotation we can save it</span>
+                <span class="c1"># if &quot;batches&quot; in site.annotations.keys():</span>
+                <span class="c1">#     site.annotations[&quot;batches&quot;].append(</span>
+                <span class="c1">#         template.annotations[&quot;batches&quot;][0]</span>
+                <span class="c1">#     )</span>
+                <span class="c1"># else:</span>
+                <span class="c1">#     site.annotations[&quot;batches&quot;] = []</span>
+                <span class="c1">#     site.annotations[&quot;batches&quot;].append(template.annotations)</span>
+                <span class="n">site</span><span class="o">.</span><span class="n">annotations</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">annotations</span>
+
+                <span class="n">sites</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">site</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sites</span></div>
+
+
+<div class="viewcode-block" id="seq_to_annotation"><a class="viewcode-back" href="../../../teemi.design.html#teemi.design.cloning.seq_to_annotation">[docs]</a><span class="k">def</span> <span class="nf">seq_to_annotation</span><span class="p">(</span><span class="n">seqrec_from</span><span class="p">,</span> <span class="n">seqrec_onto</span><span class="p">,</span> <span class="n">aType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Anotate an amplicon object from another amplicon object.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    seqrec_from: str</span>
+<span class="sd">        annotation sequence that will be extracted</span>
+
+<span class="sd">    seqrec_onto: list of Bio.SeqRecord.SeqRecord</span>
+<span class="sd">        A list of Bio.SeqRecord.SeqRecord with SeqFeatures</span>
+
+<span class="sd">    aType: str</span>
+<span class="sd">        name of the sequence that will be extracted</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    record: list of Bio.SeqRecord.SeqRecord</span>
+<span class="sd">        list of extracted sites</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">seq_from</span> <span class="o">=</span> <span class="n">seqrec_from</span><span class="o">.</span><span class="n">seq</span><span class="o">.</span><span class="n">watson</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+    <span class="n">seq_onto</span> <span class="o">=</span> <span class="n">seqrec_onto</span><span class="o">.</span><span class="n">seq</span><span class="o">.</span><span class="n">watson</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+
+    <span class="n">strand</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">match_index</span> <span class="o">=</span> <span class="n">seq_onto</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">seq_from</span><span class="p">)</span>
+
+    <span class="c1"># if there is match</span>
+    <span class="k">if</span> <span class="n">match_index</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">match_index</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq_from</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># If no match we look at the reverse complement</span>
+        <span class="n">seq_onto</span> <span class="o">=</span> <span class="n">Seq</span><span class="p">(</span><span class="n">seq_onto</span><span class="p">)</span>
+        <span class="n">rev_match_index</span> <span class="o">=</span> <span class="n">seq_onto</span><span class="o">.</span><span class="n">reverse_complement</span><span class="p">()</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">seq_from</span><span class="p">)</span>
+
+        <span class="c1"># if we get a match here</span>
+        <span class="k">if</span> <span class="n">rev_match_index</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">strand</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="n">reclength</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">seqrec_onto</span><span class="o">.</span><span class="n">seq</span><span class="p">))</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="n">reclength</span> <span class="o">-</span> <span class="n">rev_match_index</span>
+
+            <span class="n">start</span> <span class="o">=</span> <span class="n">end</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq_from</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="s2">&quot;no match! seq:&quot;</span>
+                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">seqrec_from</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">not annealing to:&quot;</span>
+                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">seqrec_onto</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="p">)</span>
+
+    <span class="c1"># add the feature to the amplicon</span>
+    <span class="n">feature</span> <span class="o">=</span> <span class="n">Bio</span><span class="o">.</span><span class="n">SeqFeature</span><span class="o">.</span><span class="n">SeqFeature</span><span class="p">(</span>
+        <span class="n">Bio</span><span class="o">.</span><span class="n">SeqFeature</span><span class="o">.</span><span class="n">FeatureLocation</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">),</span> <span class="nb">type</span><span class="o">=</span><span class="n">aType</span><span class="p">,</span> <span class="n">strand</span><span class="o">=</span><span class="n">strand</span>
+    <span class="p">)</span>
+    <span class="n">feature</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">seqrec_from</span><span class="o">.</span><span class="n">id</span>
+    <span class="n">seqrec_onto</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="USER_enzyme"><a class="viewcode-back" href="../../../teemi.design.html#teemi.design.cloning.USER_enzyme">[docs]</a><span class="k">def</span> <span class="nf">USER_enzyme</span><span class="p">(</span><span class="n">amplicon</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Simulates digestion with USER enzyme.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    amplicon: pydna.amplicon.Amplicon</span>
+<span class="sd">        An pydna.amplicon.Amplicon to with Uracil integrated</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Dseqrecord</span>
+<span class="sd">        USER digested Dseqrecord with USER tails</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">fw_U_idx</span> <span class="o">=</span> <span class="n">amplicon</span><span class="o">.</span><span class="n">forward_primer</span><span class="o">.</span><span class="n">seq</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;U&quot;</span><span class="p">)</span>
+    <span class="c1"># fw_U_idx</span>
+
+    <span class="n">rv_U_idx</span> <span class="o">=</span> <span class="n">amplicon</span><span class="o">.</span><span class="n">reverse_primer</span><span class="o">.</span><span class="n">seq</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;U&quot;</span><span class="p">)</span>
+    <span class="c1"># rv_U_idx</span>
+
+    <span class="n">digested_watson</span> <span class="o">=</span> <span class="n">amplicon</span><span class="o">.</span><span class="n">seq</span><span class="o">.</span><span class="n">watson</span><span class="p">[</span><span class="n">fw_U_idx</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span>
+    <span class="c1"># digested_watson</span>
+
+    <span class="n">digested_crick</span> <span class="o">=</span> <span class="n">amplicon</span><span class="o">.</span><span class="n">seq</span><span class="o">.</span><span class="n">crick</span><span class="p">[</span><span class="n">rv_U_idx</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span>
+    <span class="c1"># digested_crick</span>
+
+    <span class="n">digested_pcr</span> <span class="o">=</span> <span class="n">pydna</span><span class="o">.</span><span class="n">dseqrecord</span><span class="o">.</span><span class="n">Dseqrecord</span><span class="p">(</span>
+        <span class="n">pydna</span><span class="o">.</span><span class="n">dseq</span><span class="o">.</span><span class="n">Dseq</span><span class="p">(</span><span class="n">watson</span><span class="o">=</span><span class="n">digested_watson</span><span class="p">,</span> <span class="n">crick</span><span class="o">=</span><span class="n">digested_crick</span><span class="p">),</span>
+        <span class="n">features</span><span class="o">=</span><span class="n">amplicon</span><span class="o">.</span><span class="n">features</span><span class="p">,</span>
+        <span class="n">annotations</span><span class="o">=</span><span class="n">amplicon</span><span class="o">.</span><span class="n">annotations</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="c1"># digested_pcr.seq</span>
+    <span class="k">return</span> <span class="n">digested_pcr</span></div>
+
+
+<div class="viewcode-block" id="nicking_enzyme"><a class="viewcode-back" href="../../../teemi.design.html#teemi.design.cloning.nicking_enzyme">[docs]</a><span class="k">def</span> <span class="nf">nicking_enzyme</span><span class="p">(</span><span class="n">vector</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Nt.Bbc.CI (nicking enzyme, Nicks) a vector with the</span>
+<span class="sd">    sequence &#39;CGCGTG&#39; on watson and &#39;CGCACG&#39; on crick strand.</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    vector: Dseq</span>
+<span class="sd">        digested Dseqrecord - usually with AsiSI or similar overhang</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Dseq with nick - ready for USER cloning</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">vector</span><span class="o">.</span><span class="n">seq</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">8</span><span class="p">]</span><span class="o">.</span><span class="n">watson</span> <span class="o">==</span> <span class="s2">&quot;CGCGTG&quot;</span> <span class="ow">and</span> <span class="n">vector</span><span class="o">.</span><span class="n">seq</span><span class="o">.</span><span class="n">crick</span><span class="p">[:</span><span class="mi">6</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;CGCACG&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Dseq</span><span class="p">(</span><span class="n">watson</span><span class="o">=</span><span class="n">vector</span><span class="o">.</span><span class="n">seq</span><span class="o">.</span><span class="n">watson</span><span class="p">[</span><span class="mi">6</span><span class="p">:],</span> <span class="n">crick</span><span class="o">=</span><span class="n">vector</span><span class="o">.</span><span class="n">seq</span><span class="o">.</span><span class="n">crick</span><span class="p">[</span><span class="mi">6</span><span class="p">:],</span> <span class="n">ovhg</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No nicking sequnce&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="casembler"><a class="viewcode-back" href="../../../teemi.design.html#teemi.design.cloning.casembler">[docs]</a><span class="k">def</span> <span class="nf">casembler</span><span class="p">(</span>
+    <span class="n">bg_strain</span><span class="p">,</span>
+    <span class="n">site_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">gRNAs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">parts</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">assembly_limits</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">assembly_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">to_benchling</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Simulate in vivo assembly and integration with the possibility</span>
+<span class="sd">    of printing to gb files or send it directly to benchling.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    bg_strain : GenBank</span>
+<span class="sd">        strain of choice eg. genbank file</span>
+
+<span class="sd">    site_names: list</span>
+<span class="sd">          list of names e.g. [X-3, XI-3]</span>
+
+<span class="sd">    gRNAs: Seqrecords</span>
+<span class="sd">        list of 20 bp seqrecords e.g. [ATF1_gRNA, CroCPR_gRNA]</span>
+
+<span class="sd">    parts: list</span>
+<span class="sd">        list of list of parts e.g. [[ATF1_repair_template],[CPR_repair_template]]</span>
+
+<span class="sd">    assembly_limits: list</span>
+<span class="sd">        list of numbers of bp assembly limits e.g. [200,400]</span>
+
+<span class="sd">    assembly_names: list</span>
+<span class="sd">        list of names of DNA post assembly e.g.[&quot;X_3_tADH1_P2_pPGK1&quot;, &quot;XI_3_UP_DW&quot;]</span>
+
+<span class="sd">    verbose: bool</span>
+<span class="sd">        write DNA e.g. False</span>
+
+<span class="sd">    to_benchling: bool</span>
+<span class="sd">        upload DNA to benchling e.g. False</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    One dseqrecord</span>
+<span class="sd">        of assembled contig</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">assemblies</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">int_no</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">gRNAs</span><span class="p">)):</span>
+
+        <span class="n">gRNA</span> <span class="o">=</span> <span class="n">gRNAs</span><span class="p">[</span><span class="n">int_no</span><span class="p">]</span>
+
+        <span class="n">site_name</span> <span class="o">=</span> <span class="n">site_names</span><span class="p">[</span><span class="n">int_no</span><span class="p">]</span>
+
+        <span class="n">site</span> <span class="o">=</span> <span class="n">extract_sites</span><span class="p">([</span><span class="n">site_name</span><span class="p">],</span> <span class="p">[</span><span class="n">bg_strain</span><span class="p">],</span> <span class="p">[</span><span class="n">site_name</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">UP</span><span class="p">,</span> <span class="n">DW</span> <span class="o">=</span> <span class="n">CAS9_cutting</span><span class="p">(</span><span class="n">gRNA</span><span class="p">,</span> <span class="n">site</span><span class="p">)</span>
+
+        <span class="n">fragments</span> <span class="o">=</span> <span class="p">[</span><span class="n">UP</span><span class="p">]</span> <span class="o">+</span> <span class="n">parts</span><span class="p">[</span><span class="n">int_no</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">DW</span><span class="p">]</span>
+
+        <span class="n">assembly</span> <span class="o">=</span> <span class="n">pydna</span><span class="o">.</span><span class="n">assembly</span><span class="o">.</span><span class="n">Assembly</span><span class="p">(</span>
+            <span class="n">fragments</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">assembly_limits</span><span class="p">[</span><span class="n">int_no</span><span class="p">]</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">assemble_linear</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># sometimes pydna.assembly.Assembly distorts the start, end location of features to become negative which produces and error when printing.</span>
+        <span class="c1"># This function is created as a workaround.</span>
+        <span class="c1"># CPR assembly gives DW_XI_3 annotation called &quot;DW_XI_3&quot; a negative start location.</span>
+        <span class="c1"># A quick workaround is to remove featuere</span>
+        <span class="n">remove_features_with_negative_loc</span><span class="p">(</span><span class="n">assembly</span><span class="p">)</span>
+
+        <span class="n">assembly</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">assembly_names</span><span class="p">[</span><span class="n">int_no</span><span class="p">]</span>
+
+        <span class="n">assembly_feat</span> <span class="o">=</span> <span class="n">Bio</span><span class="o">.</span><span class="n">SeqFeature</span><span class="o">.</span><span class="n">SeqFeature</span><span class="p">(</span>
+            <span class="n">Bio</span><span class="o">.</span><span class="n">SeqFeature</span><span class="o">.</span><span class="n">FeatureLocation</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">assembly</span><span class="p">),</span> <span class="n">strand</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;misc_feature&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">assembly_feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">site_names</span><span class="p">[</span><span class="n">int_no</span><span class="p">]</span>
+        <span class="n">assembly_feat</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">site_names</span><span class="p">[</span><span class="n">int_no</span><span class="p">]</span>
+        <span class="n">assembly</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">assembly_feat</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="n">DNAs</span> <span class="o">=</span> <span class="p">[</span><span class="n">UP</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">assembly</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">DW</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">DNA</span> <span class="ow">in</span> <span class="n">DNAs</span><span class="p">:</span>
+                <span class="n">DNA</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;./&quot;</span> <span class="o">+</span> <span class="n">DNA</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;.gb&quot;</span><span class="p">)</span>  <span class="c1"># &quot;../data/processed/&quot;</span>
+
+        <span class="k">if</span> <span class="n">to_benchling</span><span class="p">:</span>
+            <span class="n">to_benchling</span><span class="p">(</span><span class="n">assembly</span><span class="p">,</span> <span class="s2">&quot;to_benchling&quot;</span><span class="p">)</span>
+
+        <span class="n">assemblies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">assembly</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">functools</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span><span class="p">,</span> <span class="n">assemblies</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="UPandDW"><a class="viewcode-back" href="../../../teemi.design.html#teemi.design.cloning.UPandDW">[docs]</a><span class="k">def</span> <span class="nf">UPandDW</span><span class="p">(</span><span class="n">strain</span><span class="p">,</span> <span class="n">isite_name</span><span class="p">,</span> <span class="n">path_to_gRNA_table</span><span class="o">=</span><span class="s2">&quot;../data/raw/gRNAtable.csv&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Finds upstream and downstream sequences based on genome and site name.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    strain : str</span>
+<span class="sd">        name of the strain eg. CENPK113-7d</span>
+<span class="sd">        (you should specify path to the chromosome)</span>
+
+<span class="sd">    isite_name : str</span>
+<span class="sd">        a string of the site chomosomal site you want to retrieve</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    UP_sites : list</span>
+<span class="sd">        list of pydna.dseqrecord or pydna.amplicon.Amplicon</span>
+
+<span class="sd">    DW_sites : list</span>
+<span class="sd">        list of pydna.dseqrecord or pydna.amplicon.Amplicon</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># load lookup table</span>
+    <span class="n">gRNAtable</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">path_to_gRNA_table</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+
+    <span class="n">chromosome_no</span> <span class="o">=</span> <span class="n">gRNAtable</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">isite_name</span><span class="p">,</span> <span class="s2">&quot;chromosome&quot;</span><span class="p">]</span>
+
+    <span class="c1"># load chromosome</span>
+    <span class="n">PathToChromosomeSeq</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;../data/raw/&quot;</span> <span class="o">+</span> <span class="n">strain</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">chromosome_no</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;.fa&quot;</span>
+    <span class="p">)</span>
+    <span class="n">ChromosomeSeq</span> <span class="o">=</span> <span class="n">Bio</span><span class="o">.</span><span class="n">SeqIO</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">PathToChromosomeSeq</span><span class="p">,</span> <span class="s2">&quot;fasta&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">seq</span>
+
+    <span class="c1"># define homology region location with respect to gRNA sequence</span>
+    <span class="c1"># f_hom is the length of the UP homology</span>
+    <span class="c1"># e_hom is the length of the DW homology</span>
+    <span class="c1"># f_dist is distance from end of UP homology to the first base in isite_sequence</span>
+    <span class="c1"># e_dist is distance from end of the isite_sequence to DW homology</span>
+    <span class="n">f_dist</span> <span class="o">=</span> <span class="n">gRNAtable</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">isite_name</span><span class="p">,</span> <span class="s2">&quot;f_dist&quot;</span><span class="p">]</span>
+    <span class="n">e_dist</span> <span class="o">=</span> <span class="n">gRNAtable</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">isite_name</span><span class="p">,</span> <span class="s2">&quot;e_dist&quot;</span><span class="p">]</span>
+    <span class="n">f_hom</span> <span class="o">=</span> <span class="n">gRNAtable</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">isite_name</span><span class="p">,</span> <span class="s2">&quot;f_hom&quot;</span><span class="p">]</span>
+    <span class="n">e_hom</span> <span class="o">=</span> <span class="n">gRNAtable</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">isite_name</span><span class="p">,</span> <span class="s2">&quot;e_hom&quot;</span><span class="p">]</span>
+
+    <span class="n">isite_sequence</span> <span class="o">=</span> <span class="n">gRNAtable</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">isite_name</span><span class="p">,</span> <span class="s2">&quot;sequence&quot;</span><span class="p">]</span>
+    <span class="n">isite_sequence</span> <span class="o">=</span> <span class="n">Bio</span><span class="o">.</span><span class="n">Seq</span><span class="o">.</span><span class="n">Seq</span><span class="p">(</span><span class="n">isite_sequence</span><span class="p">)</span>
+
+    <span class="c1"># Determine gRNA sequence strand</span>
+    <span class="n">gRNA_strand</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">ChromosomeSeq</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">isite_sequence</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;not on +1&quot;</span><span class="p">)</span>
+        <span class="n">gRNA_strand</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">isite_sequence</span> <span class="o">=</span> <span class="n">isite_sequence</span><span class="o">.</span><span class="n">reverse_complement</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">ChromosomeSeq</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">isite_sequence</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;not on -1&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;CAN&#39;T FIND THE CUT SITE IN YOUR SEQUENCE&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Locate UP and DW</span>
+    <span class="n">StartIndex</span> <span class="o">=</span> <span class="n">ChromosomeSeq</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">isite_sequence</span><span class="p">)</span>
+    <span class="n">EndIndex</span> <span class="o">=</span> <span class="n">StartIndex</span>
+
+    <span class="n">UPseq</span> <span class="o">=</span> <span class="n">ChromosomeSeq</span><span class="p">[</span><span class="n">StartIndex</span> <span class="o">+</span> <span class="n">f_dist</span> <span class="o">-</span> <span class="n">f_hom</span> <span class="p">:</span> <span class="n">StartIndex</span> <span class="o">+</span> <span class="n">f_dist</span><span class="p">]</span>
+    <span class="n">DWseq</span> <span class="o">=</span> <span class="n">ChromosomeSeq</span><span class="p">[</span><span class="n">EndIndex</span> <span class="o">+</span> <span class="n">e_dist</span> <span class="p">:</span> <span class="n">EndIndex</span> <span class="o">+</span> <span class="n">e_dist</span> <span class="o">+</span> <span class="n">e_hom</span><span class="p">]</span>
+
+    <span class="n">UPrec</span> <span class="o">=</span> <span class="n">Bio</span><span class="o">.</span><span class="n">SeqRecord</span><span class="o">.</span><span class="n">SeqRecord</span><span class="p">(</span><span class="n">UPseq</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">isite_name</span> <span class="o">+</span> <span class="s2">&quot;UP&quot;</span><span class="p">)</span>
+    <span class="n">DWrec</span> <span class="o">=</span> <span class="n">Bio</span><span class="o">.</span><span class="n">SeqRecord</span><span class="o">.</span><span class="n">SeqRecord</span><span class="p">(</span><span class="n">DWseq</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">isite_name</span> <span class="o">+</span> <span class="s2">&quot;DW&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Annotate</span>
+    <span class="n">UP_feature</span> <span class="o">=</span> <span class="n">Bio</span><span class="o">.</span><span class="n">SeqFeature</span><span class="o">.</span><span class="n">SeqFeature</span><span class="p">(</span>
+        <span class="n">Bio</span><span class="o">.</span><span class="n">SeqFeature</span><span class="o">.</span><span class="n">FeatureLocation</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">UPseq</span><span class="p">)),</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;misc_feature&quot;</span><span class="p">,</span> <span class="n">strand</span><span class="o">=+</span><span class="mi">1</span>
+    <span class="p">)</span>
+    <span class="n">UP_feature</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">UPrec</span><span class="o">.</span><span class="n">name</span>
+    <span class="n">UPrec</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">UP_feature</span><span class="p">)</span>
+
+    <span class="n">DW_feature</span> <span class="o">=</span> <span class="n">Bio</span><span class="o">.</span><span class="n">SeqFeature</span><span class="o">.</span><span class="n">SeqFeature</span><span class="p">(</span>
+        <span class="n">Bio</span><span class="o">.</span><span class="n">SeqFeature</span><span class="o">.</span><span class="n">FeatureLocation</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">DWseq</span><span class="p">)),</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;misc_feature&quot;</span><span class="p">,</span> <span class="n">strand</span><span class="o">=+</span><span class="mi">1</span>
+    <span class="p">)</span>
+    <span class="n">DW_feature</span><span class="o">.</span><span class="n">qualifiers</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">DWrec</span><span class="o">.</span><span class="n">name</span>
+    <span class="n">DWrec</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">DW_feature</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">([</span><span class="n">UPrec</span><span class="p">],</span> <span class="p">[</span><span class="n">DWrec</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="multiply_list"><a class="viewcode-back" href="../../../teemi.design.html#teemi.design.cloning.multiply_list">[docs]</a><span class="k">def</span> <span class="nf">multiply_list</span><span class="p">(</span><span class="n">myList</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Multiplies elements one by one.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    myList: list</span>
+<span class="sd">        list of integers to be multiplied</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    result : int</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">myList</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">result</span> <span class="o">*</span> <span class="n">x</span>
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="remove_tuple_duplicates"><a class="viewcode-back" href="../../../teemi.design.html#teemi.design.cloning.remove_tuple_duplicates">[docs]</a><span class="k">def</span> <span class="nf">remove_tuple_duplicates</span><span class="p">(</span><span class="n">lst</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Removes tuple duplicates</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    lst: list</span>
+<span class="sd">        list with duplicated elements</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    list</span>
+<span class="sd">        without duplicates</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">lst</span><span class="p">))]</span></div>
+
+
+<div class="viewcode-block" id="recs_no_duplicates"><a class="viewcode-back" href="../../../teemi.design.html#teemi.design.cloning.recs_no_duplicates">[docs]</a><span class="k">def</span> <span class="nf">recs_no_duplicates</span><span class="p">(</span><span class="n">recs_with_duplicates</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Removes duplicate sequences from a list.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    recs_with_duplicates: list</span>
+<span class="sd">        list with duplicated elements</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    list</span>
+<span class="sd">        without duplicates</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">seen_sequences</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="n">recs_no_dup</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">rec</span> <span class="ow">in</span> <span class="n">recs_with_duplicates</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">rec</span><span class="o">.</span><span class="n">seq</span><span class="o">.</span><span class="n">watson</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen_sequences</span><span class="p">:</span>
+            <span class="n">recs_no_dup</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span>
+            <span class="n">seen_sequences</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">rec</span><span class="o">.</span><span class="n">seq</span><span class="o">.</span><span class="n">watson</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">recs_no_dup</span></div>
+
+
+<div class="viewcode-block" id="recs_no_duplicates_names"><a class="viewcode-back" href="../../../teemi.design.html#teemi.design.cloning.recs_no_duplicates_names">[docs]</a><span class="k">def</span> <span class="nf">recs_no_duplicates_names</span><span class="p">(</span><span class="n">recs_with_duplicates</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Removes duplicate names from a list</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    recs_with_duplicates: list</span>
+<span class="sd">        list with duplicated elements</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    list</span>
+<span class="sd">        without duplicates</span>
+
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">seen_names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="n">recs_no_dup</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">rec</span> <span class="ow">in</span> <span class="n">recs_with_duplicates</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">rec</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen_names</span><span class="p">:</span>
+            <span class="n">recs_no_dup</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span>
+            <span class="n">seen_names</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">rec</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">recs_no_dup</span></div>
+
+
+<div class="viewcode-block" id="plate_plot"><a class="viewcode-back" href="../../../teemi.design.html#teemi.design.cloning.plate_plot">[docs]</a><span class="k">def</span> <span class="nf">plate_plot</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Plots a 96 well plate as a pandas df.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df: pd.Dataframe</span>
+<span class="sd">        A pandas dataframe with</span>
+
+<span class="sd">    value: pandas dataframe column name</span>
+<span class="sd">        The name of the pandas dataframe coloumn that you want to display</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pd.Dataframe</span>
+<span class="sd">        in a 96 well plate format of the chosen column</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    1. Initialize:</span>
+<span class="sd">    Amplicon_df = {</span>
+<span class="sd">        name	location	template_name	fw_name	fw_location	rv_name	rv_location	prow	pcol</span>
+<span class="sd">    29	PCR_G8H_01	l5_A03	VminG8H_tADH1	PR_G8H_01	op4_A10	PR_G8H_02	op4_A01	A	1</span>
+<span class="sd">    25	PCR_G8H_05	l5_A07	SmusG8H_tADH1	PR_G8H_01	op4_A10	PR_G8H_06	op4_A02	A	2</span>
+<span class="sd">    21	PCR_G8H_09	l5_B02	RsepG8H_tADH1	PR_G8H_01	op4_A10	PR_G8H_10	op4_A03	A	3</span>
+<span class="sd">    17	PCR_G8H_13	l5_B06	CacuG8H_tADH1	PR_G8H_01	op4_A10	PR_G8H_14	op4_A04	A	4</span>
+<span class="sd">    13	PCR_G8H_17	l5_C01	OpumG8H_tADH1	PR_G8H_01	op4_A10	PR_G8H_18	op4_A05	A	5</span>
+<span class="sd">    }</span>
+
+<span class="sd">    2. Call the function:  # here we call the name coloumn</span>
+<span class="sd">    plate_plot(amplicon_df, &#39;name&#39;)</span>
+
+<span class="sd">    &lt;&lt;Result:</span>
+<span class="sd">    name</span>
+<span class="sd">    pcol	1	2	3	4	5	6	7	8	9	10	11	12</span>
+<span class="sd">    prow</span>
+<span class="sd">    A	PCR_G8H_01	PCR_G8H_05	PCR_G8H_09	PCR_G8H_13	PCR_G8H_17	PCR_G8H_21	PCR_G8H_25	PCR_G8H_29	PCR_G8H_33	PCR_UP_tADH1_01	PCR_PRO_01	NaN1</span>
+<span class="sd">    B	PCR_G8H_02	PCR_G8H_06	PCR_G8H_10	PCR_G8H_14	PCR_G8H_18	PCR_G8H_22	PCR_G8H_26	PCR_G8H_30	PCR_G8H_34	PCR_TRP1-DW_02	PCR_PRO_02	NaN2</span>
+<span class="sd">    C	PCR_G8H_03	PCR_G8H_07	PCR_G8H_11	PCR_G8H_15	PCR_G8H_19	PCR_G8H_23	PCR_G8H_27	PCR_G8H_31	PCR_G8H_35	PCR_TRP1-DW_01	PCR_PRO_03	NaN3</span>
+<span class="sd">    D	PCR_G8H_04	PCR_G8H_08	PCR_G8H_12	PCR_G8H_16	PCR_G8H_20	PCR_G8H_24	PCR_G8H_28	PCR_G8H_32	PCR_G8H_36	NaN4	PCR_PRO_04	NaN5</span>
+<span class="sd">    E	PCR_CPR_01	PCR_CPR_10	PCR_CPR_03	PCR_CPR_09	PCR_CPR_02	PCR_CPR_06	PCR_CPR_07	PCR_CPR_08	PCR_CPR_04	PCR_CPR_05	PCR_PRO_05	NaN6</span>
+<span class="sd">    F	PCR_CPR_11	PCR_CPR_20	PCR_CPR_13	PCR_CPR_19	PCR_CPR_12	PCR_CPR_16	PCR_CPR_17	PCR_CPR_18	PCR_CPR_14	PCR_CPR_15	PCR_PRO_06	NaN7</span>
+<span class="sd">    G	PCR_CPR_21	PCR_CPR_30	PCR_CPR_23	PCR_CPR_29	PCR_CPR_22	PCR_CPR_26	PCR_CPR_27	PCR_CPR_28	PCR_CPR_24	PCR_CPR_25	PCR_PRO_07	NaN8</span>
+<span class="sd">    H	PCR_CPR_31	PCR_CPR_40	PCR_CPR_33	PCR_CPR_39	PCR_CPR_32	PCR_CPR_36	PCR_CPR_37	PCR_CPR_38	PCR_CPR_34	PCR_CPR_35	PCR_PRO_08	NaN9</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;prow&quot;</span><span class="p">,</span> <span class="s2">&quot;pcol&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">df</span><span class="p">[</span><span class="n">cols</span><span class="p">]</span><span class="o">.</span><span class="n">set_index</span><span class="p">([</span><span class="s2">&quot;prow&quot;</span><span class="p">,</span> <span class="s2">&quot;pcol&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">unstack</span><span class="p">(</span><span class="n">level</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CRIPSR_knockout"><a class="viewcode-back" href="../../../teemi.design.html#teemi.design.cloning.CRIPSR_knockout">[docs]</a><span class="k">def</span> <span class="nf">CRIPSR_knockout</span><span class="p">(</span><span class="n">gRNA_record</span><span class="p">,</span> <span class="n">insertion_site</span><span class="p">,</span> <span class="n">repair_DNA</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Simple version of casembler - Cuts the insertion site with</span>
+<span class="sd">     CAS9_cutting and assembles knockout with a repair template.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gRNA_record: pydna.dseqrecord.</span>
+<span class="sd">        A 20 bp DNA sequence</span>
+
+<span class="sd">    insertion_site: pydna.dseqrecord.</span>
+<span class="sd">        The site to knock out</span>
+
+<span class="sd">    repair_DNA: pydna.dseqrecord.</span>
+<span class="sd">        Repair template. Typucally 90 bp or longer</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pydna.dseqrecord.</span>
+<span class="sd">        Of assembled contig after CRISPR-mediated KO</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Create fragments after CAS9 cut</span>
+    <span class="n">IS_UP</span><span class="p">,</span> <span class="n">IS_DW</span> <span class="o">=</span> <span class="n">CAS9_cutting</span><span class="p">(</span><span class="n">gRNA_record</span><span class="p">,</span> <span class="n">insertion_site</span><span class="p">)</span>
+
+    <span class="c1"># create list of parts and assemble to knockout sequence</span>
+    <span class="n">assmeble_parts</span> <span class="o">=</span> <span class="n">IS_UP</span><span class="p">,</span> <span class="n">repair_DNA</span><span class="p">,</span> <span class="n">IS_DW</span>
+    <span class="n">assembled_knockout</span> <span class="o">=</span> <span class="n">Assembly</span><span class="p">(</span><span class="n">assmeble_parts</span><span class="p">)</span><span class="o">.</span><span class="n">assemble_linear</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">assembled_knockout</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Technical University of Denmark (DTU).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
