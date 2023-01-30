@@ -1,0 +1,47 @@
+# Ignore env file
+.env
+
+# ignore 
+.pytest_cache
+__pycache__/
+
+# Mac OS-specific storage files
+.DS_Store
+**/.DS_Store
+
+# Notebooks
+/notebooks
+
+
+# Egg files
+*.egg-info/
+*.egg
+eggs/
+.eggs/
+
+# R_project initializer
+.Rproj.user
+.RData
+
+# ignore the data directory
+data/
+
+# Ignore the notebooks directory
+#notebooks/
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.cache
+.coverage
+nosetests.xml
+coverage.xml
+*.cover
+
+
+# Jupyter NB Checkpoints
+.ipynb_checkpoints/
+
+# 
+dist
+build

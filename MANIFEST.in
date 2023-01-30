@@ -1,0 +1,4 @@
+include versioneer.py
+include constrain/_version.py
+include HISTORY.rst
+
