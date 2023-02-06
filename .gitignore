@@ -26,8 +26,6 @@ eggs/
 # ignore the data directory
 data/
 
-
-
 # Unit test / coverage reports
 htmlcov/
 .tox/
@@ -63,3 +61,6 @@ share/python-wheels/
 
 # Vs code
 .vscode
+
+# Sphinx documentation
+docs/_build/
