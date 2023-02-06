@@ -1,8 +1,0 @@
-Colab notebooks
-=========
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-   colab_notebooks/00_DESIGN_HomologSelection.ipynb
