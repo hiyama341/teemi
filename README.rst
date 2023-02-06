@@ -1,10 +1,5 @@
-
-.. image:: https://raw.githubusercontent.com/hiyama341/teemi/main/pictures/teemi1.svg?token=GHSAT0AAAAAABTYCY2LIAJ7B7ZTWBR4NMHIYZUJQ4A
-  :width: 400
-  :alt: teemi logo 
-
-teemi: Literate programming can streamline bioengineering workflows
------------------------------------------------------------------------
+teemi: a python package designed to make HT strain construction reproducible and FAIR
+-------------------------------------------------------------------------------------
 
 .. summary-start
 
@@ -33,7 +28,7 @@ teemi: Literate programming can streamline bioengineering workflows
 
 
 What is teemi?
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 **teemi**, named after the Greek goddess of fairness, is a python package designed
 to make microbial strain construction reproducible and FAIR (Findable, Accessible, 
@@ -79,12 +74,8 @@ Features
 * Workflows for selecting enzyme homologs
 * Promoter selection workflows from RNA-seq datasets
 * Data analysis of large LC-MS datasets along with workflows for analysis
+* .. and much more
 
-and much more
-
-..  image:: https://raw.githubusercontent.com/hiyama341/teemi/main/pictures/DBTL_teemi_with_modules1.svg
-    :width: 800
-    :alt: Overview of teemi's features throughout the DBTL cycle. 
 
 Getting started
 ~~~~~~~~~~~~~~~
@@ -110,8 +101,6 @@ Just click the Google colab badge to start the workflows.
 
 Strictosidine case : First DBTL cycle
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
 
 **DESIGN:**
 
@@ -187,8 +176,8 @@ Strictosidine case : First DBTL cycle
 
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Strictosidine case : Second DBTL cycle
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
