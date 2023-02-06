@@ -37,13 +37,13 @@ What is teemi?
 
 **teemi**, named after the Greek goddess of fairness, is a python package designed
 to make microbial strain construction reproducible and FAIR (Findable, Accessible, 
-Interoperable, and Reusable). With teemi, you can simulate the steps of 
+Interoperable, and Reusable). With teemi, you can simulate all steps of 
 a strain construction cycle, from generating genetic parts to designing 
 a combinatorial library and keeping track of samples through a commercial
 Benchling API and a low-level CSV file database. 
 This tool can be used in literate programming to 
 increase efficiency and speed in metabolic engineering tasks. 
-To try teemi, visit our Google Colab notebooks. 
+To try teemi, visit our `Google Colab notebooks <https://github.com/hiyama341/teemi/tree/main/colab_notebooks>`__.
 
 
 teemi not only simplifies the strain construction process but also offers the 
@@ -80,6 +80,7 @@ Features
 * Promoter selection workflows from RNA-seq datasets
 * Data analysis of large LC-MS datasets along with workflows for analysis
 
+and much more
 
 ..  image:: https://raw.githubusercontent.com/hiyama341/teemi/main/pictures/DBTL_teemi_with_modules1.svg
     :width: 800
@@ -107,8 +108,8 @@ and evolution-guided laboratory workflows for optimizing strictosidine productio
 Below you can find all the notebooks developed in this work. 
 Just click the Google colab badge to start the workflows. 
 
-First DBTL cycle
-~~~~~~~~~~~~~~~~
+Strictosidine case : First DBTL cycle
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
@@ -186,8 +187,8 @@ First DBTL cycle
 
 
 
-Second DBTL cycle
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Strictosidine case : Second DBTL cycle
 
 
 
