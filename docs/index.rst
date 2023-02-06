@@ -19,17 +19,36 @@ Feel free to reach out if something is unclear.
 Features of teemi
 ---------------------
 
-* Combinatorial library generation
-* HT cloning and transformation workflows
-* Flowbot One instructions
-* CSV-based LIMS system as well as integration to Benchling
-* Genotyping of microbial strains
-* Advanced Machine Learning of biological datasets with the AutoML `H2O <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html>`__
-* Workflows for selecting enzyme homologs
-* Promoter selection workflows from RNA-seq datasets
-* Data analysis of large LC-MS datasets along with workflows for analysis
+- teemi/
+
+    - design/
+        - combinatorial_design.py
+        - teselagen_helpers.py
+        - cloning.py
+        - retrieve_gene_homologs.py
+        - fetch_sequences.py
+    
+    - build/
+        - transformation.py
+        - containers_wells_picklists.py
+        - robot_assembly.py
+        - PCR.py
+
+    - test/
+        - genotyping.py
+
+    - learn/
+        - plotting.py
+        - auto_ml.py
+
+    - lims/
+        - benchling_api.py
+        - csv_database.py  
+
+    - utils.py
 
 
+    
 Getting started
 ~~~~~~~~~~~~~~~
 To get started with making microbial strains in an HT manner please follow the steps below: 
