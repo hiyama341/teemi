@@ -1,4 +1,4 @@
 include versioneer.py
-include constrain/_version.py
+include teemi/_version.py
 include HISTORY.rst
 

@@ -1,0 +1,69 @@
+# This workflow will install Python dependencies, run tests, build package and publish on pipy
+
+name: ci-cd
+
+# WIll run on push commands
+on: [push]
+
+jobs:
+  ci:
+    # Set up operating system
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8"  ,"3.9", "3.10"]
+
+
+    # Define job steps
+    steps:
+
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+
+      - name: Check-out repository
+        uses: actions/checkout@v2
+        with: 
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 pytest
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          
+      - name: Test with pytest
+        run: |
+          pytest --cov
+          
+      - name: Code coverage
+        run: |
+          curl -Os https://uploader.codecov.io/latest/linux/codecov
+          chmod +x codecov
+          ./codecov -t ${{secrets.CODECOV_TOKEN}}
+
+          
+      - name: Build package
+        run: python setup.py sdist bdist_wheel
+
+
+      - name: pypi-publish
+        # You may pin to the exact commit or the version.
+        # uses: pypa/gh-action-pypi-publish@717ba43cfbb0387f6ce311b169a825772f54d295
+
+        # we only publish a new version when there is a tag to the push 
+        if: startsWith(github.ref, 'refs/tags')
+
+        uses: pypa/gh-action-pypi-publish@v1.5.0
+        with:
+          # PyPI user
+          user: __token__
+          # Password for your PyPI user or an access token
+          password: ${{secrets.PYPI_TOKEN}} 
+          
+        
+
