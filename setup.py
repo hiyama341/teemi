@@ -10,6 +10,7 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
+
 # Requirements
 install_requires = ['pydna>=4.0.7',
 'pandas>=1.3.0', 
@@ -67,6 +68,7 @@ setup(
     
 
     ### Change version and put tag to release on PYPI
+    # First time making a package, then comment this section and write: version= "0.0.1"
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     zip_safe=False,
