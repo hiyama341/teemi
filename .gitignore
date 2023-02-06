@@ -26,8 +26,7 @@ eggs/
 # ignore the data directory
 data/
 
-# Ignore the notebooks directory
-#notebooks/
+
 
 # Unit test / coverage reports
 htmlcov/
@@ -38,10 +37,29 @@ nosetests.xml
 coverage.xml
 *.cover
 
-
 # Jupyter NB Checkpoints
 .ipynb_checkpoints/
 
-# 
-dist
-build
+# Distribution / packaging
+.Python
+build/
+# we keep the teemi build folder 
+!teemi/build
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Vs code
+.vscode
