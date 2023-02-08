@@ -225,11 +225,67 @@ def location_to_start_end_strand(dictionary: Dict[str, Any]) -> Dict[str, Any]:
     dictionary : Dict[str, Any]
         The dictionary with "start", "end", "strand" key added and location removed.
     """
+    location = dictionary.pop("location")
 
-    Compoundloc = dictionary.pop("location")
-
-    dictionary["start"] = Compoundloc.start.real
-    dictionary["end"] = Compoundloc.end.real
-    dictionary["strand"] = Compoundloc.strand
+    dictionary["start"] = location.start.real
+    dictionary["end"] = location.end.real
+    dictionary["strand"] = location.strand
 
     return dictionary
+
+def multiply_list(myList):
+    """Multiplies elements one by one.
+
+    Parameters
+    ----------
+    myList: list
+        list of integers to be multiplied
+
+    Returns
+    -------
+    result : int
+
+    """
+    result = 1
+    for x in myList:
+        result = result * x
+    return result
+
+
+def remove_tuple_duplicates(lst: list) -> list:
+    """Removes tuple duplicates.
+
+    Parameters
+    ----------
+    lst: list
+        list with duplicated elements
+
+    Returns
+    -------
+    list
+        without duplicates
+    """
+    return [t for t in (set(tuple(i) for i in lst))]
+
+
+def remove_duplicates_with_name_attribute(record_with_duplicates) -> list:
+    """Removes duplicate names from a list.
+
+    Parameters
+    ----------
+    record_with_duplicates: list
+        list with duplicated elements
+
+    Returns
+    -------
+    recs_no_dup : list
+        list without duplicates
+    """
+    seen_names = set()
+    recs_no_dup = []
+    for rec in record_with_duplicates:
+        if rec.name not in seen_names:
+            recs_no_dup.append(rec)
+            seen_names.add(rec.name)
+    return recs_no_dup
+

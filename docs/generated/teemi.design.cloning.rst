@@ -3,12 +3,7 @@
 
 .. automodule:: teemi.design.cloning
 
-   
-   
-   
 
-   
-   
    .. rubric:: Functions
 
    .. autosummary::
@@ -21,13 +16,9 @@
       extract_gRNAs
       extract_sites
       extract_template_amplification_sites
-      multiply_list
       nicking_enzyme
-      plate_plot
-      recs_no_duplicates
-      recs_no_duplicates_names
+      plate_plot  
       remove_features_with_negative_loc
-      remove_tuple_duplicates
       seq_to_annotation
    
    

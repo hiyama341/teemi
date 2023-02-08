@@ -24,10 +24,10 @@ import Bio.SeqIO
 from Bio.Seq import Seq
 from pydna.assembly import Assembly
 from pydna.dseq import Dseq
+from math import fabs
 
 
 def CAS9_cutting(gRNA_record, background_record):
-
     """Simulates double-stranded-break by CAS9 given a gRNA.
 
     Parameters
@@ -39,9 +39,9 @@ def CAS9_cutting(gRNA_record, background_record):
 
     Returns
     -------
-    1.pydna.dseqrecord.
+    1. up : pydna.dseqrecord.
         Sequence upstream of the DSB: pydna.dseqrecord.
-    2. pydna.dseqrecord.
+    2. dw : pydna.dseqrecord.
         Sequence downstream of the DSB: pydna.dseqrecord.
 
     """
@@ -139,7 +139,6 @@ def remove_features_with_negative_loc(record):
     -------
     record: pydna.amplicon.Amplicon.
         With the negative features deleted
-
     """
 
     for i in range(len(record.features)):
@@ -149,7 +148,6 @@ def remove_features_with_negative_loc(record):
 
 def extract_template_amplification_sites(templates, names, terminator):
     """Extracts amplifications sites from a templates features
-
 
     Parameters
     ----------
@@ -194,13 +192,11 @@ def extract_template_amplification_sites(templates, names, terminator):
 
         if "batches" in template_amplification_site.annotations.keys():
             template_amplification_site.annotations["batches"].append(
-                template.annotations["batches"][0]
-            )  # {'location': template.annotations['batches'][0]['location']}
+                template.annotations["batches"][0])  
         else:
             template_amplification_site.annotations["batches"] = []
             template_amplification_site.annotations["batches"].append(
-                template.annotations
-            )  # {'location': template.annotations['batches'][0]['location']}
+                template.annotations) 
 
         template_amplification_sites.append(template_amplification_site)
     return template_amplification_sites
@@ -230,82 +226,71 @@ def extract_sites(annotations, templates, names):
     sites = []
     for anno, template, name in zip(annotations, templates, names):
         for feature in template.features:
-            # site = template[feature.location.start : feature.location.end]
             if str(feature.qualifiers["name"][0]) == anno:
                 site = template[feature.location.start : feature.location.end]
                 site.name = name
-
-                # # If there is an batch anotation we can save it
-                # if "batches" in site.annotations.keys():
-                #     site.annotations["batches"].append(
-                #         template.annotations["batches"][0]
-                #     )
-                # else:
-                #     site.annotations["batches"] = []
-                #     site.annotations["batches"].append(template.annotations)
                 site.annotations = template.annotations
 
                 sites.append(site)
     return sites
 
 
-def seq_to_annotation(seqrec_from, seqrec_onto, aType):
-    """Anotate an amplicon object from another amplicon object.
+# def seq_to_annotation(seqrec_from, seqrec_onto, aType):
+#     """Anotate an amplicon object from another amplicon object.
 
-    Parameters
-    ----------
-    seqrec_from: str
-        annotation sequence that will be extracted
+#     Parameters
+#     ----------
+#     seqrec_from: str
+#         annotation sequence that will be extracted
 
-    seqrec_onto: list of Bio.SeqRecord.SeqRecord
-        A list of Bio.SeqRecord.SeqRecord with SeqFeatures
+#     seqrec_onto: list of Bio.SeqRecord.SeqRecord
+#         A list of Bio.SeqRecord.SeqRecord with SeqFeatures
 
-    aType: str
-        name of the sequence that will be extracted
+#     aType: str
+#         name of the sequence that will be extracted
 
-    Returns
-    -------
-    record: list of Bio.SeqRecord.SeqRecord
-        list of extracted sites
-    """
+#     Returns
+#     -------
+#     record: list of Bio.SeqRecord.SeqRecord
+#         list of extracted sites
+#     """
 
-    seq_from = seqrec_from.seq.watson.upper()
-    seq_onto = seqrec_onto.seq.watson.upper()
+#     seq_from = seqrec_from.seq.watson.upper()
+#     seq_onto = seqrec_onto.seq.watson.upper()
 
-    strand = 1
-    match_index = seq_onto.find(seq_from)
+#     strand = 1
+#     match_index = seq_onto.find(seq_from)
 
-    # if there is match
-    if match_index != -1:
-        start = match_index
-        end = start + len(seq_from)
-    else:
-        # If no match we look at the reverse complement
-        seq_onto = Seq(seq_onto)
-        rev_match_index = seq_onto.reverse_complement().find(seq_from)
+#     # if there is match
+#     if match_index != -1:
+#         start = match_index
+#         end = start + len(seq_from)
+#     else:
+#         # If no match we look at the reverse complement
+#         seq_onto = Seq(seq_onto)
+#         rev_match_index = seq_onto.reverse_complement().find(seq_from)
 
-        # if we get a match here
-        if rev_match_index != -1:
-            strand = -1
-            reclength = len(str(seqrec_onto.seq))
-            end = reclength - rev_match_index
+#         # if we get a match here
+#         if rev_match_index != -1:
+#             strand = -1
+#             reclength = len(str(seqrec_onto.seq))
+#             end = reclength - rev_match_index
+#             start = end - len(seq_from)
 
-            start = end - len(seq_from)
+#         else:
+#             print(
+#                 "no match! seq:"
+#                 + str(seqrec_from.name)
+#                 + "\nnot annealing to:"
+#                 + str(seqrec_onto.name)
+#             )
 
-        else:
-            print(
-                "no match! seq:"
-                + str(seqrec_from.name)
-                + "\nnot annealing to:"
-                + str(seqrec_onto.name)
-            )
-
-    # add the feature to the amplicon
-    feature = Bio.SeqFeature.SeqFeature(
-        Bio.SeqFeature.FeatureLocation(start, end), type=aType, strand=strand
-    )
-    feature.qualifiers["label"] = seqrec_from.id
-    seqrec_onto.features.append(feature)
+#     # add the feature to the amplicon
+#     feature = Bio.SeqFeature.SeqFeature(
+#         Bio.SeqFeature.FeatureLocation(start, end), type=aType, strand=strand
+#     )
+#     feature.qualifiers["label"] = seqrec_from.id
+#     seqrec_onto.features.append(feature)
 
 
 def USER_enzyme(amplicon):
@@ -322,23 +307,16 @@ def USER_enzyme(amplicon):
         USER digested Dseqrecord with USER tails
     """
     fw_U_idx = amplicon.forward_primer.seq.find("U")
-    # fw_U_idx
-
     rv_U_idx = amplicon.reverse_primer.seq.find("U")
-    # rv_U_idx
 
     digested_watson = amplicon.seq.watson[fw_U_idx + 1 :]
-    # digested_watson
-
     digested_crick = amplicon.seq.crick[rv_U_idx + 1 :]
-    # digested_crick
 
     digested_pcr = pydna.dseqrecord.Dseqrecord(
         pydna.dseq.Dseq(watson=digested_watson, crick=digested_crick),
         features=amplicon.features,
         annotations=amplicon.annotations,
     )
-    # digested_pcr.seq
     return digested_pcr
 
 
@@ -534,87 +512,6 @@ def UPandDW(strain, isite_name, path_to_gRNA_table="../data/raw/gRNAtable.csv"):
     return ([UPrec], [DWrec])
 
 
-def multiply_list(myList):
-    """Multiplies elements one by one.
-
-    Parameters
-    ----------
-    myList: list
-        list of integers to be multiplied
-
-    Returns
-    -------
-    result : int
-
-    """
-    result = 1
-    for x in myList:
-        result = result * x
-    return result
-
-
-def remove_tuple_duplicates(lst: list) -> list:
-    """Removes tuple duplicates
-
-    Parameters
-    ----------
-    lst: list
-        list with duplicated elements
-
-    Returns
-    -------
-    list
-        without duplicates
-    """
-    return [t for t in (set(tuple(i) for i in lst))]
-
-
-def recs_no_duplicates(recs_with_duplicates: list) -> list:
-    """Removes duplicate sequences from a list.
-
-    Parameters
-    ----------
-    recs_with_duplicates: list
-        list with duplicated elements
-
-    Returns
-    -------
-    list
-        without duplicates
-    """
-    seen_sequences = set()
-    recs_no_dup = []
-    for rec in recs_with_duplicates:
-        if rec.seq.watson not in seen_sequences:
-            recs_no_dup.append(rec)
-            seen_sequences.add(rec.seq.watson)
-    return recs_no_dup
-
-
-def recs_no_duplicates_names(recs_with_duplicates):
-    """Removes duplicate names from a list
-
-    Parameters
-    ----------
-    recs_with_duplicates: list
-        list with duplicated elements
-
-    Returns
-    -------
-    list
-        without duplicates
-
-
-    """
-    seen_names = set()
-    recs_no_dup = []
-    for rec in recs_with_duplicates:
-        if rec.name not in seen_names:
-            recs_no_dup.append(rec)
-            seen_names.add(rec.name)
-    return recs_no_dup
-
-
 def plate_plot(df, value):
     """Plots a 96 well plate as a pandas df.
 
@@ -694,3 +591,63 @@ def CRIPSR_knockout(gRNA_record, insertion_site, repair_DNA):
     assembled_knockout = Assembly(assmeble_parts).assemble_linear()[0]
 
     return assembled_knockout
+
+def seq_to_annotation(seq_record_from : Bio.SeqRecord, seq_record_onto : Bio.SeqRecord, type_name : str):
+    """Anotate an Bio.SeqRecord object from another amplicon object.
+
+    Parameters
+    ----------
+    seqrec_from: Bio.SeqRecord
+        annotation sequence that will be extracted
+
+    seqrec_onto: Bio.SeqRecord
+
+    type_name: str
+        name of the sequence that will be extracted
+
+    Returns
+    -------
+    None 
+    """
+    match_index = find_sequence_location(seq_record_from, seq_record_onto)
+
+    if match_index[0] >= 0 and match_index[1] >=0:    
+        strand = 1
+        start_location, end_location = match_index[0], match_index[1]
+    else: 
+        strand = -1
+        start_location, end_location = int(fabs(match_index[1])), int(fabs(match_index[0]))
+
+    feature = Bio.SeqFeature.SeqFeature(
+        Bio.SeqFeature.FeatureLocation(start_location, end_location), type=type_name, strand=strand)
+    
+    feature.qualifiers["label"] = seq_record_from.id
+    seq_record_onto.features.append(feature)
+
+
+def find_sequence_location(sequence:Bio.SeqRecord, sequence_to_search_in : Bio.SeqRecord)->tuple:
+    '''Finds start and end location of a mathced sequence.
+    
+    Parameters
+    ----------
+    sequence : str
+    sequence_to_search_in : Bio.SeqRecord
+
+    Returns
+    -------
+    (start_index,end_index) : tuple
+    '''
+    strand = +1
+    start_index = sequence_to_search_in.seq.find(sequence.seq)
+    end_index = start_index + len(sequence)
+
+    if start_index == -1: 
+        # search reverse_comp
+        start_index =  len(sequence_to_search_in) -sequence_to_search_in.reverse_complement().seq.find(sequence.seq)
+        end_index = start_index - len(sequence)
+        strand = -1
+
+        if start_index == -1: 
+            raise ValueError('ValueERROR - couldnt find a match')
+            
+    return (start_index, end_index, strand)
