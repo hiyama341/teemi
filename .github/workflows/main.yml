@@ -40,11 +40,13 @@ jobs:
         run: |
           pytest --cov
           
-      - name: Code coverage
-        run: |
-          curl -Os https://uploader.codecov.io/latest/linux/codecov
-          chmod +x codecov
-          ./codecov -t ${secrets.CODECOV_TOKEN_TEEMI}
+      # - name: Code coverage
+      #   run: |
+      #     curl -Os https://uploader.codecov.io/latest/linux/codecov
+      #     chmod +x codecov
+      #     ./codecov -t ${{secrets.CODECOV_TOKEN_TEEMI}}
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
 
           
       - name: Build package
