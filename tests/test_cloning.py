@@ -186,3 +186,23 @@ def test_casembler():
 
     assert len(assembly[0]) == 8993
     assert str(assembly[0].seq[:20]) =='GTTTGTAGTTGGCGGTGGAG'
+
+
+
+def test_find_sequence_location(): 
+    
+    test_plasmid = SeqIO.read('../teemi/tests/files_for_testing/MIA-HA-1.gb', format = 'genbank')
+    sgRNA = SeqRecord(Seq('TGACGAATCGTTAGGCACAG'), name = 'random_sgRNA', id = '1483', description = 'This is a test sgRNA')
+    start_end_location = find_sequence_location(sgRNA, test_plasmid)
+    
+    assert start_end_location[0] == 2
+    assert start_end_location[1] == 22
+    assert start_end_location[2] == 1
+
+    # reverse complement
+    sgRNA = sgRNA.reverse_complement()
+    start_end_location = find_sequence_location(sgRNA, test_plasmid)
+
+    assert start_end_location[0] == 22
+    assert start_end_location[1] == 2
+    assert start_end_location[2] == -1
