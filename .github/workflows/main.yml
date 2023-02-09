@@ -13,7 +13,6 @@ jobs:
       matrix:
         python-version: ["3.8"  ,"3.9", "3.10"]
 
-
     # Define job steps
     steps:
 
@@ -23,7 +22,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
-
 
       - name: Check-out repository
         uses: actions/checkout@v2
@@ -38,17 +36,10 @@ jobs:
           
       - name: Test with pytest
         run: |
-          pytest --cov
+          pytest --cov --cov-report=xml
           
-      # - name: Code coverage
-      #   run: |
-      #     curl -Os https://uploader.codecov.io/latest/linux/codecov
-      #     chmod +x codecov
-      #     ./codecov -t ${{secrets.CODECOV_TOKEN_TEEMI}}
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
-        with:
-            token: ${{secrets.CODECOV_TOKEN_TEEMI}}
 
       - name: Build package
         run: python setup.py sdist bdist_wheel
