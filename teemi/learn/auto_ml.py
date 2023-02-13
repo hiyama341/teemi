@@ -77,7 +77,7 @@ def autoML_on_partitioned_data(
             if col != training_column:
                 col = str(col)
 
-        # making the dataframes categorical
+        # making the dataframes categorical except the training column
         for column in df_test.columns:
             if col != training_column:
                 df_test[column] = df_test[column].asfactor()
@@ -100,7 +100,6 @@ def autoML_on_partitioned_data(
 
     ##### Training the models on partitioned data
     for i in range(len(autoML_dataclasses_list)):
-        # for j in range(len(new_list_of_list_with_5x_models[i])):
         autoML_dataclasses_list[i].train(
             x=feature_cols, y=training_column, training_frame=list_of_df_test_frames[i]
         )
