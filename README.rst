@@ -68,17 +68,31 @@ Please cite our paper (link tba) if you've used teemi in a scientific publicatio
 
 Features
 --------
+**Module 1: Design**
 
-* Combinatorial library generation
-* HT cloning and transformation workflows
-* Flowbot One instructions
-* CSV-based LIMS system as well as integration to Benchling
-* Genotyping of microbial strains
-* Advanced Machine Learning of biological datasets with the AutoML `H2O <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html>`__
-* Workflows for selecting enzyme homologs
-* Promoter selection workflows from RNA-seq datasets
-* Data analysis of large LC-MS datasets along with workflows for analysis
-* .. and much more
+- Combinatorial library generation
+- Cloning
+- Workflows for selecting enzyme homologs and genetic parts
+
+**Module 2: Build**
+
+- Transformation 
+- PCR
+- Flowbot One instructions
+
+**Module 3: Test**
+
+- Genotyping
+
+**Module 4: Learn**
+
+- Advanced Machine Learning of biological datasets with `H2O <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html>`__
+- reproducible plotting
+
+**Module 5: LIMS**
+
+- CSV-based LIMS system as well as integration to Benchling
+
 
 
 Getting started
