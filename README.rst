@@ -1,3 +1,7 @@
+.. image:: https://raw.githubusercontent.com/hiyama341/teemi/main/pictures/teemi_logo.svg
+  :width: 400
+  :alt: teemi logo 
+
 teemi: a python package designed to make HT strain construction reproducible and FAIR
 -------------------------------------------------------------------------------------
 
