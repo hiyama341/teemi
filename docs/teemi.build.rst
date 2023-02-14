@@ -9,13 +9,6 @@ PCR module
    :undoc-members:
    :show-inheritance:
 
-Containers module 
------------------
-
-.. automodule:: teemi.build.containers_wells_picklists
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 Robot assembly module
 ---------------------
@@ -29,6 +22,14 @@ Transformation module
 ---------------------
 
 .. automodule:: teemi.build.transformation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Containers module 
+-----------------
+
+.. automodule:: teemi.build.containers_wells_picklists
    :members:
    :undoc-members:
    :show-inheritance:

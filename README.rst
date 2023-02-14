@@ -68,31 +68,33 @@ Please cite our paper (link tba) if you've used teemi in a scientific publicatio
 
 Features
 --------
-**Module 1: Design**
+- teemi/
 
-- Combinatorial library generation
-- Cloning
-- Workflows for selecting enzyme homologs and genetic parts
+    - design/
+        - combinatorial_design.py
+        - teselagen_helpers.py
+        - cloning.py
+        - retrieve_gene_homologs.py
+        - fetch_sequences.py
+    
+    - build/
+        - transformation.py
+        - containers_wells_picklists.py
+        - robot_assembly.py
+        - PCR.py
 
-**Module 2: Build**
+    - test/
+        - genotyping.py
 
-- Transformation 
-- PCR
-- Flowbot One instructions
+    - learn/
+        - plotting.py
+        - auto_ml.py
 
-**Module 3: Test**
+    - lims/
+        - benchling_api.py
+        - csv_database.py  
 
-- Genotyping
-
-**Module 4: Learn**
-
-- Advanced Machine Learning of biological datasets with `H2O <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html>`__
-- reproducible plotting
-
-**Module 5: LIMS**
-
-- CSV-based LIMS system as well as integration to Benchling
-
+    - utils.py
 
 
 Getting started
