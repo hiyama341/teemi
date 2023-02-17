@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # MIT License
-# Copyright (c) 2022, Technical University of Denmark (DTU)
+# Copyright (c) 2023, Technical University of Denmark (DTU)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -15,7 +15,6 @@
 
 """ Module used for cloning of microbial strains."""
 import functools
-import pandas as pd
 import pydna
 import Bio
 import Bio.SeqFeature
@@ -25,6 +24,7 @@ from Bio.Seq import Seq
 from pydna.assembly import Assembly
 from pydna.dseq import Dseq
 from math import fabs
+import re
 
 
 def CAS9_cutting(gRNA_record, background_record):
@@ -165,7 +165,6 @@ def extract_template_amplification_sites(templates, names, terminator):
     -------
     record: list of Bio.SeqRecord.SeqRecord
         list of extracted elements
-
     """
     template_amplification_sites = []
     for name, template in zip(names, templates):
@@ -233,64 +232,6 @@ def extract_sites(annotations, templates, names):
 
                 sites.append(site)
     return sites
-
-
-# def seq_to_annotation(seqrec_from, seqrec_onto, aType):
-#     """Anotate an amplicon object from another amplicon object.
-
-#     Parameters
-#     ----------
-#     seqrec_from: str
-#         annotation sequence that will be extracted
-
-#     seqrec_onto: list of Bio.SeqRecord.SeqRecord
-#         A list of Bio.SeqRecord.SeqRecord with SeqFeatures
-
-#     aType: str
-#         name of the sequence that will be extracted
-
-#     Returns
-#     -------
-#     record: list of Bio.SeqRecord.SeqRecord
-#         list of extracted sites
-#     """
-
-#     seq_from = seqrec_from.seq.watson.upper()
-#     seq_onto = seqrec_onto.seq.watson.upper()
-
-#     strand = 1
-#     match_index = seq_onto.find(seq_from)
-
-#     # if there is match
-#     if match_index != -1:
-#         start = match_index
-#         end = start + len(seq_from)
-#     else:
-#         # If no match we look at the reverse complement
-#         seq_onto = Seq(seq_onto)
-#         rev_match_index = seq_onto.reverse_complement().find(seq_from)
-
-#         # if we get a match here
-#         if rev_match_index != -1:
-#             strand = -1
-#             reclength = len(str(seqrec_onto.seq))
-#             end = reclength - rev_match_index
-#             start = end - len(seq_from)
-
-#         else:
-#             print(
-#                 "no match! seq:"
-#                 + str(seqrec_from.name)
-#                 + "\nnot annealing to:"
-#                 + str(seqrec_onto.name)
-#             )
-
-#     # add the feature to the amplicon
-#     feature = Bio.SeqFeature.SeqFeature(
-#         Bio.SeqFeature.FeatureLocation(start, end), type=aType, strand=strand
-#     )
-#     feature.qualifiers["label"] = seqrec_from.id
-#     seqrec_onto.features.append(feature)
 
 
 def USER_enzyme(amplicon):
@@ -430,87 +371,6 @@ def casembler(
     return functools.reduce(lambda x, y: x + y, assemblies)
 
 
-def UPandDW(strain, isite_name, path_to_gRNA_table="../data/raw/gRNAtable.csv"):
-    """Finds upstream and downstream sequences based on genome and site name.
-
-    Parameters
-    ----------
-    strain : str
-        name of the strain eg. CENPK113-7d
-        (you should specify path to the chromosome)
-
-    isite_name : str
-        a string of the site chomosomal site you want to retrieve
-
-    Returns
-    -------
-    UP_sites : list
-        list of pydna.dseqrecord or pydna.amplicon.Amplicon
-
-    DW_sites : list
-        list of pydna.dseqrecord or pydna.amplicon.Amplicon
-
-    """
-
-    # load lookup table
-    gRNAtable = pd.read_csv(path_to_gRNA_table, index_col="name")
-
-    chromosome_no = gRNAtable.loc[isite_name, "chromosome"]
-
-    # load chromosome
-    PathToChromosomeSeq = (
-        "../data/raw/" + strain + "/" + str(chromosome_no).zfill(2) + ".fa"
-    )
-    ChromosomeSeq = Bio.SeqIO.read(PathToChromosomeSeq, "fasta").seq
-
-    # define homology region location with respect to gRNA sequence
-    # f_hom is the length of the UP homology
-    # e_hom is the length of the DW homology
-    # f_dist is distance from end of UP homology to the first base in isite_sequence
-    # e_dist is distance from end of the isite_sequence to DW homology
-    f_dist = gRNAtable.loc[isite_name, "f_dist"]
-    e_dist = gRNAtable.loc[isite_name, "e_dist"]
-    f_hom = gRNAtable.loc[isite_name, "f_hom"]
-    e_hom = gRNAtable.loc[isite_name, "e_hom"]
-
-    isite_sequence = gRNAtable.loc[isite_name, "sequence"]
-    isite_sequence = Bio.Seq.Seq(isite_sequence)
-
-    # Determine gRNA sequence strand
-    gRNA_strand = 1
-    if ChromosomeSeq.find(isite_sequence) == -1:
-        print("not on +1")
-        gRNA_strand = -1
-        isite_sequence = isite_sequence.reverse_complement()
-        if ChromosomeSeq.find(isite_sequence) == -1:
-            print("not on -1")
-            print("CAN'T FIND THE CUT SITE IN YOUR SEQUENCE")
-
-    # Locate UP and DW
-    StartIndex = ChromosomeSeq.find(isite_sequence)
-    EndIndex = StartIndex
-
-    UPseq = ChromosomeSeq[StartIndex + f_dist - f_hom : StartIndex + f_dist]
-    DWseq = ChromosomeSeq[EndIndex + e_dist : EndIndex + e_dist + e_hom]
-
-    UPrec = Bio.SeqRecord.SeqRecord(UPseq, name=isite_name + "UP")
-    DWrec = Bio.SeqRecord.SeqRecord(DWseq, name=isite_name + "DW")
-
-    # Annotate
-    UP_feature = Bio.SeqFeature.SeqFeature(
-        Bio.SeqFeature.FeatureLocation(0, len(UPseq)), type="misc_feature", strand=+1
-    )
-    UP_feature.qualifiers["label"] = UPrec.name
-    UPrec.features.append(UP_feature)
-
-    DW_feature = Bio.SeqFeature.SeqFeature(
-        Bio.SeqFeature.FeatureLocation(0, len(DWseq)), type="misc_feature", strand=+1
-    )
-    DW_feature.qualifiers["label"] = DWrec.name
-    DWrec.features.append(DW_feature)
-
-    return ([UPrec], [DWrec])
-
 
 def plate_plot(df, value):
     """Plots a 96 well plate as a pandas df.
@@ -562,46 +422,15 @@ def plate_plot(df, value):
     return df[cols].set_index(["prow", "pcol"]).unstack(level=-1)
 
 
-def CRIPSR_knockout(gRNA_record, insertion_site, repair_DNA):
-
-    """Simple version of casembler - Cuts the insertion site with
-     CAS9_cutting and assembles knockout with a repair template.
-
-    Parameters
-    ----------
-    gRNA_record: pydna.dseqrecord.
-        A 20 bp DNA sequence
-
-    insertion_site: pydna.dseqrecord.
-        The site to knock out
-
-    repair_DNA: pydna.dseqrecord.
-        Repair template. Typucally 90 bp or longer
-
-    Returns
-    -------
-    pydna.dseqrecord.
-        Of assembled contig after CRISPR-mediated KO
-    """
-    # Create fragments after CAS9 cut
-    IS_UP, IS_DW = CAS9_cutting(gRNA_record, insertion_site)
-
-    # create list of parts and assemble to knockout sequence
-    assmeble_parts = IS_UP, repair_DNA, IS_DW
-    assembled_knockout = Assembly(assmeble_parts).assemble_linear()[0]
-
-    return assembled_knockout
-
 def seq_to_annotation(seq_record_from : Bio.SeqRecord, seq_record_onto : Bio.SeqRecord, type_name : str):
-    """Anotate an Bio.SeqRecord object from another amplicon object.
+    """Anotate an Bio.SeqRecord object from another 
+    bio.seqrecord object.
 
     Parameters
     ----------
     seqrec_from: Bio.SeqRecord
         annotation sequence that will be extracted
-
     seqrec_onto: Bio.SeqRecord
-
     type_name: str
         name of the sequence that will be extracted
 
@@ -610,13 +439,11 @@ def seq_to_annotation(seq_record_from : Bio.SeqRecord, seq_record_onto : Bio.Seq
     None 
     """
     match_index = find_sequence_location(seq_record_from, seq_record_onto)
-
-    if match_index[0] >= 0 and match_index[1] >=0:    
-        strand = 1
-        start_location, end_location = match_index[0], match_index[1]
+    
+    if match_index[2] > 0:
+        start_location, end_location, strand = match_index[0], match_index[1], match_index[2]
     else: 
-        strand = -1
-        start_location, end_location = int(fabs(match_index[1])), int(fabs(match_index[0]))
+        start_location, end_location, strand = match_index[1], match_index[0], match_index[2]
 
     feature = Bio.SeqFeature.SeqFeature(
         Bio.SeqFeature.FeatureLocation(start_location, end_location), type=type_name, strand=strand)
@@ -649,5 +476,168 @@ def find_sequence_location(sequence:Bio.SeqRecord, sequence_to_search_in : Bio.S
 
         if start_index == -1: 
             raise ValueError('ValueERROR - couldnt find a match')
-            
+
     return (start_index, end_index, strand)
+
+
+def crispr_db_break_location(start_location, end_location, strand):
+    """
+    Determine the CRISPR cut location in the genome.
+
+    Parameters
+    ----------
+    start_location : int
+        Start position of the sgRNA sequence in the chromosome.
+    end_location : int
+        End position of the sgRNA sequence in the chromosome.
+    strand : int
+        Strand of the sgRNA sequence in the chromosome, +1 for positive strand, -1 for negative strand.
+
+    Returns
+    -------
+    crispr_db_break : int
+        CRISPR cut location in the genome.
+    """
+    if strand == +1: 
+        crispr_db_break = start_location + 17
+    if strand == -1:
+        crispr_db_break = start_location - 3
+        
+    return crispr_db_break
+
+
+def add_feature_annotation_to_seqrecord(sequence : Bio.SeqRecord, label='', type_name = "misc_feature", strand =0)-> None:
+    ''' Adds feature, label and name to a Bio.Seqrecord sequence.
+    Parameters
+    ----------
+    sequence : Bio.SeqRecord
+    label : str (optional)
+    type_name : str (default: "misc_feature")
+    strand : int (default 0)
+    
+    Returns
+    -------
+    None
+    '''
+    bio_feature = Bio.SeqFeature.SeqFeature(
+                    Bio.SeqFeature.FeatureLocation(0, len(sequence)),
+                    type=type_name, strand=strand)
+    
+    # label
+    sequence.features.append(bio_feature)
+    sequence.features[0].qualifiers['label'] = label
+    sequence.features[0].qualifiers['name'] = sequence.name
+
+def find_all_occurences_of_a_sequence(sequence:Bio.SeqRecord, sequence_to_search_in : Bio.SeqRecord)->tuple:
+    """
+    Searches for all occurrences of a given sequence in a given string.
+
+    Parameters
+    ----------
+    sequence : Bio.SeqRecord
+        Sequence to search for.
+    sequence_to_search_in : Bio.SeqRecord
+        Sequence to search in.
+
+    Returns
+    -------
+    tuple
+        Number of occurrences of `sequence` in `sequence_to_search_in`.
+
+    """
+    finder = re.finditer(str(sequence.seq.upper()), str(sequence_to_search_in.seq.upper()))
+    matches_watson = [(match.start(), match.end()) for match in finder]
+    
+    if len(matches_watson) < 2:
+        finder = re.finditer(str(sequence.seq.upper()), str(sequence_to_search_in.seq.reverse_complement().upper()))
+        matches_crick =[(match.start(), match.end()) for match in finder]
+    
+        return len(matches_watson) + len(matches_crick)
+    else: 
+        return len(matches_watson) 
+    
+
+
+
+
+
+# def UPandDW(strain, isite_name, path_to_gRNA_table="../data/raw/gRNAtable.csv"):
+#     """Finds upstream and downstream sequences based on genome and site name.
+
+#     Parameters
+#     ----------
+#     strain : str
+#         name of the strain eg. CENPK113-7d
+#         (you should specify path to the chromosome)
+
+#     isite_name : str
+#         a string of the site chomosomal site you want to retrieve
+
+#     Returns
+#     -------
+#     UP_sites : list
+#         list of pydna.dseqrecord or pydna.amplicon.Amplicon
+
+#     DW_sites : list
+#         list of pydna.dseqrecord or pydna.amplicon.Amplicon
+
+#     """
+
+#     # load lookup table
+#     gRNAtable = pd.read_csv(path_to_gRNA_table, index_col="name")
+
+#     chromosome_no = gRNAtable.loc[isite_name, "chromosome"]
+
+#     # load chromosome
+#     PathToChromosomeSeq = (
+#         "../data/raw/" + strain + "/" + str(chromosome_no).zfill(2) + ".fa"
+#     )
+#     ChromosomeSeq = Bio.SeqIO.read(PathToChromosomeSeq, "fasta").seq
+
+#     # define homology region location with respect to gRNA sequence
+#     # f_hom is the length of the UP homology
+#     # e_hom is the length of the DW homology
+#     # f_dist is distance from end of UP homology to the first base in isite_sequence
+#     # e_dist is distance from end of the isite_sequence to DW homology
+#     f_dist = gRNAtable.loc[isite_name, "f_dist"]
+#     e_dist = gRNAtable.loc[isite_name, "e_dist"]
+#     f_hom = gRNAtable.loc[isite_name, "f_hom"]
+#     e_hom = gRNAtable.loc[isite_name, "e_hom"]
+
+#     isite_sequence = gRNAtable.loc[isite_name, "sequence"]
+#     isite_sequence = Bio.Seq.Seq(isite_sequence)
+
+#     # Determine gRNA sequence strand
+#     gRNA_strand = 1
+#     if ChromosomeSeq.find(isite_sequence) == -1:
+#         print("not on +1")
+#         gRNA_strand = -1
+#         isite_sequence = isite_sequence.reverse_complement()
+#         if ChromosomeSeq.find(isite_sequence) == -1:
+#             print("not on -1")
+#             print("CAN'T FIND THE CUT SITE IN YOUR SEQUENCE")
+
+#     # Locate UP and DW
+#     StartIndex = ChromosomeSeq.find(isite_sequence)
+#     EndIndex = StartIndex
+
+#     UPseq = ChromosomeSeq[StartIndex + f_dist - f_hom : StartIndex + f_dist]
+#     DWseq = ChromosomeSeq[EndIndex + e_dist : EndIndex + e_dist + e_hom]
+
+#     UPrec = Bio.SeqRecord.SeqRecord(UPseq, name=isite_name + "UP")
+#     DWrec = Bio.SeqRecord.SeqRecord(DWseq, name=isite_name + "DW")
+
+#     # Annotate
+#     UP_feature = Bio.SeqFeature.SeqFeature(
+#         Bio.SeqFeature.FeatureLocation(0, len(UPseq)), type="misc_feature", strand=+1
+#     )
+#     UP_feature.qualifiers["label"] = UPrec.name
+#     UPrec.features.append(UP_feature)
+
+#     DW_feature = Bio.SeqFeature.SeqFeature(
+#         Bio.SeqFeature.FeatureLocation(0, len(DWseq)), type="misc_feature", strand=+1
+#     )
+#     DW_feature.qualifiers["label"] = DWrec.name
+#     DWrec.features.append(DW_feature)
+
+#     return ([UPrec], [DWrec])

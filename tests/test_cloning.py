@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-# Test USER cloning module
-
 # Importing the module we are  testing
 from pydna.amplify import pcr
 from teemi.design.cloning import *
@@ -53,15 +51,15 @@ def test_CAS9_cutting():
     assert dw.seq.watson == 'CCTCTTGGGCTAGCGGTAAAGGTGCGCATTTTTTCACACCCTACAATGTTCTGTTCAAAAGATTTTGGTCAAACGCTGTAGAAGTGAAAGTTGGTGCGCATGTTTCGGCGTTCGAAACTTCTCCGCAGTGAAAGATAAATGATCGCCGTAGTAACGTCGCTGTCGTTTTAGAGCTAGAAATAGCAAGTTAAAATAAGGCTAGTCCGTTATCAACTTGAAAAAGTGGCACCGAGTCGGTGGTGCTTTTTTTGTTTTTTATGTCTTCGAGTCATGTAATTAGTTAAGTGCAGGT'
 
 
-def test_CRIPSR_knockout():
-    # initialize
-    insertion_site = Dseqrecord('TCTTTGAAAAGATAATGTATGATTATGCTTTCACTCATATTTATACAGAAACTTGATGTTTTCTTTCGAGTATATACAAGGTGATTACATGTACGTTTGAAGTACAACTCTAGATTTTGTAGTGCCCTCTTGGGCTAGCGGTAAAGGTGCGCATTTTTTCACACCCTACAATGTTCTGTTCAAAAGATTTTGGTCAAACGCTGTAGAAGTGAAAGTTGGTGCGCATGTTTCGGCGTTCGAAACTTCTCCGCAGTGAAAGATAAATGATCGCCGTAGTAACGTCGCTGTCGTTTTAGAGCTAGAAATAGCAAGTTAAAATAAGGCTAGTCCGTTATCAACTTGAAAAAGTGGCACCGAGTCGGTGGTGCTTTTTTTGTTTTTTATGTCTTCGAGTCATGTAATTAGTTAAGTGCAGGT')
-    gRNA = Dseqrecord('TCTAGATTTTGTAGTGCCCT')
-    repair_template = Dseqrecord('CGTTTGAAGTACAACTCTAGATTTTGTAGTGCCCTCTTGGGCTAGCGGTAAAGGTGCGCATTTTTTCACACCCTACAATGT')
+# def test_CRIPSR_knockout():
+#     # initialize
+#     insertion_site = Dseqrecord('TCTTTGAAAAGATAATGTATGATTATGCTTTCACTCATATTTATACAGAAACTTGATGTTTTCTTTCGAGTATATACAAGGTGATTACATGTACGTTTGAAGTACAACTCTAGATTTTGTAGTGCCCTCTTGGGCTAGCGGTAAAGGTGCGCATTTTTTCACACCCTACAATGTTCTGTTCAAAAGATTTTGGTCAAACGCTGTAGAAGTGAAAGTTGGTGCGCATGTTTCGGCGTTCGAAACTTCTCCGCAGTGAAAGATAAATGATCGCCGTAGTAACGTCGCTGTCGTTTTAGAGCTAGAAATAGCAAGTTAAAATAAGGCTAGTCCGTTATCAACTTGAAAAAGTGGCACCGAGTCGGTGGTGCTTTTTTTGTTTTTTATGTCTTCGAGTCATGTAATTAGTTAAGTGCAGGT')
+#     gRNA = Dseqrecord('TCTAGATTTTGTAGTGCCCT')
+#     repair_template = Dseqrecord('CGTTTGAAGTACAACTCTAGATTTTGTAGTGCCCTCTTGGGCTAGCGGTAAAGGTGCGCATTTTTTCACACCCTACAATGT')
 
-    # call the function
-    Knock_out = CRIPSR_knockout(gRNA,insertion_site, repair_template)
-    assert Knock_out.seq.watson == 'TCTTTGAAAAGATAATGTATGATTATGCTTTCACTCATATTTATACAGAAACTTGATGTTTTCTTTCGAGTATATACAAGGTGATTACATGTACGTTTGAAGTACAACTCTAGATTTTGTAGTGCCCTCTTGGGCTAGCGGTAAAGGTGCGCATTTTTTCACACCCTACAATGTTCTGTTCAAAAGATTTTGGTCAAACGCTGTAGAAGTGAAAGTTGGTGCGCATGTTTCGGCGTTCGAAACTTCTCCGCAGTGAAAGATAAATGATCGCCGTAGTAACGTCGCTGTCGTTTTAGAGCTAGAAATAGCAAGTTAAAATAAGGCTAGTCCGTTATCAACTTGAAAAAGTGGCACCGAGTCGGTGGTGCTTTTTTTGTTTTTTATGTCTTCGAGTCATGTAATTAGTTAAGTGCAGGT'
+#     # call the function
+#     Knock_out = CRIPSR_knockout(gRNA,insertion_site, repair_template)
+#     assert Knock_out.seq.watson == 'TCTTTGAAAAGATAATGTATGATTATGCTTTCACTCATATTTATACAGAAACTTGATGTTTTCTTTCGAGTATATACAAGGTGATTACATGTACGTTTGAAGTACAACTCTAGATTTTGTAGTGCCCTCTTGGGCTAGCGGTAAAGGTGCGCATTTTTTCACACCCTACAATGTTCTGTTCAAAAGATTTTGGTCAAACGCTGTAGAAGTGAAAGTTGGTGCGCATGTTTCGGCGTTCGAAACTTCTCCGCAGTGAAAGATAAATGATCGCCGTAGTAACGTCGCTGTCGTTTTAGAGCTAGAAATAGCAAGTTAAAATAAGGCTAGTCCGTTATCAACTTGAAAAAGTGGCACCGAGTCGGTGGTGCTTTTTTTGTTTTTTATGTCTTCGAGTCATGTAATTAGTTAAGTGCAGGT'
 
 def test_extract_gRNAs():
     template = 'TCTTTGAAAAGATAATGTATGATTATGCTTTCACTCATATTTATACAGAAACTTGATGTTTTCTTTCGAGTATATACAAGGTGATTACATGTACGTTTGAAGTACAACTCTAGATTTTGTAGTGCCCTCTTGGGCTAGCGGTAAAGGTGCGCATTTTTTCACACCCTACAATGTTCTGTTCAAAAGATTTTGGTCAAACGCTGTAGAAGTGAAAGTTGGTGCGCATGTTTCGGCGTTCGAAACTTCTCCGCAGTGAAAGATAAATGATCGCCGTAGTAACGTCGCTGTCGTTTTAGAGCTAGAAATAGCAAGTTAAAATAAGGCTAGTCCGTTATCAACTTGAAAAAGTGGCACCGAGTCGGTGGTGCTTTTTTTGTTTTTTATGTCTTCGAGTCATGTAATTAGTTAAGTGCAGGT'
@@ -130,24 +128,16 @@ def test_extract_sites():
 
 
 def test_seq_to_annotation(): 
-    template1 = 'TCTTTGAAAAGATAATGTATGATTATGCTTTCACTCATATTTATACAGAAACTTGATGTTTTCTTTCGAGTATATACAAGGTGATTACATGTACGTTTGAAGTACAACTCTAGATTTTGTAGTGCCCTCTTGGGCTAGCGGTAAAGGTGCGCATTTTTTCACACCCTACAATGTTCTGTTCAAAAGATTTTGGTCAAACGCTGTAGAAGTGAAAGTTGGTGCGCATGTTTCGGCGTTCGAAACTTCTCCGCAGTGAAAGATAAATGATCGCCGTAGTAACGTCGCTGTCGTTTTAGAGCTAGAAATAGCAAGTTAAAATAAGGCTAGTCCGTTATCAACTTGAAAAAGTGGCACCGAGTCGGTGGTGCTTTTTTTGTTTTTTATGTCTTCGAGTCATGTAATTAGTTAAGTGCAGGT'
-    primerF1 = 'CGTGCGAUTCTTTGAAAAGATAATGTATGA'
-    primerR1 = 'ACCTGCACUTAACTAATTACATGACTCGA'
-    rec_vector1 = pcr(primerF1,primerR1, template1)
-
-    template2 = 'ATATTTATACAGAAACTTGATGTTTTCTTTCGAGTATATACAAGGTGATTACATGTACGTTTGAAGTACAACTCTAGATTTTGTAGTGCCCTCTTGGGCTAGCGGTAAAGGTGCGCATTTTTTCACACCCTACAATGTTCTG'
-    primerF2 = 'ATATTTATACAGAAACTTGATG'
-    primerR2 = 'CAGAACATTGTAGGGTGTGAAAAAAT'
-    rec_vector2 = pcr(primerF2,primerR2, template2)
+    test_plasmid = SeqIO.read('../teemi/tests/files_for_testing/MIA-HA-1.gb', 'gb')
+    test_sequence = test_plasmid[0:100]
     
     # The actual test
-    seq_to_annotation(rec_vector2, rec_vector1, 'AMPLICON2')
-    assert rec_vector1.features[2].type == 'AMPLICON2'
-    assert rec_vector1.features[2].location.start.position == 44
-    assert rec_vector1.features[2].location.end.position == 186
+    seq_to_annotation(test_sequence, test_plasmid, 'AMPLICON2')
 
-def test_UPandDW(): 
-    pass 
+    assert test_plasmid.features[-1].type == 'AMPLICON2'
+    assert test_plasmid.features[-1].location.start.position == 0
+    assert test_plasmid.features[-1].location.end.position == 100
+
 
 def test_casembler():
     # name 
@@ -188,7 +178,6 @@ def test_casembler():
     assert str(assembly[0].seq[:20]) =='GTTTGTAGTTGGCGGTGGAG'
 
 
-
 def test_find_sequence_location(): 
     
     test_plasmid = SeqIO.read('../teemi/tests/files_for_testing/MIA-HA-1.gb', format = 'genbank')
@@ -206,3 +195,42 @@ def test_find_sequence_location():
     assert start_end_location[0] == 22
     assert start_end_location[1] == 2
     assert start_end_location[2] == -1
+
+
+def test_crispr_db_break_location(): 
+    
+    assert crispr_db_break_location(220,200, -1) == 217
+    assert crispr_db_break_location(200,220, 1) == 217
+
+
+def test_add_feature_annotation_to_seqrecord(): 
+    test_plasmid = SeqIO.read('../teemi/tests/files_for_testing/MIA-HA-1.gb', 'gb')
+    add_feature_annotation_to_seqrecord(test_plasmid,label=f'This a test', strand = 1)
+    
+    assert test_plasmid.features[0].qualifiers['label'] == 'This a test'
+    assert test_plasmid.features[-1].location.start.position == 0
+    assert test_plasmid.features[-1].location.end.position == len(test_plasmid)
+
+
+
+def test_find_all_occurences_of_a_sequence(): 
+    test_plasmid = SeqIO.read('../teemi/tests/files_for_testing/MIA-HA-1.gb', 'gb')
+    sgRNA = SeqRecord(Seq('attcattaccatagtattact'), name = 'random_sgRNA', id = '1483', description = 'This is a test sgRNA')
+    do_we_have_multiple_hits_on_the_genome = find_all_occurences_of_a_sequence(sgRNA, test_plasmid)
+
+    assert do_we_have_multiple_hits_on_the_genome == 1
+    
+    sgRNA = SeqRecord(Seq('TGACGAATCGTTAGGCACAG'), name = 'random_sgRNA', id = '1483', description = 'This is a test sgRNA')
+    do_we_have_multiple_hits_on_the_genome = find_all_occurences_of_a_sequence(sgRNA, test_plasmid)
+
+    assert do_we_have_multiple_hits_on_the_genome == 1
+
+    sgRNA = SeqRecord(Seq('CTATTTTTTTCTGCTTACGCGAGAGAGAGATAGATAGA'), name = 'random_sgRNA', id = '1483', description = 'This is a test sgRNA')
+    do_we_have_multiple_hits_on_the_genome = find_all_occurences_of_a_sequence(sgRNA, test_plasmid)
+
+    assert do_we_have_multiple_hits_on_the_genome == 0
+
+    sgRNA = SeqRecord(Seq('CTAT'), name = 'random_sgRNA', id = '1483', description = 'This is a test sgRNA')
+    do_we_have_multiple_hits_on_the_genome = find_all_occurences_of_a_sequence(sgRNA, test_plasmid)
+
+    assert do_we_have_multiple_hits_on_the_genome == 27

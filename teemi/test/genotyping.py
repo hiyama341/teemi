@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # MIT License
-# Copyright (c) 2022, Technical University of Denmark (DTU)
+# Copyright (c) 2023, Technical University of Denmark (DTU)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -166,7 +166,7 @@ def concatenating_list_of_dfs(list_of_dfs: list):
 
 def pairwise_alignment_of_templates(
     reads: list, templates: list, primers: list
-) -> dict:
+) -> pd.DataFrame:
     """Infers relationship of templates to reads based on highest
     score from a pairwise alignment.
 
