@@ -137,14 +137,14 @@ Strictosidine case : First DBTL cycle
     :target: https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/02_1_DESIGN_Combinatorial_library.ipynb
     
 
-00. Describes how we can automatically fetch homologs from NCBI from a query in a standardizable and repeatable way |Notebook 00|. 
+00. Automatically fetch homologs from NCBI from a query in a standardizable and repeatable way |Notebook 00|. 
 
 
-01. Describes how promoters can be selected from RNAseq data and fetched from online database with various quality measurements implemented |Notebook 01|.
+01. Promoters can be selected from RNAseq data and fetched from online database with various quality measurements implemented |Notebook 01|.
 
 
 
-02. Describes how a combinatorial library can be generated with the DesignAssembly class along with robot executable intructions |Notebook 02|. 
+02. Combinatorial libraries can be generated with the DesignAssembly class along with robot executable intructions |Notebook 02|. 
 
 
 
@@ -166,11 +166,11 @@ Strictosidine case : First DBTL cycle
     :target: https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/05_1_BUILD_CombinatorialLibrary_AllStrains.ipynb
 
 
-03. Describes the assembly of a CRISPR plasmid with USER cloning |Notebook 03|.
+03. Assembly of a CRISPR plasmid with USER cloning |Notebook 03|.
 
-04. Describes the construction of the background strain by K/O of G8H and CPR |Notebook 04|.
+04. Construction of the background strain by K/O of G8H and CPR |Notebook 04|.
 
-05. Shows how the first combinatorial library was generated for 1280 possible combinations |Notebook 05|. 
+05. First combinatorial library was generated for 1280 possible combinations |Notebook 05|. 
 
 
 
@@ -182,7 +182,7 @@ Strictosidine case : First DBTL cycle
     :target: https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/06_1_TEST_LibraryCharacterisation.ipynb
 
 
-06. Describes data processing of LC-MS data and genotyping of the generated strains |Notebook 06|.  
+06. Data processing of LC-MS data and genotyping of the generated strains |Notebook 06|.  
 
 
 **LEARN:**
@@ -192,7 +192,7 @@ Strictosidine case : First DBTL cycle
     :target: https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/07_1_LEARN_DataAnalysis.ipynb
 
 
-07. Describes how we use AutoML to predict the best combinations for a targeted second round of library construction |Notebook 07|.
+07. Use AutoML to predict the best combinations for a targeted second round of library construction |Notebook 07|.
 
 
 
@@ -207,7 +207,7 @@ Strictosidine case : Second DBTL cycle
     :alt: Notebook 08
     :target: https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/09_BUILD_Library2.ipynb
 
-08. Shows how results from the ML can be translated into making a target library of strains |Notebook 08|. 
+08. Results from the ML can be translated into making a targeted library of strains |Notebook 08|. 
 
 
 
@@ -232,7 +232,7 @@ Strictosidine case : Second DBTL cycle
 
 
 
-10. Describes the data processing of LC-MS data like in notebook 7 |Notebook 10|.
+10. Data processing of LC-MS data like in notebook 7 |Notebook 10|.
 
 
 
