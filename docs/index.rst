@@ -1,4 +1,4 @@
-.. image:: https://raw.githubusercontent.com/hiyama341/teemi/main/pictures/teemi1.svg?token=GHSAT0AAAAAABTYCY2LIAJ7B7ZTWBR4NMHIYZUJQ4A
+.. image:: https://raw.githubusercontent.com/hiyama341/teemi/main/pictures/teemi_logo.svg
   :width: 400
   :alt: teemi logo 
 
