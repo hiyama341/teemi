@@ -77,7 +77,7 @@ def ODtime(initialOD: float, time: float, td: float = 0.5):
 
 
 def time_to_inculate(
-    initialOD=0.0025, td=0.4, verbose=False, transformation_time: int = 12
+    initialOD=0.0025, td=0.4, verbose=False, transformation_time: int = 12, plot = False
 ):
 
     """Calculates when a starter culture is ready to be inoculated
@@ -120,21 +120,23 @@ def time_to_inculate(
     ods_025_3 = [ODtime(initialOD, time, td=0.3) for time in times]
     ods_025_input = [ODtime(initialOD, time, td=td) for time in times]
     ods_025_5 = [ODtime(initialOD, time, td=0.5) for time in times]
-    fig = plt.figure()
-    ax = plt.axes()
 
-    # ax.set_xlim(lims)
-    ax.set_ylim([0, 2.2])
-    ax.plot(times, [2] * len(times), "r-", label="end of exponential phase")
-    ax.plot(times, [1] * len(times), "k-", label="target")
-    ax.plot(times, ods_025_3, label="iOD=" + str(initialOD) + ", td=0.3")
-    ax.plot(times, ods_025_input, label="iOD=" + str(initialOD) + ", td=" + str(td))
-    ax.plot(times, ods_025_5, label="iOD=" + str(initialOD) + ", td=0.5")
+    if plot: 
+        fig = plt.figure()
+        ax = plt.axes()
 
-    plt.xlabel("time, h^-1")
-    plt.ylabel("OD")
-    plt.legend()
-    plt.show()
+        # ax.set_xlim(lims)
+        ax.set_ylim([0, 2.2])
+        ax.plot(times, [2] * len(times), "r-", label="end of exponential phase")
+        ax.plot(times, [1] * len(times), "k-", label="target")
+        ax.plot(times, ods_025_3, label="iOD=" + str(initialOD) + ", td=0.3")
+        ax.plot(times, ods_025_input, label="iOD=" + str(initialOD) + ", td=" + str(td))
+        ax.plot(times, ods_025_5, label="iOD=" + str(initialOD) + ", td=0.5")
+
+        plt.xlabel("time, h^-1")
+        plt.ylabel("OD")
+        plt.legend()
+        plt.show()
 
     def inoculation_time(times, ods):
         def find_closest(A, target):
@@ -420,8 +422,7 @@ def calculate_volume_and_total_concentration(amplicons, amplicon_parts_amounts_t
     total_vol = sum(volumes)
     total_ngs = sum(ngs)
     total_conc = total_ngs/total_vol
-    print('total volume: ', sum(volumes))
-    print()
+    print('total volume: ', sum(volumes),'\n')
     print('total ngs: ', sum(ngs))
     print('total conc: ', total_conc)
     

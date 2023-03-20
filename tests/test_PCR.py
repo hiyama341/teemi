@@ -3,7 +3,6 @@
 # Test PCR module
 
 from pydna.dseqrecord import Dseqrecord
-from pydna.readers import read
 from pydna.amplify import pcr
 from pydna.primer import Primer
 from Bio.SeqRecord import SeqRecord

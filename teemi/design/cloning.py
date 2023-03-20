@@ -528,7 +528,7 @@ def add_feature_annotation_to_seqrecord(sequence : Bio.SeqRecord, label='', type
     sequence.features[0].qualifiers['label'] = label
     sequence.features[0].qualifiers['name'] = sequence.name
 
-def find_all_occurences_of_a_sequence(sequence:Bio.SeqRecord, sequence_to_search_in : Bio.SeqRecord)->tuple:
+def find_all_occurrences_of_a_sequence(sequence:Bio.SeqRecord, sequence_to_search_in : Bio.SeqRecord)->tuple:
     """
     Searches for all occurrences of a given sequence in a given string.
 

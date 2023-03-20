@@ -216,21 +216,21 @@ def test_add_feature_annotation_to_seqrecord():
 def test_find_all_occurences_of_a_sequence(): 
     test_plasmid = SeqIO.read('../teemi/tests/files_for_testing/MIA-HA-1.gb', 'gb')
     sgRNA = SeqRecord(Seq('attcattaccatagtattact'), name = 'random_sgRNA', id = '1483', description = 'This is a test sgRNA')
-    do_we_have_multiple_hits_on_the_genome = find_all_occurences_of_a_sequence(sgRNA, test_plasmid)
+    do_we_have_multiple_hits_on_the_genome = find_all_occurrences_of_a_sequence(sgRNA, test_plasmid)
 
     assert do_we_have_multiple_hits_on_the_genome == 1
     
     sgRNA = SeqRecord(Seq('TGACGAATCGTTAGGCACAG'), name = 'random_sgRNA', id = '1483', description = 'This is a test sgRNA')
-    do_we_have_multiple_hits_on_the_genome = find_all_occurences_of_a_sequence(sgRNA, test_plasmid)
+    do_we_have_multiple_hits_on_the_genome = find_all_occurrences_of_a_sequence(sgRNA, test_plasmid)
 
     assert do_we_have_multiple_hits_on_the_genome == 1
 
     sgRNA = SeqRecord(Seq('CTATTTTTTTCTGCTTACGCGAGAGAGAGATAGATAGA'), name = 'random_sgRNA', id = '1483', description = 'This is a test sgRNA')
-    do_we_have_multiple_hits_on_the_genome = find_all_occurences_of_a_sequence(sgRNA, test_plasmid)
+    do_we_have_multiple_hits_on_the_genome = find_all_occurrences_of_a_sequence(sgRNA, test_plasmid)
 
     assert do_we_have_multiple_hits_on_the_genome == 0
 
     sgRNA = SeqRecord(Seq('CTAT'), name = 'random_sgRNA', id = '1483', description = 'This is a test sgRNA')
-    do_we_have_multiple_hits_on_the_genome = find_all_occurences_of_a_sequence(sgRNA, test_plasmid)
+    do_we_have_multiple_hits_on_the_genome = find_all_occurrences_of_a_sequence(sgRNA, test_plasmid)
 
     assert do_we_have_multiple_hits_on_the_genome == 27
