@@ -17,8 +17,10 @@
 
 import re
 from Bio import pairwise2
-from dnachisel import *
 import pandas as pd
+from dnachisel import DnaOptimizationProblem, EnforceGCContent, CodonOptimize
+from typing import List
+from Bio.SeqRecord import SeqRecord
 
 
 def alignment_identity(query: list, reference: str) -> list:
@@ -53,7 +55,6 @@ def filter_blast_results(
     UPPER__PROTEIN_IDENTITY_THRESH=1,
     show_alignment=False,
 ):
-
     Alignments_that_follow_our_criteria = []  # These are the ACC numbers
 
     # saving some of the metrics
@@ -108,12 +109,13 @@ def filter_blast_results(
 
 
 def codon_optimize_with_dnachisel(
-    sequences: list,
+    sequences: List[SeqRecord],
     lower_GC: float = 0.3,
     upper_GC: float = 0.7,
-    species: str = "s_cerevisiae",
+    species: str = None,
+    codon_usage_table=None,
     window: int = 50,
-) -> list:
+) -> List[SeqRecord]:
     """Codon-optimize sequences with_dnachisel.
 
     Parameters
@@ -128,20 +130,49 @@ def codon_optimize_with_dnachisel(
         name of the species for which to optimize the sequence.
         examples: 'e_coli, s_cerevisiae, h_sapiens, c_elegans, b_subtilis, d_melanogaster
         check python_codon_tables for more info.
+    codon_usage_table:
+        a codon table following the structure of:
+        {'*': {'TAA': 0.0, 'TAG': 0.0, 'TGA': 1.0},...
+
 
     Returns
     -------
     list of codon optimized sequences for yeast
     """
+
+    if not species and not codon_usage_table:
+        raise ValueError(
+            "At least one of `species` and `codon_usage_table` must be specified."
+        )
+
     codon_optimized_seqs = []
 
     # DEFINE THE OPTIMIZATION PROBLEM
     for seq in sequences:
-        problem = DnaOptimizationProblem(
-            sequence=seq.seq,
-            constraints=[EnforceGCContent(mini=lower_GC, maxi=upper_GC, window=window)],
-            objectives=[CodonOptimize(species=species)],
-        )
+        if species:
+            problem = DnaOptimizationProblem(
+                sequence=seq.seq,
+                constraints=[
+                    EnforceGCContent(mini=lower_GC, maxi=upper_GC, window=window)
+                ],
+                objectives=[CodonOptimize(species=species)],
+            )
+
+            # SOLVE THE CONSTRAINTS, OPTIMIZE WITH RESPECT TO THE OBJECTIVE
+            problem.resolve_constraints()
+            problem.optimize()
+
+            print(problem.constraints_text_summary())
+            print(problem.objectives_text_summary())
+
+        elif codon_usage_table:
+            problem = DnaOptimizationProblem(
+                sequence=seq.seq,
+                constraints=[
+                    EnforceGCContent(mini=lower_GC, maxi=upper_GC, window=window)
+                ],
+                objectives=[CodonOptimize(codon_usage_table=codon_usage_table)],
+            )
 
         # SOLVE THE CONSTRAINTS, OPTIMIZE WITH RESPECT TO THE OBJECTIVE
         problem.resolve_constraints()
