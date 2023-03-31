@@ -30,6 +30,9 @@ teemi: a python package designed to make HT strain construction reproducible and
 .. image:: https://img.shields.io/badge/code%20style-black-black
         :target: https://black.readthedocs.io/en/stable/
 
+.. image:: https://img.shields.io/github/last-commit/hiyama341/teemi
+
+
 
 What is teemi?
 ~~~~~~~~~~~~~~
@@ -67,33 +70,16 @@ Please cite our paper (in preparation - link tba) if you've used teemi in a scie
 
 Features
 --------
-- teemi/
 
-    - design/
-        - combinatorial_design.py
-        - teselagen_helpers.py
-        - cloning.py
-        - retrieve_gene_homologs.py
-        - fetch_sequences.py
-    
-    - build/
-        - transformation.py
-        - containers_wells_picklists.py
-        - robot_assembly.py
-        - PCR.py
-
-    - test/
-        - genotyping.py
-
-    - learn/
-        - plotting.py
-        - auto_ml.py
-
-    - lims/
-        - benchling_api.py
-        - csv_database.py  
-
-    - utils.py
+* Combinatorial library generation
+* HT cloning and transformation workflows
+* Flowbot One instructions
+* CSV-based LIMS system as well as integration to Benchling
+* Genotyping of microbial strains
+* Advanced Machine Learning of biological datasets with the AutoML `H2O <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html>`__
+* Workflows for selecting enzyme homologs
+* Promoter selection workflows from RNA-seq datasets
+* Data analysis of large LC-MS datasets along with workflows for analysis
 
 
 Getting started
