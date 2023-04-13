@@ -1,0 +1,46 @@
+name: "weekly ci-cd"
+on:
+  schedule:
+  # Every monday at 1PM UTC 9am EST
+  #- cron: "0 13 * * 1"
+  # Every 10 minutes
+  - cron: "*/10 * * * *" 
+
+jobs:
+  ci:
+    # Set up operating system
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8"  ,"3.9", "3.10", "3.11"]
+
+    # Define job steps
+    steps:
+
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Check-out repository
+        uses: actions/checkout@v2
+        with: 
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 pytest
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          
+      - name: Test with pytest
+        run: |
+          pytest --cov --cov-report=xml
+          
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+
+      - name: Build package
+        run: python setup.py sdist bdist_wheel
