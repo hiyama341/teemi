@@ -123,15 +123,18 @@ Strictosidine case : First DBTL cycle
     
 
 00. Automatically fetch homologs from NCBI from a query in a standardizable and repeatable way 
+
 |Notebook 00| 
 
 
 01. Promoters can be selected from RNAseq data and fetched from online database with various quality measurements implemented 
+
 |Notebook 01|
 
 
 
 02. Combinatorial libraries can be generated with the DesignAssembly class along with robot executable intructions 
+
 |Notebook 02| 
 
 
@@ -155,12 +158,15 @@ Strictosidine case : First DBTL cycle
 
 
 03. Assembly of a CRISPR plasmid with USER cloning 
+
 |Notebook 03|
 
 04. Construction of the background strain by K/O of G8H and CPR 
+
 |Notebook 04|
 
 05. First combinatorial library was generated for 1280 possible combinations 
+
 |Notebook 05| 
 
 
@@ -174,6 +180,7 @@ Strictosidine case : First DBTL cycle
 
 
 06. Data processing of LC-MS data and genotyping of the generated strains 
+
 |Notebook 06|  
 
 
@@ -185,6 +192,7 @@ Strictosidine case : First DBTL cycle
 
 
 07. Use AutoML to predict the best combinations for a targeted second round of library construction 
+
 |Notebook 07|
 
 
@@ -201,6 +209,7 @@ Strictosidine case : Second DBTL cycle
     :target: https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/09_BUILD_Library2.ipynb
 
 08. Results from the ML can be translated into making a targeted library of strains 
+
 |Notebook 08| 
 
 
@@ -214,6 +223,7 @@ Strictosidine case : Second DBTL cycle
 
 
 09. Shows the construction of a targeted library of strains 
+
 |Notebook 09| 
 
 
@@ -228,6 +238,7 @@ Strictosidine case : Second DBTL cycle
 
 
 10. Data processing of LC-MS data like in notebook 6 
+
 |Notebook 10|
 
 
@@ -241,6 +252,7 @@ Strictosidine case : Second DBTL cycle
 
 
 11. Second ML cycle of ML showing how the model increased performance and saturation of best performing strains 
+
 |Notebook 11| 
 
 
