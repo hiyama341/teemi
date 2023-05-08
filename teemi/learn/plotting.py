@@ -39,7 +39,8 @@ def carpet_barplot(
     ylabel="",
     size_height: int = 10,
     size_length: int = 20,
-    bar_width = 1.0
+    bar_width = 1.0, 
+    ylim = [0,25]
 ) -> None:
     """Plotting stacked barplots from a pandas dataframe cross tab df
 
@@ -112,6 +113,7 @@ def plot_ml_learning_curve(
     size_length: int = 10,
     title = '', 
     linewidth:int = 1.5,
+    y_axis_range:list = [0,25]
 ) -> None:
     """Plotting a learning curve from partitioned dataframes.
 
@@ -188,6 +190,9 @@ def plot_ml_learning_curve(
     # SIze matters
     fig = mpl.pyplot.gcf()
     fig.set_size_inches(size_length,size_height)
+
+    # change y-axis range 
+    plt.ylim(y_axis_range)
 
     if save_pdf and path != "":
         ## save pdf
