@@ -77,11 +77,9 @@ def ODtime(initialOD: float, time: float, td: float = 0.5):
 
 
 def time_to_inoculate(
-    initialOD=0.0025, td=0.4, verbose=False, transformation_time: int = 12, plot = False
+    initialOD: float, td: float, verbose: bool, transformation_time: float, target_OD: float
 ):
-
-    """Calculates when a starter culture is ready to be inoculated
-     with a transformation mixture.
+    """Calculates when a starter culture is ready to be transformed.
 
     Parameters
     ----------
@@ -92,6 +90,8 @@ def time_to_inoculate(
         The time you want to transform
     verbose : Bool
         Provides extra information
+    target_OD: float
+        The target optical density that needs to be reached before transformation.
 
     Returns
     -------
@@ -103,40 +103,35 @@ def time_to_inoculate(
     For example:
     OD_1 = 1 * 10^7 cells / ml
     For a succesfull S.cerevisiae transformation between 1 to 2 × 10^7 cells/ml should be used
-    Normal doupling time is between 3-6 hours
+    Normal doubling time is between 3-6 hours
 
 
     """
     if verbose:
         print("GOAL: to get enough cells in exponential phase for transformation")
-    print("Assumed that: ")
+    print("Assumptions:")
     print(
-        "- transformation time "
-        + str(transformation_time)
-        + " (reached OD=1 the day after)"
+        f"- Transformation time: {transformation_time} (aka time when the target OD is reached)"
     )
 
-    times = list(range(0, 37))
-    ods_025_3 = [ODtime(initialOD, time, td=0.3) for time in times]
+    times = list(range(0, 30))
+    ods_025_3 = [ODtime(initialOD, time, td=td-0.1) for time in times]
     ods_025_input = [ODtime(initialOD, time, td=td) for time in times]
-    ods_025_5 = [ODtime(initialOD, time, td=0.5) for time in times]
+    ods_025_5 = [ODtime(initialOD, time, td=td+0.1) for time in times]
+    fig = plt.figure()
+    ax = plt.axes()
 
-    if plot: 
-        fig = plt.figure()
-        ax = plt.axes()
+    # ax.set_xlim(lims)
+    ax.set_ylim([0, 2.0])
+    ax.plot(times, [target_OD] * len(times), "k-", label="target")
+    ax.plot(times, ods_025_3, label="iOD=" + str(initialOD) + ", td=" + str(round(td-0.1, 1)))
+    ax.plot(times, ods_025_input, label="iOD=" + str(initialOD) + ", td=" + str(td))
+    ax.plot(times, ods_025_5, label="iOD=" + str(initialOD) + ", td=" + str(td+0.1))
 
-        # ax.set_xlim(lims)
-        ax.set_ylim([0, 2.2])
-        ax.plot(times, [2] * len(times), "r-", label="end of exponential phase")
-        ax.plot(times, [1] * len(times), "k-", label="target")
-        ax.plot(times, ods_025_3, label="iOD=" + str(initialOD) + ", td=0.3")
-        ax.plot(times, ods_025_input, label="iOD=" + str(initialOD) + ", td=" + str(td))
-        ax.plot(times, ods_025_5, label="iOD=" + str(initialOD) + ", td=0.5")
-
-        plt.xlabel("time, h^-1")
-        plt.ylabel("OD")
-        plt.legend()
-        plt.show()
+    plt.xlabel("time, h^-1")
+    plt.ylabel("OD")
+    plt.legend()
+    plt.show()
 
     def inoculation_time(times, ods):
         def find_closest(A, target):
@@ -148,31 +143,21 @@ def time_to_inoculate(
             idx -= target - left < right - target
             return idx
 
-        # In how many hours will the cells have reached OD 1?
+        # In how many hours will the cells have reached the
         hours_to_OD1 = times[find_closest(np.array(ods), 1)]
-        print("Hours to OD = 1: \t" + str(hours_to_OD1) + " hours")
+        print("Hours to target OD: \t" + str(hours_to_OD1) + " hours")
 
         ### When do u need to innoculate?
-        when_to_inoculate = transformation_time - hours_to_OD1
-
-        if when_to_inoculate < 0:
-            print("Transformation time has been set to ", transformation_time)
-            print(
-                "Time of inoculation: \t"
-                + str(when_to_inoculate + 24)
-                + " (the day before)"
-            )
-
-        else:
-            print("Transformation time has been set to ", transformation_time)
-            print(
-                "Time of inoculation: \t" + str(when_to_inoculate) + "(the day before)"
+        when_to_inoculate = transformation_time - timedelta(hours=hours_to_OD1)
+        print("Transformation time has been set to ", transformation_time)
+        print("Time of inoculation: \t"
+                + str(when_to_inoculate), "(aka when to start growing the cells)"
             )
 
         # If i innoculate now?
 
         print(
-            "\nIf you innoculate now, the cells will have reached OD= 1 by:  ",
+            "\nNB: If you inoculated now, the cells will have reached the target OD by:  ",
             datetime.now() + timedelta(hours=hours_to_OD1),
         )
 
@@ -183,7 +168,7 @@ def time_to_inoculate(
         print(
             "How to hit initialOD = 0.0025 (e.g. from colony)? Guess. Inoculate 9/10 + 1/10 'normal' colony per ~10 ml"
         )
-        print("How much volume? ~2 ml per transformation")
+        print("How much volume? ~2 ml per transformation.")
 
 
 def transformation_mix(
