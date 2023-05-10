@@ -274,7 +274,8 @@ calculated con 357.14285714285717'''
 
 
 def test_time_to_inculate(capsys):
-    time_to_inculate(initialOD=0.0025, td=0.4, verbose=True, transformation_time=12)
+    # Test 1
+    time_to_inoculate(initialOD=0.0025, td=0.4, verbose=True, transformation_time=12)
     captured = capsys.readouterr()
     assert "GOAL: to get enough cells in exponential phase for transformation" in captured.out
     assert "Assumed that:" in captured.out

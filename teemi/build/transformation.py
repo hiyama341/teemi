@@ -76,7 +76,7 @@ def ODtime(initialOD: float, time: float, td: float = 0.5):
         return "non-valid_input"
 
 
-def time_to_inculate(
+def time_to_inoculate(
     initialOD=0.0025, td=0.4, verbose=False, transformation_time: int = 12, plot = False
 ):
 
