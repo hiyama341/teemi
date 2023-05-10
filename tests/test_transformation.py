@@ -275,13 +275,13 @@ calculated con 357.14285714285717'''
 
 def test_time_to_inculate(capsys):
     # Test 1
-    time_to_inoculate(initialOD=0.0025, td=0.4, verbose=True, transformation_time=12)
+    time_to_inoculate(initialOD=0.0025, td=0.4, verbose=True, transformation_time=12,target_OD =1, plot=False )
     captured = capsys.readouterr()
     assert "GOAL: to get enough cells in exponential phase for transformation" in captured.out
-    assert "Assumed that:" in captured.out
-    assert "Hours to OD = 1:" in captured.out
-    assert "Time of inoculation:" in captured.out
-    assert "If you innoculate now, the cells will have reached OD= 1 by:" in captured.out
+    assert "Assumptions:" in captured.out
+    assert "Hours to target OD: 	" in captured.out
+    assert "Time of inoculation: 	" in captured.out
+    assert "NB: If you inoculated now, the cells will have reached the target OD by:   " in captured.out
 
 
 def test_calculate_volume_and_total_concentration():
