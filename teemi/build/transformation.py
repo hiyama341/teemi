@@ -77,32 +77,34 @@ def ODtime(initialOD: float, time: float, td: float = 0.5):
 
 
 def time_to_inoculate(
-    initialOD: float, td: float, verbose: bool, transformation_time: float, target_OD: float, plot=True
-):
+    initialOD: float, td: float, verbose: bool, transformation_time: int, target_OD: float, plot:bool=True):
     """Calculates when a starter culture is ready to be transformed.
 
     Parameters
     ----------
     initialOD : float
+        the OD that you have you have diluted to e.g. 0.0025
     td : float
-        is doubling time
+        Doubling time - you can find this online or find experimentally.
     transformation_time : int
-        The time you want to transform
+        The time you want to transform. For example could be at 8 in the morning. 
     verbose : Bool
         Provides extra information
     target_OD: float
         The target optical density that needs to be reached before transformation.
+    plot : bool
+        If you want to visualize the plot
 
     Returns
     -------
-    A plot of cell growth at different td
+    A plot of cell growth at different td along with text about the transformation.
 
     Notes
     -----
     This is used to calculate when the cells should be used for transformation.
     For example:
     OD_1 = 1 * 10^7 cells / ml
-    For a succesfull S.cerevisiae transformation between 1 to 2 × 10^7 cells/ml should be used
+    For a successful S.cerevisiae transformation between 1 to 2 × 10^7 cells/ml should be used
     Normal doubling time is between 3-6 hours
 
 
@@ -154,7 +156,7 @@ def time_to_inoculate(
                 + str(when_to_inoculate), "(aka when to start growing the cells)"
             )
 
-        # If i innoculate now?
+        # If i inoculate now?
         from datetime import datetime
         print(
             "\nNB: If you inoculated now, the cells will have reached the target OD by:  ",
