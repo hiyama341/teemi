@@ -381,7 +381,9 @@ def correlation_plot(dataframe, x: str, y: str,
     path: str = "", 
     title: str = '',
     size_height: int = 10,
-    size_length: int = 10) -> None:
+    size_length: int = 10,
+    y_axis_range: list = [0,1],
+    x_axis_range: list = [0,1]) -> None:
     """Plotting a correlation_plot.
 
     Parameters
@@ -395,6 +397,8 @@ def correlation_plot(dataframe, x: str, y: str,
     path : str
     size_height : int
     size_length : int
+    x_axis_range : list
+    y_axis_range : list
 
     Returns
     -------
@@ -436,6 +440,10 @@ def correlation_plot(dataframe, x: str, y: str,
     fig = mpl.pyplot.gcf()
     fig.set_size_inches(size_height, size_length)
     
+    # change y-axis range 
+    plt.xlim(x_axis_range)
+    plt.ylim(y_axis_range)
+
 
     if save_pdf and path != "":
         plt.savefig(path + ".pdf", format="pdf", dpi=300, bbox_inches="tight")
