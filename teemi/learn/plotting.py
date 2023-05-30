@@ -261,7 +261,7 @@ def bar_plot(
 
     # add horisontal line
     if horisontal_line:
-        plt.axhline(y=100, color="black", linestyle="-")
+        plt.axhline(y=100, color = 'black', linestyle = 'dashed')
 
     # Title and labels
     if title is not None:
@@ -302,6 +302,7 @@ def horisontal_bar_plot(
     y_label=None,
     size_height: int = 10,
     size_length: int = 8,
+    legend= False
 ) -> None:
     """Plotting a horisontal_bar_plot .
 
@@ -336,6 +337,13 @@ def horisontal_bar_plot(
     # Change x labels rotation
     ax.tick_params(rotation=90)
 
+    # LEGEND
+    if legend: 
+        lineOne, = ax.plot([], label='dbtl_2')
+        lineTwo, = ax.plot([], label='dbtl_1')
+        ax.legend(handles=[lineOne, lineTwo], loc='best')
+
+
     # remove gridlines
     ax.grid(False)
 
@@ -352,15 +360,15 @@ def horisontal_bar_plot(
 
     # add horisontal line
     if vertical_line:
-        plt.axvline(x=100, color="black", linestyle="-")
+        plt.axvline(x=100, color="black", linestyle='dashed')
 
     # rotate sticks
     ax.tick_params(rotation=0)
 
-    ## adding the labels on the bar
+    # ## adding the labels on the bar
     for c in ax.containers:
         ax.bar_label(c, padding=10)
-
+    #remove spines
     ax.spines["right"].set_visible(False)
     ax.spines["top"].set_visible(False)
     ax.spines["left"].set_visible(False)
@@ -509,7 +517,7 @@ def bar_plot_w_hue(
 
     if horisontal_line:
         # normalized line
-        ax.axhline(100)
+        ax.axhline(100, color = 'black', linestyle = 'dashed')
 
     if save_pdf == True and path != "":
         plt.savefig(path + ".pdf", format="pdf", dpi=300)
@@ -764,7 +772,7 @@ def grouped_bar_plot(x:list, y:list, colors:list, category_labels:list,
     
     if axhline: 
         # add horisontal line
-        plt.axhline(y = 100, color = 'black', linestyle = '-')
+        plt.axhline(y = 100, color = 'black', linestyle = 'dashed')
 
     # Set color 
     ax.set_facecolor("white")
