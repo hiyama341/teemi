@@ -556,60 +556,58 @@ def update_amplicon_annotations(
         ] = volumes[i]
 
 
-## Maybe redundant
-# def get_amplicons_by_row(row, amplicon_df, amplicons):
-#    """Returns a list of amplicons in a given gel row.
-#
-#    Parameters
-#    ----------
-#    row : str
-#        Name of the gel row.
-#    amplicon_df : pandas DataFrame
-#        DataFrame with amplicon information, including the column 'prow' indicating the gel row.
-#    amplicons : list of Amplicon
-#        List of Amplicon objects.
-#
-#    Returns
-#    -------
-#    list of Amplicon
-#        List of Amplicon objects in the given gel row.
-#    """
-#    row_names = amplicon_df[amplicon_df['prow']==row][['name']]['name'].tolist()
-#
-#    row_amplicons = []
-#    for name in row_names:
-#        for amplicon in amplicons:
-#            if amplicon.name == name:
-#                row_amplicons.append([amplicon])
-#
-#    return(row_amplicons)
-#
-#
-#
-# def get_amplicons_by_column(col, amplicon_df, amplicons):
-#    """
-#    Returns a list of amplicons in a given gel column.
-#
-#    Parameters
-#    ----------
-#    col : str
-#        Name of the gel column.
-#    amplicon_df : pandas DataFrame
-#        DataFrame with amplicon information, including the column 'pcol' indicating the gel column.
-#    amplicons : list of Amplicon
-#        List of Amplicon objects.
-#
-#    Returns
-#    -------
-#    list of Amplicon
-#        List of Amplicon objects in the given gel column.
-#    """
-#    col_names = amplicon_df[amplicon_df['pcol']==col][['name']]['name'].tolist()
-#
-#    col_amplicons = []
-#    for name in col_names:
-#        for amplicon in amplicons:
-#            if amplicon.name == name:
-#                col_amplicons.append([amplicon])
-#
-#    return(col_amplicons)
+def get_amplicons_by_row(row, amplicon_df, amplicons):
+   """Returns a list of amplicons in a given gel row.
+
+   Parameters
+   ----------
+   row : str
+       Name of the gel row.
+   amplicon_df : pandas DataFrame
+       DataFrame with amplicon information, including the column 'prow' indicating the gel row.
+   amplicons : list of Amplicon
+       List of Amplicon objects.
+
+   Returns
+   -------
+   list of Amplicon
+       List of Amplicon objects in the given gel row.
+   """
+   row_names = amplicon_df[amplicon_df['prow']==row][['name']]['name'].tolist()
+
+   row_amplicons = []
+   for name in row_names:
+       for amplicon in amplicons:
+           if amplicon.name == name:
+               row_amplicons.append([amplicon])
+
+   return(row_amplicons)
+
+
+def get_amplicons_by_column(col, amplicon_df, amplicons):
+   """
+   Returns a list of amplicons in a given gel column.
+
+   Parameters
+   ----------
+   col : str
+       Name of the gel column.
+   amplicon_df : pandas DataFrame
+       DataFrame with amplicon information, including the column 'pcol' indicating the gel column.
+   amplicons : list of Amplicon
+       List of Amplicon objects.
+
+   Returns
+   -------
+   list of Amplicon
+       List of Amplicon objects in the given gel column.
+   """
+   col_names = amplicon_df[amplicon_df['pcol']==col][['name']]['name'].tolist()
+
+   col_amplicons = []
+   for name in col_names:
+       for amplicon in amplicons:
+           if amplicon.name == name:
+               col_amplicons.append([amplicon])
+
+   return(col_amplicons)
