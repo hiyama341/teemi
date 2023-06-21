@@ -18,7 +18,7 @@ Combinatorial library module
    :undoc-members:
    :show-inheritance:
 
-Fetch_sequences module
+Fetch sequences module
 ----------------------
 
 .. automodule:: teemi.design.fetch_sequences
@@ -26,7 +26,7 @@ Fetch_sequences module
    :undoc-members:
    :show-inheritance:
 
-Retrieve_gene_homologs module
+Retrieve gene homologs module
 -----------------------------
 
 .. automodule:: teemi.design.retrieve_gene_homologs

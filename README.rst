@@ -2,7 +2,7 @@
   :width: 400
   :alt: teemi logo 
 
-teemi: a python package designed to make HT strain construction reproducible and FAIR
+teemi: a python package designed to make high-throughput strain construction reproducible and FAIR
 -------------------------------------------------------------------------------------
 
 .. summary-start
@@ -65,7 +65,6 @@ biological applications.
 Curious about how you can build strains easier and faster with teemi? 
 Head over to our `Google Colab notebooks <https://github.com/hiyama341/teemi/tree/main/colab_notebooks>`__
 and give it a try.
-
 
 Our `pre-print <https://www.biorxiv.org/content/10.1101/2023.06.18.545451v1>`__ is out now. Please cite it if you've used teemi in a scientific publication.
 

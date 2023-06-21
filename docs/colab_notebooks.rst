@@ -68,7 +68,7 @@ Strictosidine case : First DBTL cycle
 
 ..  |Notebook 03| image:: https://colab.research.google.com/assets/colab-badge.svg
     :alt: Notebook 03
-    :target: https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/03_1_BUILD_USER_gRNA_plasmid.ipynb
+    :target: https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/03_1_BUILD_gRNA_plasmid.ipynb
 
 
 ..  |Notebook 04| image:: https://colab.research.google.com/assets/colab-badge.svg
@@ -78,7 +78,7 @@ Strictosidine case : First DBTL cycle
 
 ..  |Notebook 05| image:: https://colab.research.google.com/assets/colab-badge.svg
     :alt: Notebook 05
-    :target: https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/05_1_BUILD_CombinatorialLibrary_AllStrains.ipynb
+    :target: https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/05_1_BUILD_Combinatorial_library.ipynb
 
 
 03. Describes the assembly of a CRISPR plasmid with USER cloning |Notebook 03|.
@@ -94,7 +94,7 @@ Strictosidine case : First DBTL cycle
 
 ..  |Notebook 06| image:: https://colab.research.google.com/assets/colab-badge.svg
     :alt: Notebook 06
-    :target: https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/06_1_TEST_LibraryCharacterisation.ipynb
+    :target: https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/06_1_TEST_Library_characterisation.ipynb
 
 
 06. Describes data processing of LC-MS data and genotyping of the generated strains |Notebook 06|.  
@@ -104,7 +104,7 @@ Strictosidine case : First DBTL cycle
 
 ..  |Notebook 07| image:: https://colab.research.google.com/assets/colab-badge.svg
     :alt: Notebook 07
-    :target: https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/07_1_LEARN_DataAnalysis.ipynb
+    :target: https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/07_1_LEARN_Modelling_and_predictions.ipynb
 
 
 07. Describes how we use AutoML to predict the best combinations for a targeted second round of library construction |Notebook 07|.
@@ -120,7 +120,7 @@ Strictosidine case : Second DBTL cycle
 
 ..  |Notebook 08| image:: https://colab.research.google.com/assets/colab-badge.svg
     :alt: Notebook 08
-    :target: https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/09_BUILD_Library2.ipynb
+    :target: https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/08_2_DESIGN_Model_recommended_combinatiorial_library.ipynb
 
 08. Shows how results from the ML can be translated into making a target library of strains |Notebook 08|. 
 
@@ -131,7 +131,7 @@ Strictosidine case : Second DBTL cycle
 
 ..  |Notebook 09| image:: https://colab.research.google.com/assets/colab-badge.svg
     :alt: Notebook 09
-    :target: https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/09_2_BUILD_CombinatorialLibrary.ipynb
+    :target: https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/09_2_BUILD_Combinatorial_library.ipynb
 
 
 09. Shows the construction of a targeted library of strains |Notebook 09|. 
@@ -154,12 +154,12 @@ Strictosidine case : Second DBTL cycle
 
 ..  |Notebook 11| image:: https://colab.research.google.com/assets/colab-badge.svg
     :alt: Notebook 11
-    :target: https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/11_2_LEARN_DataAnalysisML.ipynb
+    :target: https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/11_2_LEARN_Modelling_and_predictions.ipynb
 
 
 11. Second ML cycle of ML showing how the model increased performance and saturation of best performing strains |Notebook 11|. 
 
 
 
-For more information head over to our `publication <https://github.com/hiyama341/teemi/blob/main/colab_notebooks/08_LEARN_DataAnalysis.ipynb>`__ describing the use of teemi in a literate programming context. 
+For more information head over to our `publication <https://www.biorxiv.org/content/10.1101/2023.06.18.545451v1>`__ describing the use of teemi in a literate programming context. 
 
