@@ -32,6 +32,9 @@ teemi: a python package designed to make HT strain construction reproducible and
 
 .. image:: https://img.shields.io/github/last-commit/hiyama341/teemi
 
+.. image:: https://img.shields.io/badge/DOI-10.1101/2023.06.18.545451
+        :target: https://doi.org/10.1101/2023.06.18.545451
+    
 
 
 What is teemi?
