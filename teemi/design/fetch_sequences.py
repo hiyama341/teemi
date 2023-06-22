@@ -76,6 +76,25 @@ def read_fasta_files(path):
     return ncbi_hits
 
 
+def read_genbank_files(path):
+    """Reads single Genbank files.
+    Parameters
+    ----------
+    path: str
+        path to the genbank file you want to read.
+
+    Returns
+    -------
+    list of Bio.SeqRecord.SeqRecord
+    """
+
+    ncbi_hits = []
+    for seq_record in SeqIO.parse(path, format="gb"):
+        ncbi_hits.append(seq_record)
+
+    return ncbi_hits
+
+
 def retrieve_sequences_from_PDB(query: list):
     """Retrieves sequences from PDB.
     Parameters
@@ -168,20 +187,4 @@ def fetch_multiple_promoters(List_of_promoter_names: list):
     return LIST_OF_BIOrecord_objects
 
 
-def read_genbank_files(path):
-    """Reads single Genbank files.
-    Parameters
-    ----------
-    path: str
-        path to the genbank file you want to read.
 
-    Returns
-    -------
-    list of Bio.SeqRecord.SeqRecord
-    """
-
-    ncbi_hits = []
-    for seq_record in SeqIO.parse(path, format="gb"):
-        ncbi_hits.append(seq_record)
-
-    return ncbi_hits

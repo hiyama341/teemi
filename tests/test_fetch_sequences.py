@@ -2,6 +2,7 @@
 
 # Test fetch_sequences module
 from teemi.design.fetch_sequences import *
+import pytest
 
 
 from Bio import SeqIO
@@ -22,7 +23,7 @@ def test_read_fasta_files():
     assert sequences[0].seq[:10] == 'MDSSSEKLSP'
     assert sequences[0].id == 'sp|Q05001.1|NCPR_CATRO'
 
-def retrieve_sequences_from_PDB(): 
+def test_retrieve_sequences_from_PDB(): 
     acc_numbers = ['Q1PQK4']
     sequences = retrieve_sequences_from_PDB(acc_numbers)
     assert str(sequences[0][0].seq[:10]) == 'MQSTTSVKLS'
