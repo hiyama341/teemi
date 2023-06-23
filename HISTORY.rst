@@ -16,7 +16,7 @@ CRISPRSequenceCutter is a dataclass that is used to cut DNA through CRISPR-cas9 
 SequenceFinder is a dataclass that finds upstream and downstream sequences from a sequence input, annotates them and saves them.
 
 
-0.4.0 (2023-22-06)
+0.3.0 (2023-22-06)
 ------------------
 
 * New submodules: gibson_cloning
