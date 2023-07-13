@@ -160,7 +160,7 @@ def picklist_from_plates(
 
     # FIRST WE CHECK WICH COMPONENTS WE NEED FOR THE PCRs
     for index, row in PCR_dataframe.iterrows():
-        templates = row["Template"]
+        templates = row["template"]
         f_primers = row["forward_primer"]
         r_primers = row["reverse_primer"]
 
