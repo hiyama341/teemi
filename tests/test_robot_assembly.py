@@ -19,14 +19,6 @@ templates = ['pRPL15B']
 test_Robotassemly = RobotAssembly(test_data,fwd_primers ,rev_primers, templates)
 
 
-# this test doesent work with the flowbot hack rn
-#def test_Robotassemly_length_of_actions():
-    # there should be 32(rows)*3*colums*5actions instructions here
-#    len_of_picklist = (test_Robotassemly.picklist.to_flowbot_instructions()).split()
-
-#    assert len(len_of_picklist) == 32*3*5
-
-
 def test_Robotassemly_correct_input():
     assert type(test_Robotassemly.pandas_PCR) == pd.core.frame.DataFrame
     assert type(test_Robotassemly.forward_primers) == list
