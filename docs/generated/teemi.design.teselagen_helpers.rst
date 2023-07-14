@@ -1,4 +1,4 @@
-﻿teemi.design.teselagen\_helpers
+teemi.design.teselagen\_helpers
 ===============================
 
 .. automodule:: teemi.design.teselagen_helpers

@@ -1,4 +1,4 @@
-﻿teemi.design.fetch\_sequences
+teemi.design.fetch\_sequences
 =============================
 
 .. automodule:: teemi.design.fetch_sequences

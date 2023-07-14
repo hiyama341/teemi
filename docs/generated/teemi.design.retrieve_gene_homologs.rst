@@ -1,4 +1,4 @@
-﻿teemi.design.retrieve\_gene\_homologs
+teemi.design.retrieve\_gene\_homologs
 =====================================
 
 .. automodule:: teemi.design.retrieve_gene_homologs

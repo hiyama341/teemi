@@ -18,7 +18,7 @@
       ng_to_nmol
       pool_parts
       print_pooled_parts
-      time_to_inculate
+      time_to_inoculate
       transformation_mix
       transformation_partitipants
       wanted_mass

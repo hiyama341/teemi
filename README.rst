@@ -66,7 +66,8 @@ Curious about how you can build strains easier and faster with teemi?
 Head over to our `Google Colab notebooks <https://github.com/hiyama341/teemi/tree/main/colab_notebooks>`__
 and give it a try.
 
-Our `pre-print <https://www.biorxiv.org/content/10.1101/2023.06.18.545451v1>`__ is out now. Please cite it if you've used teemi in a scientific publication.
+Our pre-print `"Literate programming for iterative design-build-test-learn cycles in bioengineering" <https://www.biorxiv.org/content/10.1101/2023.06.18.545451v1>`__ is out now. 
+Please cite it if you've used teemi in a scientific publication.
 
 .. summary-end
 
@@ -107,6 +108,191 @@ and evolution-guided laboratory workflows for optimizing strictosidine productio
 Below you can find all the notebooks developed in this work. 
 Just click the Google colab badge to start the workflows. 
 
+
+A Quick Guide to Creating a Combinatorial Library
+-------------------------------------------------
+
+This guide provides a simple illustration of the power and ease of use of the Teemi tool. Let's take the example of creating a basic combinatorial library with the following design considerations:
+
+- Four promoters
+- Ten enzyme homologs
+- A Kozak sequence integrated into the primers
+
+Our goal is to assemble a library of promoters and enzymes into a genome via in vivo assembly. We already have a CRISPR plasmid; all we need to do is amplify the promoters and enzymes for the transformation. This requires generating primers and conducting numerous PCRs. We'll use Teemi for this process.
+
+To begin, we load the genetic parts using Teemi's easy-to-use function ``read_genbank_files()``, specifying the path to the genetic parts.
+
+.. code-block:: python
+
+    from teemi.design.fetch_sequences import read_genbank_files
+    path = '../data/genetic_parts/G8H_CYP_CPR_PARTS/'
+    pCPR_sites = read_genbank_files(path+'CPR_promoters.gb')
+    CPR_sites = read_genbank_files(path+'CPR_tCYC1.gb')
+
+We have four promoters and ten CPR homologs (all with integrated terminators). We want to convert them into ``pydna.Dseqrevord`` objects from their current form as Bio.Seqrecord. We can do it this way:
+
+.. code-block:: python
+
+    from pydna.dseqrecord import Dseqrecord
+    pCPR_sites = [Dseqrecord(seq) for seq in pCPR_sites]
+    CPR_sites = [Dseqrecord(seq) for seq in CPR_sites]
+
+Next, we add these genetic parts to a list in the configuration we desire, with the promoters upstream of the enzyme homologs.
+
+.. code-block:: python
+
+    list_of_seqs = [pCPR_sites, CPR_sites]
+
+If we want to integrate a sgRNA site into the primers, we can do that. In this case, we want to integrate a Kozak sequence.
+
+.. code-block:: python
+
+    kozak = Dseqrecord('TCGGTC')
+
+Now we're ready to create a combinatorial library of our 4x10 combinations. We can import the Teemi class for this.
+
+.. code-block:: python
+
+    from teemi.design.combinatorial_design import DesignAssembly
+
+We initialize with the sequences, the pad (where we want the pad - in this case, between the promoters and CPRs), then select the overlap and the desired temperature for the primers. Note that you can use your own primer calculator. Teemi has a function that can calculate primer Tm using NEB, for example, but for simplicity, we'll use the default calculator here.
+
+.. code-block:: python
+
+    CPR_combinatorial_library = DesignAssembly(list_of_seqs, pad = kozak , position_of_pad =1, overlap=35, target_tm = 55 )
+
+Now, we can retrieve the library.
+
+.. code-block:: python
+
+    CPR_combinatorial_library.primer_list_to_dataframe()
+
+
+.. list-table::
+   :widths: 5 10 15 10 5 10 15 15 10
+   :header-rows: 1
+
+   * - id
+     - anneals to
+     - sequence
+     - annealing temperature
+     - length
+     - price(DKK)
+     - description
+     - footprint
+     - len_footprint
+   * - P001
+     - pMLS1
+     - ...
+     - 56.11
+     - 20
+     - 36.0
+     - Anneals to pMLS1
+     - ...
+     - 20
+   * - P002
+     - pMLS1
+     - ...
+     - 56.18
+     - 49
+     - 88.2
+     - Anneals to pMLS1, overlaps to 2349bp_PCR_prod
+     - ...
+     - 28
+   * - ...
+     - ...
+     - ...
+     - ...
+     - ...
+     - ...
+     - ...
+     - ...
+     - ...
+
+The result of this operation is a pandas DataFrame which will look similar to the given example (note that the actual DataFrame have more rows).
+
+
+To obtain a DataFrame detailing the steps required for each PCR, we can use the following:
+
+.. code-block:: python
+
+    CPR_combinatorial_library.pcr_list_to_dataframe()
+.. list-table::
+   :widths: 10 20 15 15 10 10
+   :header-rows: 1
+
+   * - pcr_number
+     - template
+     - forward_primer
+     - reverse_primer
+     - f_tm
+     - r_tm
+   * - PCR1
+     - pMLS1
+     - P001
+     - P002
+     - 56.11
+     - 56.18
+   * - PCR2
+     - AhuCPR_tCYC1
+     - P003
+     - P004
+     - 53.04
+     - 53.50
+   * - PCR3
+     - pMLS1
+     - P001
+     - P005
+     - 56.11
+     - 56.18
+   * - ...
+     - ...
+     - ...
+     - ...
+     - ...
+     - ...
+
+
+The output is a pandas DataFrame. This is a simplified version and the actual DataFrame can have more rows.
+
+Teemi has many more functionalities. For instance, we can easily view the different combinations in our library.
+
+.. code-block:: python
+
+    CPR_combinatorial_library.show_variants_lib_df()
+
+.. list-table::
+   :widths: 5 15 10 5
+   :header-rows: 1
+
+   * - 0
+     - 1
+     - Systematic_name
+     - Variant
+   * - pMLS1
+     - AhuCPR_tCYC1
+     - (1, 1)
+     - 0
+   * - pMLS1
+     - AanCPR_tCYC1
+     - (1, 2)
+     - 1
+   * - pMLS1
+     - CloCPR_tCYC1
+     - (1, 3)
+     - 2
+   * - ...
+     - ...
+     - ...
+     - ...
+
+
+This command results in a pandas DataFrame, showing the combinations in the library. This is a simplified version and the actual DataFrame would have 40 rows for this example.
+
+The next step is to head to the lab and build some strains. Luckily, we have many examples demonstrating how to do this for a large number of strains and a bigger library (1280 combinations). 
+Please refer to our notebooks below where we look at optimizing strictosidine production in yeast with Teemi.
+
+
 Strictosidine case : First DBTL cycle
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -125,7 +311,7 @@ Strictosidine case : First DBTL cycle
     :target: https://colab.research.google.com/github/hiyama341/teemi/blob/main/colab_notebooks/02_1_DESIGN_Combinatorial_library.ipynb
     
 
-00. Automatically fetch homologs from NCBI from a query in a standardizable and repeatable way 
+1.  Automatically fetch homologs from NCBI from a query in a standardizable and repeatable way 
 
 |Notebook 00| 
 

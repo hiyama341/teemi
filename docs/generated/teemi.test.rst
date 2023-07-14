@@ -27,5 +27,6 @@
    :toctree:
    :recursive:
 
+   teemi.test.data_wrangling
    teemi.test.genotyping
 

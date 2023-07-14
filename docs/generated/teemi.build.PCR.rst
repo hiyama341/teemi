@@ -19,6 +19,8 @@
       calculate_processing_speed
       calculate_required_thermal_cyclers
       calculate_volumes
+      get_amplicons_by_column
+      get_amplicons_by_row
       grouper
       nanophotometer_concentrations
       pcr_locations
