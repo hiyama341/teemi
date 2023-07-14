@@ -129,7 +129,7 @@ To begin, we load the genetic parts using Teemi's easy-to-use function ``read_ge
     pCPR_sites = read_genbank_files(path+'CPR_promoters.gb')
     CPR_sites = read_genbank_files(path+'CPR_tCYC1.gb')
 
-We have four promoters and ten CPR homologs (all with integrated terminators). We want to convert them into ``pydna.Dseqrevord`` objects from their current form as Bio.Seqrecord. We can do it this way:
+We have four promoters and ten CPR homologs (all with integrated terminators). We want to convert them into ``pydna.Dseqrecord`` objects from their current form as ``Bio.Seqrecord``. We can do it this way:
 
 .. code-block:: python
 
@@ -144,6 +144,7 @@ Next, we add these genetic parts to a list in the configuration we desire, with 
     list_of_seqs = [pCPR_sites, CPR_sites]
 
 If we want to integrate a sgRNA site into the primers, we can do that. In this case, we want to integrate a Kozak sequence.
+We can initialize it as shown below.
 
 .. code-block:: python
 
