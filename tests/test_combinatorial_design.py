@@ -41,7 +41,7 @@ for seq_record in SeqIO.parse('../teemi/tests/files_for_testing/terminator_test_
 test_prom = promoter[0:2]
 test_cds = cds[0:2]
 test_term = terminator[0:2]
-pad = Dseqrecord('')
+pad = [Dseqrecord('')]
 
 
 # Getting their sequences
@@ -59,7 +59,7 @@ list_of_seqs = [test_prom_seqrecord, test_cds_seqrecord, test_term_seqrecord]
 list_of_names =[test_prom_names, test_cds_names,test_term_names]
 
 # Initializing the design
-test_assembly = DesignAssembly(list_of_seqs, pad, 2)
+test_assembly = DesignAssembly(list_of_seqs, pad, [2])
 index0 = test_assembly.list_of_amplicons
 
 import io
