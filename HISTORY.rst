@@ -25,3 +25,13 @@ This module is used to perform simple Gibson cloning workflows.
 While the addition of the "gibson_cloning" submodule is an exciting development, this module is still a work in progress.
 Next, a golden gate module. Keep posted on the progress. 
 
+
+0.3.1 (2023-31-07)
+This release failed due to a bug in the readme file.
+
+
+0.3.2 (2023-01-08)
+This release features a re-factored DesignAssembly class with: 
+- Simplified methods i.e. redundant methods have been removed. 
+- The ability to add more than one pad, which can be used to make constructs with overlapping ends for for plasmid cloning.
+ 
