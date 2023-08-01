@@ -97,28 +97,20 @@ To get started with making microbial strains in an HT manner please follow the s
 3. You can start making your own workflows by importing teemi into either Google colab or Jupyter lab/notebooks.
 
 
-Colab notebooks
----------------
-As a proof of concept we show how teemi and literate programming can be used to streamline bioengineering workflows.
-These workflows should serve as a guide or a help to build your own workflows and thereby harnessing the power of literate programming with teemi. 
-
-Specifically, in this study we present how teemi and literate programming to build simulation-guided, iterative,
-and evolution-guided laboratory workflows for optimizing strictosidine production in yeast.
-
-Below you can find all the notebooks developed in this work. 
-Just click the Google colab badge to start the workflows. 
-
 
 A Quick Guide to Creating a Combinatorial Library
 -------------------------------------------------
 
-This guide provides a simple illustration of the power and ease of use of the Teemi tool. Let's take the example of creating a basic combinatorial library with the following design considerations:
+This guide provides a simple example of the power and ease of use of the teemi tool. 
+Let's take the example of creating a basic combinatorial library with the following design considerations:
 
 - Four promoters
 - Ten enzyme homologs
 - A Kozak sequence integrated into the primers
 
-Our goal is to assemble a library of promoters and enzymes into a genome via in vivo assembly. We already have a CRISPR plasmid; all we need to do is amplify the promoters and enzymes for the transformation. This requires generating primers and conducting numerous PCRs. We'll use Teemi for this process.
+Our goal is to assemble a library of promoters and enzymes into a genome via in vivo assembly. 
+We already have a CRISPR plasmid; all we need to do is amplify the promoters and enzymes for the transformation. 
+This requires generating primers and making PCRs. We'll use teemi for this process.
 
 To begin, we load the genetic parts using Teemi's easy-to-use function ``read_genbank_files()``, specifying the path to the genetic parts.
 
@@ -129,7 +121,8 @@ To begin, we load the genetic parts using Teemi's easy-to-use function ``read_ge
     pCPR_sites = read_genbank_files(path+'CPR_promoters.gb')
     CPR_sites = read_genbank_files(path+'CPR_tCYC1.gb')
 
-We have four promoters and ten CPR homologs (all with integrated terminators). We want to convert them into ``pydna.Dseqrecord`` objects from their current form as ``Bio.Seqrecord``. We can do it this way:
+We have four promoters and ten CPR homologs (all with integrated terminators). 
+We want to convert them into ``pydna.Dseqrecord`` objects from their current form as ``Bio.Seqrecord``. We can do it this way:
 
 .. code-block:: python
 
@@ -156,7 +149,8 @@ Now we're ready to create a combinatorial library of our 4x10 combinations. We c
 
     from teemi.design.combinatorial_design import DesignAssembly
 
-We initialize with the sequences, the pad (where we want the pad - in this case, between the promoters and CPRs), then select the overlap and the desired temperature for the primers. Note that you can use your own primer calculator. Teemi has a function that can calculate primer Tm using NEB, for example, but for simplicity, we'll use the default calculator here.
+We initialize with the sequences, the pad (where we want the pad - in this case, between the promoters and CPRs), then select the overlap and the desired temperature for the primers. 
+Note that you can use your own primer calculator. Teemi has a function that can calculate primer Tm using NEB, for example, but for simplicity, we'll use the default calculator here.
 
 .. code-block:: python
 
@@ -293,6 +287,18 @@ This command results in a pandas DataFrame, showing the combinations in the libr
 The next step is to head to the lab and build some strains. Luckily, we have many examples demonstrating how to do this for a large number of strains and a bigger library (1280 combinations). 
 Please refer to our notebooks below where we look at optimizing strictosidine production in yeast with Teemi.
 
+
+Colab notebooks
+---------------
+As a proof of concept we show how teemi and literate programming can be used to streamline bioengineering workflows.
+These workflows should serve as a guide or a help to build your own workflows and thereby harnessing the power of literate programming with teemi. 
+
+Specifically, in this first study we present how teemi and literate programming to build simulation-guided, iterative,
+and evolution-guided laboratory workflows for optimizing strictosidine production in yeast. 
+If you wanna read the study you can find the pre-print `"here" <https://www.biorxiv.org/content/10.1101/2023.06.18.545451v1>`__
+
+Below you can find all the notebooks developed in this work. 
+Just click the Google colab badge to start the workflows. 
 
 Strictosidine case : First DBTL cycle
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -465,6 +471,13 @@ you can install teemi in the following way.
 ::
 
     $ pip install -e <path-to-teemi-repo>  
+
+Or if you are in the teemi repository:
+
+::
+
+    $ pip install -e .
+
 
 
 You might need to run these commands with administrative
