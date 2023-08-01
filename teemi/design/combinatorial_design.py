@@ -384,13 +384,13 @@ def assembly_maker(combinatorial_list_of_amplicons: list, overlap=35):
 
     """
 
-    List_of_assemblies = []
+    list_of_assemblies = []
     for i in range(0, len(combinatorial_list_of_amplicons)):
-        List_of_assemblies.append(
+        list_of_assemblies.append(
             assembly_fragments(combinatorial_list_of_amplicons[i], overlap, maxlink=40)
         )
 
-    return List_of_assemblies
+    return list_of_assemblies
 
 
 def unique_primers(primers: list, list_of_assemblies):
