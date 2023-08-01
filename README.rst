@@ -3,7 +3,7 @@
   :alt: teemi logo 
 
 teemi: a python package designed to make high-throughput strain construction reproducible and FAIR
--------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------
 
 .. summary-start
 
@@ -148,7 +148,7 @@ We can initialize it as shown below.
 
 .. code-block:: python
 
-    kozak = Dseqrecord('TCGGTC')
+    kozak = [Dseqrecord('TCGGTC')]
 
 Now we're ready to create a combinatorial library of our 4x10 combinations. We can import the Teemi class for this.
 
@@ -160,7 +160,7 @@ We initialize with the sequences, the pad (where we want the pad - in this case,
 
 .. code-block:: python
 
-    CPR_combinatorial_library = DesignAssembly(list_of_seqs, pad = kozak , position_of_pad =1, overlap=35, target_tm = 55 )
+    CPR_combinatorial_library = DesignAssembly(list_of_seqs, pad = kozak , position_of_pads =[1], overlap=35, target_tm = 55 )
 
 Now, we can retrieve the library.
 
