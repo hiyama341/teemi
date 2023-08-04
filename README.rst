@@ -302,6 +302,20 @@ Just click the Google colab badge to start the workflows.
 
 Strictosidine case : First DBTL cycle
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**The strictosidine pathway and short intro:**
+Strictosidine is a crucial precursor for 3,000+ bioactive alkaloids found
+in plants, used in medical treatments like cancer and malaria. 
+Chemically synthesizing or extracting them is challenging. 
+We're exploring biotechnological methods to produce them in yeast cell factories. 
+But complex P450-mediated hydroxylations limit production. 
+We're optimizing these reactions using combinatorial optimization, starting with geraniol hydroxylation(G8H) as a test case.
+Feal free to check out the notebooks for more information on how we did it. 
+
+
+.. image:: https://github.com/hiyama341/teemi/blob/fadcfe20e17e6b630280d38c624d1ad2e8838d5c/pictures/Petersend_Levassor_et_al_fig2A_strictosidine_pathway.png
+  :width: 400
+  :alt: strictosidine pathway 
+
 
 **DESIGN:**
 
