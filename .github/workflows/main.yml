@@ -57,6 +57,4 @@ jobs:
           user: __token__
           # Password for your PyPI user or an access token
           password: ${{secrets.PYPI_TOKEN_TEEMI}} 
-          
-        
 
