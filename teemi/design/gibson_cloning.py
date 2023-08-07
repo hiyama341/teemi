@@ -13,18 +13,11 @@
 # copies or substantial portions of the Software.
 
 from pydna.dseqrecord import Dseqrecord
-from pydna.dseqrecord import Dseqrecord
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 from pydna.assembly import Assembly
 from Bio.SeqRecord import SeqRecord
 from pydna.design import primer_design
 from pydna.design import assembly_fragments
-
-from pydna.dseqrecord import Dseqrecord
-from pydna.design import primer_design
-from pydna.dseqrecord import Dseqrecord
-from Bio.SeqRecord import SeqRecord
-from pydna.dseqrecord import Dseqrecord
 from typing import List
 from teemi.build.PCR import primer_tm_neb
 
@@ -94,9 +87,6 @@ def find_up_dw_repair_templates(genome: SeqRecord, repair_templates: List[str], 
                           'location_up_start':start_location-1000,
                           'location_up_end':start_location ,
                           ''
-
-
-
                           # dw repair
                           'dw_repair': repair_dw,
                           'dw_forwar_p': repair_dw.forward_primer, 
