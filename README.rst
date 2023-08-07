@@ -313,7 +313,7 @@ Feal free to check out the notebooks for more information on how we did it.
 
 
 .. image:: https://github.com/hiyama341/teemi/blob/fadcfe20e17e6b630280d38c624d1ad2e8838d5c/pictures/Petersend_Levassor_et_al_fig2A_strictosidine_pathway.png
-  :width: 400
+  :width: 800
   :alt: strictosidine pathway 
 
 
