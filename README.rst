@@ -312,7 +312,7 @@ We're optimizing these reactions using combinatorial optimization, starting with
 Feal free to check out the notebooks for more information on how we did it. 
 
 
-.. image:: https://github.com/hiyama341/teemi/blob/fadcfe20e17e6b630280d38c624d1ad2e8838d5c/pictures/Petersend_Levassor_et_al_fig2A_strictosidine_pathway.png
+.. image:: https://raw.githubusercontent.com/hiyama341/teemi/fadcfe20e17e6b630280d38c624d1ad2e8838d5c/pictures/Petersend_Levassor_et_al_fig2A_strictosidine_pathway.png
   :width: 700
   :alt: strictosidine pathway 
 
