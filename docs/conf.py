@@ -49,7 +49,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'teemi'
-copyright = "2022, Technical University of Denmark (DTU)"
+copyright = "2023, Technical University of Denmark (DTU)"
 author = "Lucas Levassor"
 
 # The version info for the project you're documenting, acts as replacement
