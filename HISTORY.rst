@@ -1,14 +1,24 @@
 History
 -------
 
+0.3.3 (2023-11-08)
+
+- Updated readme file with extra examples
+
+- Fixed setup.py file for installation of development packages like: pip install teemi[dev]
+
+
 0.3.2 (2023-01-08)
+
 This release features a re-factored DesignAssembly class with: 
-- Simplified methods i.e. redundant methods have been removed. 
+
+- Simplified methods i.e. redundant methods have been removed.
+
 - The ability to add more than one pad, which can be used to make constructs with overlapping ends for for plasmid cloning.
  
 
 0.3.1 (2023-31-07)
-This release failed due to a bug in the readme file.
+- This release failed due to a bug in the readme file.
 
 
 0.3.0 (2023-22-06)
