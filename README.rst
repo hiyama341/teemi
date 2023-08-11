@@ -285,7 +285,142 @@ Teemi has many more functionalities. For instance, we can easily view the differ
 This command results in a pandas DataFrame, showing the combinations in the library. This is a simplified version and the actual DataFrame would have 40 rows for this example.
 
 The next step is to head to the lab and build some strains. Luckily, we have many examples demonstrating how to do this for a large number of strains and a bigger library (1280 combinations). 
-Please refer to our notebooks below where we look at optimizing strictosidine production in yeast with Teemi.
+Please refer to our `Colab notebooks <https://github.com/hiyama341/teemi/tree/main/colab_notebooks>`__ below where we look at optimizing strictosidine production in yeast with Teemi.
+
+
+A Quick Guide to making a CRISPR plasmid with USER cloning (for the beginner)
+-----------------------------------------------------------------------------
+Here is a quick guide on how we simulate the assembly of a CRISPR plasmid with USER cloning. 
+Big thanks to `Björn Johansson <https://github.com/BjornFJohansson>`__ for the initial work with pydna that makes much of this possible. 
+Please check out `pydna <https://github.com/BjornFJohansson/pydna>`__ here.
+
+Let's begin with the simple workflow:
+
+.. code-block:: python
+
+    from pydna.primer import Primer
+    from pydna.dseqrecord import Dseqrecord
+
+Step 1: Getting the fragments we want to integrate into our CRISPR plasmid. 
+Specifically, we aim to integrate sgRNAs to knock out two targets. 
+
+.. code-block:: python
+
+    # 1.1: Define the primers
+    U_pSNR52_Fw_1 = Primer('CGTGCGAUTCTTTGAAAAGATAATGTATGA')
+    TJOS_66_P2R = Primer('ACCTGCACUTAACTAATTACATGACTCGA')
+    U_pSNR52_Fw_2 = Primer('AGTGCAGGUTCTTTGAAAAGATAATGTATGA')
+    TJOS_65_P1R = Primer('CACGCGAUTAACTAATTACATGACTCGA')
+
+Primers are short, single-stranded DNA sequences that are necessary for targeting the specific DNA region we want to amplify using PCR.
+
+1.2: Get the gRNA template. We retrieve the gRNA template from plate we have in the lab with the following teemi function.
+
+.. code-block:: python
+
+    from teemi.lims.csv_database import get_dna_from_box_name
+    gRNA1_template = get_dna_from_plate_name('gRNA1_template (1).fasta', 'plasmid_plates', database_path="G8H_CPR_library/data/06-lims/csv_database/")
+
+The gRNA template is the DNA sequence that encodes the guide RNA. This RNA molecule guides the Cas9 protein to the target DNA sequence, where it induces a cut.
+
+1.3: Perform a PCR to amplify the gRNA. 
+
+.. code-block:: python
+
+    from pydna.amplify import pcr
+    gRNA1_pcr_prod = pcr(U_pSNR52_Fw_1,TJOS_66_P2R, gRNA1_template)
+    gRNA2_pcr_prod = pcr(U_pSNR52_Fw_2,TJOS_65_P1R, gRNA2_template)
+
+PCR (Polymerase Chain Reaction) is a technique used to amplify a specific DNA sequence. Here, we're amplifying our gRNA templates.
+
+1.4: Use the USER enzyme to process the PCR products
+
+.. code-block:: python
+
+    from teemi.design.cloning import USER_enzyme
+    gRNA1_pcr_USER = USER_enzyme(gRNA1_pcr_prod)
+    gRNA2_pcr_USER = USER_enzyme(gRNA2_pcr_prod)
+    print(gRNA1_pcr_USER)
+    print(gRNA2_pcr_USER)
+
+The USER enzyme is used to create single-stranded overhangs on the PCR products, which will facilitate their insertion into the plasmid.
+
+Output:
+
+.. code-block::
+
+    Dseq(-425)
+            TCTT..GTTAAGTGCAGGT
+    GCACGCTAAGAA..CAAT   
+
+    Dseq(-425)
+             TCTT..GTTAATCGCGTG
+    TCACGTCCAAGAA..CAAT   
+
+Step 2: Digesting the plasmid.
+
+.. code-block:: python
+
+    # 2.1: Import the plasmid
+    vector = Dseqrecord(get_dna_from_plate_name('Backbone_template - p0056_(pESC-LEU-ccdB-USER) (1).fasta', 'plasmid_plates', database_path="G8H_CPR_library/data/06-lims/csv_database/"), circular = True)
+
+The plasmid is a small, circular DNA molecule. We're importing a specific template that we'll use to integrate our gRNAs.
+
+2.2: Digest the plasmid with AsiSI enzyme
+
+.. code-block:: python
+
+    vector_asiSI, cCCDB  = sorted( vector.cut(AsiSI), reverse=True)
+    print(vector_asiSI.seq)
+
+Digestion with the AsiSI enzyme creates specific cuts in the plasmid, allowing us to insert our gRNAs at these locations.
+
+Output:
+
+.. code-block::
+
+    Dseq(-6972)
+      CGCG..TGCGAT
+    TAGCGC..ACGC  
+
+2.3: Nick the digested plasmid using a nicking enzyme
+
+.. code-block:: python
+
+    from teemi.design.cloning import nicking_enzyme
+    vector_asiSI_nick = Dseqrecord(nicking_enzyme(vector_asiSI))
+    vector_asiSI_nick.seq
+
+Nicking enzymes create single-stranded breaks in the DNA. This step prepares the plasmid for the insertion of the gRNAs.
+
+Output:
+
+.. code-block::
+
+    Dseq(-6972)
+            CATT..AATGCGTGCGAT
+    TAGCGCACGTAA..TTAC  
+
+Step 3: Assembling sgRNAs and vector
+
+.. code-block:: python
+
+    # 3.1: Combine the nicked vector with the USER processed gRNAs and loop the resulting sequence
+    rec_vec =  (vector_asiSI_nick + gRNA1_pcr_USER + gRNA2_pcr_USER).looped()
+    rec_vec.seq
+
+In this final step, we're assembling the plasmid by combining the nicked vector with the processed gRNAs. The resulting molecule is a circular DNA plasmid containing our gRNAs.
+
+Output:
+
+.. code-block::
+
+    Dseq(o7797)
+    CATT..CGTG
+    GTAA..GCAC
+
+
+For more real-life examples on how to use this in complex metabolic worklfows in a high-throughput manner pleas check our `Colab notebooks <https://github.com/hiyama341/teemi/tree/main/colab_notebooks>`__ .
 
 
 Colab notebooks
