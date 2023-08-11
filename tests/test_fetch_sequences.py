@@ -3,8 +3,6 @@
 # Test fetch_sequences module
 from teemi.design.fetch_sequences import *
 import pytest
-
-
 from Bio import SeqIO
 
 def test_retrieve_sequences_from_ncbi():
@@ -36,7 +34,7 @@ def test_read_genbank_files():
     assert test_gb[0].name == 'MIA-HA-1'
 
 
-### I cannot make these work with github actions yet. It lacks some packages(intermine). Have to figure this out later. 
+## TODO: I cannot make these work with github actions yet. It lacks some packages(intermine). Have to figure this out later. 
 # def test_fetch_promoter(): 
 #     cyc1 = fetch_promoter('CYC1')
 #     assert cyc1[:20] == 'GAGGCACCAGCGTCAGCATT'
