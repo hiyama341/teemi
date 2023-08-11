@@ -430,7 +430,7 @@ These workflows should serve as a guide or a help to build your own workflows an
 
 Specifically, in this first study we present how teemi and literate programming to build simulation-guided, iterative,
 and evolution-guided laboratory workflows for optimizing strictosidine production in yeast. 
-If you wanna read the study you can find the pre-print `"here" <https://www.biorxiv.org/content/10.1101/2023.06.18.545451v1>`__
+If you wanna read the study you can find the pre-print `here <https://www.biorxiv.org/content/10.1101/2023.06.18.545451v1>`__.
 
 Below you can find all the notebooks developed in this work. 
 Just click the Google colab badge to start the workflows. 
