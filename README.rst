@@ -66,6 +66,10 @@ Curious about how you can build strains easier and faster with teemi?
 Head over to our `Google Colab notebooks <https://github.com/hiyama341/teemi/tree/main/colab_notebooks>`__
 and give it a try.
 
+For a quick introduction, check our quick guides: 
+- `Go to Creating a Combinatorial Library <#A Quick Guide to Creating a Combinatorial Library>`_
+- `Go to Making a CRISPR plasmid with USER cloning  <#A Quick Guide to making a CRISPR plasmid with USER cloning (for the beginner)>`_
+
 Our pre-print `"Literate programming for iterative design-build-test-learn cycles in bioengineering" <https://www.biorxiv.org/content/10.1101/2023.06.18.545451v1>`__ is out now. 
 Please cite it if you've used teemi in a scientific publication.
 
@@ -84,6 +88,7 @@ Features
 * Workflows for selecting enzyme homologs
 * Promoter selection workflows from RNA-seq datasets
 * Data analysis of large LC-MS datasets along with workflows for analysis
+
 
 
 Getting started
