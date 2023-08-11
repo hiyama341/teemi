@@ -91,8 +91,6 @@ Overview
 - `License`_
 - `Credits`_
 
-.. _features:
-
 Features
 --------
 
@@ -107,8 +105,6 @@ Features
 * Data analysis of large LC-MS datasets along with workflows for analysis
 
 
-.. _getting-started:
-
 Getting started
 ~~~~~~~~~~~~~~~
 To get started with making microbial strains in an HT manner please follow the steps below: 
@@ -120,7 +116,6 @@ To get started with making microbial strains in an HT manner please follow the s
 3. You can start making your own workflows by importing teemi into either Google colab or Jupyter lab/notebooks.
 
 
-.. _combinatorial-library:
 
 A Quick Guide to Creating a Combinatorial Library
 -------------------------------------------------
@@ -311,7 +306,6 @@ This command results in a pandas DataFrame, showing the combinations in the libr
 The next step is to head to the lab and build some strains. Luckily, we have many examples demonstrating how to do this for a large number of strains and a bigger library (1280 combinations). 
 Please refer to our `Colab notebooks <https://github.com/hiyama341/teemi/tree/main/colab_notebooks>`__ below where we look at optimizing strictosidine production in yeast with Teemi.
 
-.. _crispr-user-cloning:
 
 A Quick Guide to making a CRISPR plasmid with USER cloning (for the beginner)
 -----------------------------------------------------------------------------
@@ -508,7 +502,6 @@ Feal free to check out the notebooks for more information on how we did it.
 02. Combinatorial libraries can be generated with the DesignAssembly class along with robot executable intructions 
 
 |Notebook 02| 
-
 
 
 
