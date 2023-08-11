@@ -53,10 +53,10 @@ setup(
             "teemi=teemi.cli:main",
         ],
     },
-    extras_requirements={
-        "dev": ["pytest==7.1.2", "pylint==2.13.9", "black==22.3.0", "pytest-cov==3.0.0"]
+    extras_require={
+        "dev": ["pytest==7.1.2", "pylint==2.13.9", "black==22.3.0", "pytest-cov==4.1.0"]
     },
-    install_requires=install_requires,
+    tests_require = extras_require["dev"],
     license="MIT license",
     long_description=readme + "\n\n" + history,
     include_package_data=True,
@@ -64,7 +64,6 @@ setup(
     name="teemi",
     packages=find_packages(include=["teemi", "teemi.*"]),
     test_suite="tests",
-    tests_require=test_requirements,
     url="https://github.com/hiyama341/teemi",
     ### Change version and put tag to release on PYPI
     # First time making a package, then comment this section and write: version= "0.0.1"
