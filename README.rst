@@ -392,6 +392,7 @@ Digestion with the AsiSI enzyme creates specific cuts in the plasmid, allowing u
 
 
 .. code-block:: python
+    
     from Bio.Restriction import AsiSI
     vector_asiSI, cCCDB  = sorted( vector.cut(AsiSI), reverse=True)
     print(vector_asiSI.seq)
