@@ -68,8 +68,8 @@ and give it a try.
 
 For a quick introduction, check our quick guides:
 
-- `Creating a Combinatorial Library <#combinatorial-library>`_
-- `Making a CRISPR plasmid with USER cloning <#crispr-user-cloning>`_
+- `Creating a Combinatorial Library <combinatorial-library>`_
+- `Making a CRISPR plasmid with USER cloning <crispr-user-cloning>`_
 
 Our pre-print `"Literate programming for iterative design-build-test-learn cycles in bioengineering" <https://www.biorxiv.org/content/10.1101/2023.06.18.545451v1>`__ is out now. 
 Please cite it if you've used teemi in a scientific publication.
