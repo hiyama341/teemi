@@ -76,6 +76,22 @@ Please cite it if you've used teemi in a scientific publication.
 
 .. summary-end
 
+Overview
+--------
+- `Features`_
+- `Getting started`_
+- `A Quick Guide to Creating a Combinatorial Library`_
+- `A Quick Guide to making a CRISPR plasmid with USER cloning (for the beginner)`_
+- `Colab notebooks`_
+- `Strictosidine case : First DBTL cycle`_
+- `Strictosidine case : Second DBTL cycle`_
+- `Installation`_
+- `Documentation and Examples`_
+- `Contributions`_
+- `License`_
+- `Credits`_
+
+.. _features:
 
 Features
 --------
@@ -91,6 +107,7 @@ Features
 * Data analysis of large LC-MS datasets along with workflows for analysis
 
 
+.. _getting-started:
 
 Getting started
 ~~~~~~~~~~~~~~~
