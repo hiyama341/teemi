@@ -648,6 +648,18 @@ Or if you are in the teemi repository:
     $ pip install -e .
 
 
+For those who want to contribute or develop further, you can install the development version with:
+
+::
+
+    $ pip install -e .[dev]
+
+Or directly from PyPI:
+
+::
+
+    $ pip install teemi[dev]
+
 
 You might need to run these commands with administrative
 privileges if you're not using a virtual environment (using ``sudo`` for example).

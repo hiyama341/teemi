@@ -4,7 +4,6 @@
 Installation
 ============
 
-
 Stable release
 --------------
 
@@ -21,7 +20,6 @@ you through the process.
 
 .. _pip: https://pip.pypa.io
 .. _Python installation guide: http://docs.python-guide.org/en/latest/starting/installation/
-
 
 From sources
 ------------
@@ -46,6 +44,19 @@ Once you have a copy of the source, you can install it with:
 
     $ python setup.py install
 
+For those who want to contribute or develop further, you can install the development version with:
+
+.. code-block:: console
+
+    $ pip install -e .[dev]
+
+Or directly from PyPI:
+
+.. code-block:: console
+
+    $ pip install teemi[dev]
+
+You might need to run these commands with administrative privileges if you're not using a virtual environment (using ``sudo`` for example).
 
 .. _Github repo: https://github.com/hiyama341/teemi
 .. _tarball: https://github.com/hiyama341/teemi/tarball/master
