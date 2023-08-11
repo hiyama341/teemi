@@ -66,9 +66,10 @@ Curious about how you can build strains easier and faster with teemi?
 Head over to our `Google Colab notebooks <https://github.com/hiyama341/teemi/tree/main/colab_notebooks>`__
 and give it a try.
 
-For a quick introduction, check our quick guides: 
-- `Go to Creating a Combinatorial Library <#A Quick Guide to Creating a Combinatorial Library>`_
-- `Go to Making a CRISPR plasmid with USER cloning  <#A Quick Guide to making a CRISPR plasmid with USER cloning (for the beginner)>`_
+For a quick introduction, check our quick guides:
+
+- `Creating a Combinatorial Library <#combinatorial-library>`_
+- `Making a CRISPR plasmid with USER cloning <#crispr-user-cloning>`_
 
 Our pre-print `"Literate programming for iterative design-build-test-learn cycles in bioengineering" <https://www.biorxiv.org/content/10.1101/2023.06.18.545451v1>`__ is out now. 
 Please cite it if you've used teemi in a scientific publication.
@@ -102,6 +103,7 @@ To get started with making microbial strains in an HT manner please follow the s
 3. You can start making your own workflows by importing teemi into either Google colab or Jupyter lab/notebooks.
 
 
+.. _combinatorial-library:
 
 A Quick Guide to Creating a Combinatorial Library
 -------------------------------------------------
@@ -292,6 +294,7 @@ This command results in a pandas DataFrame, showing the combinations in the libr
 The next step is to head to the lab and build some strains. Luckily, we have many examples demonstrating how to do this for a large number of strains and a bigger library (1280 combinations). 
 Please refer to our `Colab notebooks <https://github.com/hiyama341/teemi/tree/main/colab_notebooks>`__ below where we look at optimizing strictosidine production in yeast with Teemi.
 
+.. _crispr-user-cloning:
 
 A Quick Guide to making a CRISPR plasmid with USER cloning (for the beginner)
 -----------------------------------------------------------------------------
