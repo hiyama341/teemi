@@ -315,15 +315,17 @@ Specifically, we aim to integrate sgRNAs to knock out two targets.
 Primers are short, single-stranded DNA sequences that are necessary for targeting the specific DNA region we want to amplify using PCR.
 
 1.2: Get the gRNA template. We retrieve the gRNA template from plate we have in the lab with the following teemi function.
+The gRNA template is the DNA sequence that encodes the guide RNA. This RNA molecule guides the Cas9 protein to the target DNA sequence, where it induces a cut.
 
 .. code-block:: python
 
     from teemi.lims.csv_database import get_dna_from_box_name
     gRNA1_template = get_dna_from_plate_name('gRNA1_template (1).fasta', 'plasmid_plates', database_path="G8H_CPR_library/data/06-lims/csv_database/")
 
-The gRNA template is the DNA sequence that encodes the guide RNA. This RNA molecule guides the Cas9 protein to the target DNA sequence, where it induces a cut.
 
 1.3: Perform a PCR to amplify the gRNA. 
+PCR (Polymerase Chain Reaction) is a technique used to amplify a specific DNA sequence. Here, we're amplifying our gRNA templates.
+
 
 .. code-block:: python
 
@@ -331,9 +333,10 @@ The gRNA template is the DNA sequence that encodes the guide RNA. This RNA molec
     gRNA1_pcr_prod = pcr(U_pSNR52_Fw_1,TJOS_66_P2R, gRNA1_template)
     gRNA2_pcr_prod = pcr(U_pSNR52_Fw_2,TJOS_65_P1R, gRNA2_template)
 
-PCR (Polymerase Chain Reaction) is a technique used to amplify a specific DNA sequence. Here, we're amplifying our gRNA templates.
 
-1.4: Use the USER enzyme to process the PCR products
+1.4: Use the USER enzyme to process the PCR products.
+The USER enzyme is used to create single-stranded overhangs on the PCR products, which will facilitate their insertion into the plasmid.
+
 
 .. code-block:: python
 
@@ -343,7 +346,6 @@ PCR (Polymerase Chain Reaction) is a technique used to amplify a specific DNA se
     print(gRNA1_pcr_USER)
     print(gRNA2_pcr_USER)
 
-The USER enzyme is used to create single-stranded overhangs on the PCR products, which will facilitate their insertion into the plasmid.
 
 Output:
 
@@ -357,23 +359,23 @@ Output:
              TCTT..GTTAATCGCGTG
     TCACGTCCAAGAA..CAAT   
 
-Step 2: Digesting the plasmid.
+Step 2: Digesting the plasmid. The plasmid is a small, circular DNA molecule. We're importing a specific template that we'll use to integrate our gRNAs.
+
 
 .. code-block:: python
 
     # 2.1: Import the plasmid
     vector = Dseqrecord(get_dna_from_plate_name('Backbone_template - p0056_(pESC-LEU-ccdB-USER) (1).fasta', 'plasmid_plates', database_path="G8H_CPR_library/data/06-lims/csv_database/"), circular = True)
 
-The plasmid is a small, circular DNA molecule. We're importing a specific template that we'll use to integrate our gRNAs.
 
-2.2: Digest the plasmid with AsiSI enzyme
+2.2: Digest the plasmid with AsiSI enzyme.
+Digestion with the AsiSI enzyme creates specific cuts in the plasmid, allowing us to insert our gRNAs at these locations.
+
 
 .. code-block:: python
-
+    from Bio.Restriction import AsiSI
     vector_asiSI, cCCDB  = sorted( vector.cut(AsiSI), reverse=True)
     print(vector_asiSI.seq)
-
-Digestion with the AsiSI enzyme creates specific cuts in the plasmid, allowing us to insert our gRNAs at these locations.
 
 Output:
 
