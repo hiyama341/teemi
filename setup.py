@@ -27,9 +27,9 @@ install_requires = [
 ]
 
 
-test_requirements = (
-    ["pytest==7.1.2", "pylint==2.13.9", "black==22.3.0", "pytest-cov==4.1.0"],
-)
+extra_requirements={
+    "dev": ["pytest==7.1.2", "pylint==2.13.9", "black==22.3.0", "pytest-cov==4.1.0"]
+}
 
 
 setup(
@@ -53,10 +53,9 @@ setup(
             "teemi=teemi.cli:main",
         ],
     },
-    extras_require={
-        "dev": ["pytest==7.1.2", "pylint==2.13.9", "black==22.3.0", "pytest-cov==4.1.0"]
-    },
-    tests_require = extras_require["dev"],
+
+    tests_require=extra_requirements["dev"],
+
     license="MIT license",
     long_description=readme + "\n\n" + history,
     include_package_data=True,
