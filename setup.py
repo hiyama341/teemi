@@ -28,7 +28,7 @@ install_requires = [
 
 
 test_requirements = (
-    ["pytest==7.1.2", "pylint==2.13.9", "black==22.3.0", "pytest-cov==3.0.0"],
+    ["pytest==7.1.2", "pylint==2.13.9", "black==22.3.0", "pytest-cov==4.1.0"],
 )
 
 
