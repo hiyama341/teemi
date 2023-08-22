@@ -17,4 +17,6 @@ dnachisel>=3.2.10
 h2o>=3.42.0.1
 seaborn>=0.11.2 
 python-dotenv>=0.20.0
+scipy>=1.8.0
+
 
