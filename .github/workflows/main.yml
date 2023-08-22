@@ -11,25 +11,24 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8"  ,"3.9", "3.10", "3.11"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
 
     # Define job steps
     steps:
-
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: '16'
-          
+          node-version: "16"
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
+          cache: "pip"
 
       - name: Check-out repository
         uses: actions/checkout@v2
-        with: 
+        with:
           fetch-depth: 0
 
       - name: Install dependencies
@@ -37,11 +36,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install flake8 pytest
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          
+
       - name: Test with pytest
         run: |
           pytest --cov --cov-report=xml
-          
+
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
 
@@ -52,7 +51,7 @@ jobs:
         # You may pin to the exact commit or the version.
         # uses: pypa/gh-action-pypi-publish@717ba43cfbb0387f6ce311b169a825772f54d295
 
-        # we only publish a new version when there is a tag to the push 
+        # we only publish a new version when there is a tag to the push
         if: startsWith(github.ref, 'refs/tags')
 
         uses: pypa/gh-action-pypi-publish@v1.5.0
@@ -60,5 +59,4 @@ jobs:
           # PyPI user
           user: __token__
           # Password for your PyPI user or an access token
-          password: ${{secrets.PYPI_TOKEN_TEEMI}} 
-
+          password: ${{secrets.PYPI_TOKEN_TEEMI}}
