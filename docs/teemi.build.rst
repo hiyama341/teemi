@@ -8,7 +8,6 @@ PCR module
    :members:
    :undoc-members:
    :show-inheritance:
-   :noindex:
 
 
 Robot assembly module
