@@ -39,8 +39,8 @@ def carpet_barplot(
     ylabel="",
     size_height: int = 10,
     size_length: int = 20,
-    bar_width = 1.0, 
-    ylim = [0,25]
+    bar_width=1.0,
+    ylim=[0, 25],
 ) -> None:
     """Plotting stacked barplots from a pandas dataframe cross tab df
 
@@ -58,7 +58,6 @@ def carpet_barplot(
     stacked barplot
     """
 
-
     #### How can I export a matplotlib figure as a vector graphic with editable text fields?
     mpl.rcParams["pdf.fonttype"] = 42
     mpl.rcParams["ps.fonttype"] = 42
@@ -74,16 +73,16 @@ def carpet_barplot(
     plt.legend(bbox_to_anchor=(1.02, 1), loc="upper left", borderaxespad=0)
     plt.xscale("linear")
 
-    # make axis integers 
+    # make axis integers
     plt.locator_params(axis="both", integer=True, tight=True)
- 
+
     # remove y axis labes
     plt.yticks([])
     plt.xticks(rotation=0, fontweight="bold", size=20)  # changing x scale by own
 
     ## size matters
     fig = mpl.pyplot.gcf()
-    fig.set_size_inches(size_length,size_height)
+    fig.set_size_inches(size_length, size_height)
 
     # tight layout
     plt.tight_layout()
@@ -111,9 +110,9 @@ def plot_ml_learning_curve(
     path="",
     size_height: int = 10,
     size_length: int = 10,
-    title = '', 
-    linewidth:int = 1.5,
-    y_axis_range:list = [0,25]
+    title="",
+    linewidth: int = 1.5,
+    y_axis_range: list = [0, 25],
 ) -> None:
     """Plotting a learning curve from partitioned dataframes.
 
@@ -189,9 +188,9 @@ def plot_ml_learning_curve(
 
     # SIze matters
     fig = mpl.pyplot.gcf()
-    fig.set_size_inches(size_length,size_height)
+    fig.set_size_inches(size_length, size_height)
 
-    # change y-axis range 
+    # change y-axis range
     plt.ylim(y_axis_range)
 
     if save_pdf and path != "":
@@ -214,7 +213,7 @@ def bar_plot(
     x_label=None,
     y_label=None,
     size_height: int = 25,
-    size_length: int = 15
+    size_length: int = 15,
 ) -> None:
     """Plotting a bar_plot .
 
@@ -261,7 +260,7 @@ def bar_plot(
 
     # add horisontal line
     if horisontal_line:
-        plt.axhline(y=100, color = 'black', linestyle = 'dashed')
+        plt.axhline(y=100, color="black", linestyle="dashed")
 
     # Title and labels
     if title is not None:
@@ -282,7 +281,7 @@ def bar_plot(
 
     # SIze matters
     fig = mpl.pyplot.gcf()
-    fig.set_size_inches(size_length,size_height)
+    fig.set_size_inches(size_length, size_height)
 
     if save_pdf and path != "":
         plt.savefig(path + ".pdf", format="pdf", dpi=300, bbox_inches="tight")
@@ -302,7 +301,7 @@ def horisontal_bar_plot(
     y_label=None,
     size_height: int = 10,
     size_length: int = 8,
-    legend= False
+    legend=False,
 ) -> None:
     """Plotting a horisontal_bar_plot .
 
@@ -338,11 +337,10 @@ def horisontal_bar_plot(
     ax.tick_params(rotation=90)
 
     # LEGEND
-    if legend: 
-        lineOne, = ax.plot([], label='dbtl_2')
-        lineTwo, = ax.plot([], label='dbtl_1')
-        ax.legend(handles=[lineOne, lineTwo], loc='best')
-
+    if legend:
+        (lineOne,) = ax.plot([], label="dbtl_2")
+        (lineTwo,) = ax.plot([], label="dbtl_1")
+        ax.legend(handles=[lineOne, lineTwo], loc="best")
 
     # remove gridlines
     ax.grid(False)
@@ -360,7 +358,7 @@ def horisontal_bar_plot(
 
     # add horisontal line
     if vertical_line:
-        plt.axvline(x=100, color="black", linestyle='dashed')
+        plt.axvline(x=100, color="black", linestyle="dashed")
 
     # rotate sticks
     ax.tick_params(rotation=0)
@@ -368,7 +366,7 @@ def horisontal_bar_plot(
     # ## adding the labels on the bar
     for c in ax.containers:
         ax.bar_label(c, padding=10)
-    #remove spines
+    # remove spines
     ax.spines["right"].set_visible(False)
     ax.spines["top"].set_visible(False)
     ax.spines["left"].set_visible(False)
@@ -384,14 +382,18 @@ def horisontal_bar_plot(
     plt.show()
 
 
-def correlation_plot(dataframe, x: str, y: str, 
-    save_pdf:bool =True, 
-    path: str = "", 
-    title: str = '',
+def correlation_plot(
+    dataframe,
+    x: str,
+    y: str,
+    save_pdf: bool = True,
+    path: str = "",
+    title: str = "",
     size_height: int = 10,
     size_length: int = 10,
-    y_axis_range: list = [0,1],
-    x_axis_range: list = [0,1]) -> None:
+    y_axis_range: list = [0, 1],
+    x_axis_range: list = [0, 1],
+) -> None:
     """Plotting a correlation_plot.
 
     Parameters
@@ -441,17 +443,16 @@ def correlation_plot(dataframe, x: str, y: str,
         fontweight="bold",
     )
 
-    # add title 
+    # add title
     ax.set_title(title)
 
     # SIze matters
     fig = mpl.pyplot.gcf()
     fig.set_size_inches(size_height, size_length)
-    
-    # change y-axis range 
+
+    # change y-axis range
     plt.xlim(x_axis_range)
     plt.ylim(y_axis_range)
-
 
     if save_pdf and path != "":
         plt.savefig(path + ".pdf", format="pdf", dpi=300, bbox_inches="tight")
@@ -466,13 +467,14 @@ def bar_plot_w_hue(
     save_pdf=True,
     path="",
     hue: str = "category",
-    palette = 'dark',
+    palette="dark",
     title="",
     x_label="",
     y_label="",
-    horisontal_line: bool = True, 
+    horisontal_line: bool = True,
     size_height: int = 10,
-    size_length: int = 10) -> None:
+    size_length: int = 10,
+) -> None:
     """Plotting a correlation_plot.
 
     Parameters
@@ -494,128 +496,137 @@ def bar_plot_w_hue(
     -------
     bar_plot_w_hue"""
     #### How can I export a matplotlib figure as a vector graphic with editable text fields?
-    mpl.rcParams['pdf.fonttype'] = 42
-    mpl.rcParams['ps.fonttype'] = 42
+    mpl.rcParams["pdf.fonttype"] = 42
+    mpl.rcParams["ps.fonttype"] = 42
 
     ax = sns.barplot(x=x, y=y, hue=hue, data=dataframe, palette=palette)
-    #Remove spines
+    # Remove spines
     sns.despine()
     # add labels
     ax = plt.gca()
-    ax.set_xlabel(x_label, size=20, fontname="Helvetica",  fontweight="bold")
-    ax.set_ylabel(y_label, size=20, fontname="Helvetica",  fontweight="bold")
-    ax.set_title(title, size=30, fontname="Helvetica",  fontweight="bold")
+    ax.set_xlabel(x_label, size=20, fontname="Helvetica", fontweight="bold")
+    ax.set_ylabel(y_label, size=20, fontname="Helvetica", fontweight="bold")
+    ax.set_title(title, size=30, fontname="Helvetica", fontweight="bold")
 
     # white background
     ax.set_facecolor("white")
     plt.xscale("linear")
-    
 
     # SIze matters
     fig = mpl.pyplot.gcf()
-    fig.set_size_inches(size_length, size_height )
+    fig.set_size_inches(size_length, size_height)
 
     if horisontal_line:
         # normalized line
-        ax.axhline(100, color = 'black', linestyle = 'dashed')
+        ax.axhline(100, color="black", linestyle="dashed")
 
     if save_pdf == True and path != "":
         plt.savefig(path + ".pdf", format="pdf", dpi=300)
-    
+
     plt.show()
 
 
-def color_range_dict()->dict: 
+def color_range_dict() -> dict:
     """Returns a dictionary of color ranges.
-    
+
     Returns
     -------
     dict
         A dictionary of color ranges containing keys 'yellow', 'orange', 'blue' and 'green'
     """
-    return  {'yellow':["#a59a00",
-                        "#aa9e00",
-                        "#b0a300",
-                        "#b5a800",
-                        "#bbad00",
-                        "#c0b200",
-                        "#c5b700",
-                        "#cbbc00",
-                        "#d0c100",
-                        "#d6c600",
-                        "#dbcb03",
-                        "#e1d011",
-                        "#e6d51b",
-                        "#ecda24",
-                        "#f2df2b",
-                        "#f7e432",
-                        "#fde938",
-                        "#ffef40",
-                        "#fff647"],
-             'orange': ["#cd6511",
-                        "#d26916",
-                        "#d76d1b",
-                        "#dc7120",
-                        "#e17624",
-                        "#e67a28",
-                        "#eb7e2d",
-                        "#f08231",
-                        "#f58635",
-                        "#fa8a39",
-                        "#fe8f3e",
-                        "#ff9544",
-                        "#ff9c4b",
-                        "#ffa351",
-                        "#ffaa58",
-                        "#ffb15e",
-                        "#ffb764",
-                        "#ffbd6a",
-                        "#ffc470",
-                        "#ffca76",
-                        "#ffd07c",
-                        "#ffd682"],
-            'blue':[    "#2d89bc",
-                        "#348dc0",
-                        "#3b92c5",
-                        "#4197ca",
-                        "#479bcf",
-                        "#4da0d4",
-                        "#52a5d9",
-                        "#58aade",
-                        "#5daee3",
-                        "#63b3e8",
-                        "#68b8ee",
-                        "#6ebdf3",
-                        "#73c2f8",
-                        "#78c7fd",
-                        "#7eccff",
-                        "#84d1ff",
-                        "#8ad7ff",
-                        "#8fdcff",
-                        "#95e2ff",
-                        "#9be7ff",
-                        "#a1edff",
-                        "#a6f3ff",
-                        "#acf8ff",
-                        "#b2feff"], 
-            'green':[   "#24b161",
-                        "#2bb565",
-                        "#32ba69",
-                        "#38bf6d",
-                        "#3ec371",
-                        "#44c876",
-                        "#4acd7a",
-                        "#4fd27e",
-                        "#54d683",
-                        "#5adb87",
-                        "#5fe08b",
-                        "#64e590",
-                        "#69ea94",
-                        "#6eee99",
-                        "#73f39d",
-                        "#78f8a2",
-                        "#7efda7",
-                        "#91ffb9"]}
+    return {
+        "yellow": [
+            "#a59a00",
+            "#aa9e00",
+            "#b0a300",
+            "#b5a800",
+            "#bbad00",
+            "#c0b200",
+            "#c5b700",
+            "#cbbc00",
+            "#d0c100",
+            "#d6c600",
+            "#dbcb03",
+            "#e1d011",
+            "#e6d51b",
+            "#ecda24",
+            "#f2df2b",
+            "#f7e432",
+            "#fde938",
+            "#ffef40",
+            "#fff647",
+        ],
+        "orange": [
+            "#cd6511",
+            "#d26916",
+            "#d76d1b",
+            "#dc7120",
+            "#e17624",
+            "#e67a28",
+            "#eb7e2d",
+            "#f08231",
+            "#f58635",
+            "#fa8a39",
+            "#fe8f3e",
+            "#ff9544",
+            "#ff9c4b",
+            "#ffa351",
+            "#ffaa58",
+            "#ffb15e",
+            "#ffb764",
+            "#ffbd6a",
+            "#ffc470",
+            "#ffca76",
+            "#ffd07c",
+            "#ffd682",
+        ],
+        "blue": [
+            "#2d89bc",
+            "#348dc0",
+            "#3b92c5",
+            "#4197ca",
+            "#479bcf",
+            "#4da0d4",
+            "#52a5d9",
+            "#58aade",
+            "#5daee3",
+            "#63b3e8",
+            "#68b8ee",
+            "#6ebdf3",
+            "#73c2f8",
+            "#78c7fd",
+            "#7eccff",
+            "#84d1ff",
+            "#8ad7ff",
+            "#8fdcff",
+            "#95e2ff",
+            "#9be7ff",
+            "#a1edff",
+            "#a6f3ff",
+            "#acf8ff",
+            "#b2feff",
+        ],
+        "green": [
+            "#24b161",
+            "#2bb565",
+            "#32ba69",
+            "#38bf6d",
+            "#3ec371",
+            "#44c876",
+            "#4acd7a",
+            "#4fd27e",
+            "#54d683",
+            "#5adb87",
+            "#5fe08b",
+            "#64e590",
+            "#69ea94",
+            "#6eee99",
+            "#73f39d",
+            "#78f8a2",
+            "#7efda7",
+            "#91ffb9",
+        ],
+    }
 
 
 def plot_phylo_tree(alignment_file, save_pdf=True, path="", height=10, wideness=8):
@@ -666,15 +677,19 @@ def plot_phylo_tree(alignment_file, save_pdf=True, path="", height=10, wideness=
 
     plt.show()
 
-def plot_stacked_barplot_with_labels(df:pd.DataFrame, colors:list, 
-                         title = '', 
-                         y_label = '' ,
-                         x_label = '',
-                         path = '',
-                         size_length:int = 20, 
-                         size_heigth:int = 10):
+
+def plot_stacked_barplot_with_labels(
+    df: pd.DataFrame,
+    colors: list,
+    title="",
+    y_label="",
+    x_label="",
+    path="",
+    size_length: int = 20,
+    size_heigth: int = 10,
+):
     """Plots a stacked barplot from a dataframe.
-    
+
     Parameters
     ----------
     df : pd.DataFrame
@@ -690,48 +705,64 @@ def plot_stacked_barplot_with_labels(df:pd.DataFrame, colors:list,
     path : str, optional
         The path to the directory where the plot will be saved. Default is an empty string.
     """
-    # Initialize 
-    plt.rc('font', family='Helvetica')
-    mpl.rcParams['pdf.fonttype'] = 42
-    mpl.rcParams['ps.fonttype'] = 42
-    
-    
-    ax = df.plot( kind="bar",stacked = True,  figsize=(size_length,size_heigth), color=colors,  edgecolor='Black') # , cmap="coolwarm"
+    # Initialize
+    plt.rc("font", family="Helvetica")
+    mpl.rcParams["pdf.fonttype"] = 42
+    mpl.rcParams["ps.fonttype"] = 42
+
+    ax = df.plot(
+        kind="bar",
+        stacked=True,
+        figsize=(size_length, size_heigth),
+        color=colors,
+        edgecolor="Black",
+    )  # , cmap="coolwarm"
     # Add Title and Labels
     plt.title(title, fontsize=40)
-    plt.xlabel(y_label, fontsize=25, weight='bold')
-    plt.ylabel(x_label, fontsize=25, weight='bold')
-    ax.tick_params(axis='both', which='major', labelsize=25)
+    plt.xlabel(y_label, fontsize=25, weight="bold")
+    plt.ylabel(x_label, fontsize=25, weight="bold")
+    ax.tick_params(axis="both", which="major", labelsize=25)
 
     # removes the borders around the plot
-    sns.despine(bottom = True, left = True)
-    ax.legend([],[],frameon=False) # around the legend
-    
+    sns.despine(bottom=True, left=True)
+    ax.legend([], [], frameon=False)  # around the legend
+
     # adding laves to each box
     for c in ax.containers:
-        # this one writes label and percent 
-        labels_for_bars = [f"{c.get_label()} \n{round(v.get_height(),2)} %"  for v in c]
+        # this one writes label and percent
+        labels_for_bars = [f"{c.get_label()} \n{round(v.get_height(),2)} %" for v in c]
 
         # remove the labels parameter if it's not needed for customized labels
-        ax.bar_label(c, labels=labels_for_bars, label_type='center', fmt='str', size = 20, weight='bold')
+        ax.bar_label(
+            c,
+            labels=labels_for_bars,
+            label_type="center",
+            fmt="str",
+            size=20,
+            weight="bold",
+        )
 
-    if path != '': 
-        name = 'Occurences of each part sampled'
-        plt.savefig(path+name+'.pdf',format = 'pdf',  dpi = 300)
+    if path != "":
+        name = "Occurences of each part sampled"
+        plt.savefig(path + name + ".pdf", format="pdf", dpi=300)
 
 
-
-def grouped_bar_plot(x:list, y:list, colors:list, category_labels:list,
-                        title = '', 
-                        y_label = '' ,
-                        x_label = '',
-                        path = '', 
-                        axhline = True, 
-                        size_height: int = 10,
-                        size_length: int = 10):
+def grouped_bar_plot(
+    x: list,
+    y: list,
+    colors: list,
+    category_labels: list,
+    title="",
+    y_label="",
+    x_label="",
+    path="",
+    axhline=True,
+    size_height: int = 10,
+    size_length: int = 10,
+):
     """
     Create a grouped bar plot from input data and save the plot in a pdf format
-    
+
     Parameters
     ----------
     x : list
@@ -751,50 +782,48 @@ def grouped_bar_plot(x:list, y:list, colors:list, category_labels:list,
     path : str, optional
         The path to the directory where the plot will be saved. Default is an empty string.
     axhline : bool, optional
-        The flag to show an horisontal line    
+        The flag to show an horisontal line
     """
 
-
     #### How can I export a matplotlib figure as a vector graphic with editable text fields?
-    mpl.rcParams['pdf.fonttype'] = 42
-    mpl.rcParams['ps.fonttype'] = 42
-    
+    mpl.rcParams["pdf.fonttype"] = 42
+    mpl.rcParams["ps.fonttype"] = 42
+
     # Create Figure and Axes instances
-    fig,ax = plt.subplots(1)
+    fig, ax = plt.subplots(1)
 
     # Plot
-    plt.bar(x, y, edgecolor='black', color = colors) # white - orange = #fee6ce
+    plt.bar(x, y, edgecolor="black", color=colors)  # white - orange = #fee6ce
 
     # Add labels and titel
-    ax.set_ylabel(y_label, size = 20, fontname='Helvetica')
-    ax.set_xlabel(x_label, size = 30, fontname='Helvetica')
-    ax.set_title(title, size = 30, fontname='Helvetica')
-    
-    if axhline: 
-        # add horisontal line
-        plt.axhline(y = 100, color = 'black', linestyle = 'dashed')
+    ax.set_ylabel(y_label, size=20, fontname="Helvetica")
+    ax.set_xlabel(x_label, size=30, fontname="Helvetica")
+    ax.set_title(title, size=30, fontname="Helvetica")
 
-    # Set color 
+    if axhline:
+        # add horisontal line
+        plt.axhline(y=100, color="black", linestyle="dashed")
+
+    # Set color
     ax.set_facecolor("white")
 
-    white_patch = mpatches.Patch(color='white', label=category_labels[0])
-    black_patch = mpatches.Patch(color='black', label=category_labels[1])
-    ax.legend(handles=[white_patch,black_patch ], fontsize = 20, frameon=False)
+    white_patch = mpatches.Patch(color="white", label=category_labels[0])
+    black_patch = mpatches.Patch(color="black", label=category_labels[1])
+    ax.legend(handles=[white_patch, black_patch], fontsize=20, frameon=False)
 
     # remove spines
-    ax.spines['right'].set_visible(False)
-    ax.spines['top'].set_visible(False)
-    ax.spines['left'].set_visible(False)
-    ax.spines['bottom'].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["top"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
 
     # SIze matters
     # SIze matters
     fig = mpl.pyplot.gcf()
     fig.set_size_inches(size_height, size_length)
 
+    if path != "":
+        name = "grouped_bar_plot"
+        plt.savefig(path + name + ".pdf", format="pdf", dpi=300)
 
-    if path != '': 
-        name = 'grouped_bar_plot'
-        plt.savefig(path+name+'.pdf',format = 'pdf',  dpi = 300)
-    
     plt.show()

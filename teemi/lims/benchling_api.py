@@ -50,7 +50,7 @@ session = Session(api_key=api_key, home=home_url)
 
 def sequence_to_benchling(folder_name, oligo_name, oligo_bases, schema):
     """This function uploads sequences to Benchling.
-    
+
     Parameters
     ----------
     folder_name : str

@@ -233,6 +233,7 @@ def location_to_start_end_strand(dictionary: Dict[str, Any]) -> Dict[str, Any]:
 
     return dictionary
 
+
 def multiply_list(myList):
     """Multiplies elements one by one.
 
@@ -288,4 +289,3 @@ def remove_duplicates_with_name_attribute(record_with_duplicates) -> list:
             recs_no_dup.append(rec)
             seen_names.add(rec.name)
     return recs_no_dup
-

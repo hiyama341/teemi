@@ -15,6 +15,7 @@
 import pandas as pd
 from Bio import pairwise2
 
+
 def pairwise_alignment_of_templates(
     reads: list, templates: list, primers: list
 ) -> pd.DataFrame:

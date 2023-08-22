@@ -185,6 +185,3 @@ def fetch_multiple_promoters(List_of_promoter_names: list):
         LIST_OF_BIOrecord_objects.append(promoters_seq)
 
     return LIST_OF_BIOrecord_objects
-
-
-

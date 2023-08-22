@@ -22,7 +22,12 @@ from typing import List
 from teemi.build.PCR import primer_tm_neb
 
 
-def find_up_dw_repair_templates(genome: SeqRecord, repair_templates: List[str], target_tm: int = 65, primer_calc_function: callable = primer_tm_neb) -> List[dict]:
+def find_up_dw_repair_templates(
+    genome: SeqRecord,
+    repair_templates: List[str],
+    target_tm: int = 65,
+    primer_calc_function: callable = primer_tm_neb,
+) -> List[dict]:
     """
     Find repair templates upstream and downstream of coding sequences in a genome.
 
@@ -59,48 +64,66 @@ def find_up_dw_repair_templates(genome: SeqRecord, repair_templates: List[str], 
     """
     repair_DNA_templates = []
     for feature in genome.features:
-        if feature.type == 'CDS': 
+        if feature.type == "CDS":
             # getting the locus tag if we see cds
-            if feature.qualifiers['locus_tag'][0] in repair_templates: 
+            if feature.qualifiers["locus_tag"][0] in repair_templates:
 
                 # get start and end locations
                 start_location = int(feature.location.start)
                 end_location = int(feature.location.end)
 
                 # Fetch 500 upstream to start + end to 500 downstream
-                repair_up = primer_design(Dseqrecord(str(genome.seq[start_location-1000:start_location]),
-                                                     name= f"Repair_Template_UPSTREAM{feature.qualifiers['locus_tag'][0]}"),
-                                                     target_tm=target_tm, tm_func=primer_calc_function)
+                repair_up = primer_design(
+                    Dseqrecord(
+                        str(genome.seq[start_location - 1000 : start_location]),
+                        name=f"Repair_Template_UPSTREAM{feature.qualifiers['locus_tag'][0]}",
+                    ),
+                    target_tm=target_tm,
+                    tm_func=primer_calc_function,
+                )
 
                 # Fetch 500 downstream to start + end to 500 downstream
-                repair_dw = primer_design(Dseqrecord(str(genome.seq[end_location:end_location+1000]), 
-                                                     name= f"Repair_Template_Downstream{feature.qualifiers['locus_tag'][0]}"),
-                                                     target_tm=target_tm, tm_func=primer_calc_function)
+                repair_dw = primer_design(
+                    Dseqrecord(
+                        str(genome.seq[end_location : end_location + 1000]),
+                        name=f"Repair_Template_Downstream{feature.qualifiers['locus_tag'][0]}",
+                    ),
+                    target_tm=target_tm,
+                    tm_func=primer_calc_function,
+                )
                 # MAKE A DICT
-                record = {'name':feature.qualifiers['locus_tag'][0],
-                          # up repair
-                          'up_repair':repair_up,
-                          'up_forwar_p': repair_up.forward_primer, 
-                          'up_reverse_p': repair_up.reverse_primer,
-                          'tm_up_forwar_p': primer_calc_function(str(repair_up.forward_primer.seq)), 
-                          'tm_up_reverse_p': primer_calc_function(str(repair_up.reverse_primer.seq)),
-                          'location_up_start':start_location-1000,
-                          'location_up_end':start_location ,
-                          ''
-                          # dw repair
-                          'dw_repair': repair_dw,
-                          'dw_forwar_p': repair_dw.forward_primer, 
-                          'dw_reverse_p': repair_dw.reverse_primer,
-                          'tm_dw_forwar_p': primer_calc_function(str(repair_dw.forward_primer.seq)), 
-                          'tm_dw_reverse_p': primer_calc_function(str(repair_dw.reverse_primer.seq)),
-                          'location_dw_start': end_location, 
-                          'location_dw_end':end_location+1000}
-                
-                repair_DNA_templates.append(record )
-                
+                record = {
+                    "name": feature.qualifiers["locus_tag"][0],
+                    # up repair
+                    "up_repair": repair_up,
+                    "up_forwar_p": repair_up.forward_primer,
+                    "up_reverse_p": repair_up.reverse_primer,
+                    "tm_up_forwar_p": primer_calc_function(
+                        str(repair_up.forward_primer.seq)
+                    ),
+                    "tm_up_reverse_p": primer_calc_function(
+                        str(repair_up.reverse_primer.seq)
+                    ),
+                    "location_up_start": start_location - 1000,
+                    "location_up_end": start_location,
+                    ""
+                    # dw repair
+                    "dw_repair": repair_dw,
+                    "dw_forwar_p": repair_dw.forward_primer,
+                    "dw_reverse_p": repair_dw.reverse_primer,
+                    "tm_dw_forwar_p": primer_calc_function(
+                        str(repair_dw.forward_primer.seq)
+                    ),
+                    "tm_dw_reverse_p": primer_calc_function(
+                        str(repair_dw.reverse_primer.seq)
+                    ),
+                    "location_dw_start": end_location,
+                    "location_dw_end": end_location + 1000,
+                }
+
+                repair_DNA_templates.append(record)
+
     return repair_DNA_templates
-
-
 
 
 def update_primer_names(list_of_records: list) -> list:

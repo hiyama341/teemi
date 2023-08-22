@@ -42,7 +42,7 @@ def slicing_and_naming_seq_plates(sequencing_plates, where_to_slice=7) -> list:
             "GoodQualFrom",
             "GoodQualTo",
             "used",
-        )  
+        )
         sequencing_plates[i] = sequencing_plates[i][where_to_slice:]
 
     return sequencing_plates

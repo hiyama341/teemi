@@ -191,11 +191,13 @@ def extract_template_amplification_sites(templates, names, terminator):
 
         if "batches" in template_amplification_site.annotations.keys():
             template_amplification_site.annotations["batches"].append(
-                template.annotations["batches"][0])  
+                template.annotations["batches"][0]
+            )
         else:
             template_amplification_site.annotations["batches"] = []
             template_amplification_site.annotations["batches"].append(
-                template.annotations) 
+                template.annotations
+            )
 
         template_amplification_sites.append(template_amplification_site)
     return template_amplification_sites
@@ -371,7 +373,6 @@ def casembler(
     return functools.reduce(lambda x, y: x + y, assemblies)
 
 
-
 def plate_plot(df, value):
     """Plots a 96 well plate as a pandas df.
 
@@ -422,8 +423,10 @@ def plate_plot(df, value):
     return df[cols].set_index(["prow", "pcol"]).unstack(level=-1)
 
 
-def seq_to_annotation(seq_record_from : Bio.SeqRecord, seq_record_onto : Bio.SeqRecord, type_name : str):
-    """Anotate an Bio.SeqRecord object from another 
+def seq_to_annotation(
+    seq_record_from: Bio.SeqRecord, seq_record_onto: Bio.SeqRecord, type_name: str
+):
+    """Anotate an Bio.SeqRecord object from another
     bio.seqrecord object.
 
     Parameters
@@ -436,25 +439,38 @@ def seq_to_annotation(seq_record_from : Bio.SeqRecord, seq_record_onto : Bio.Seq
 
     Returns
     -------
-    None 
+    None
     """
     match_index = find_sequence_location(seq_record_from, seq_record_onto)
-    
+
     if match_index[2] > 0:
-        start_location, end_location, strand = match_index[0], match_index[1], match_index[2]
-    else: 
-        start_location, end_location, strand = match_index[1], match_index[0], match_index[2]
+        start_location, end_location, strand = (
+            match_index[0],
+            match_index[1],
+            match_index[2],
+        )
+    else:
+        start_location, end_location, strand = (
+            match_index[1],
+            match_index[0],
+            match_index[2],
+        )
 
     feature = Bio.SeqFeature.SeqFeature(
-        Bio.SeqFeature.FeatureLocation(start_location, end_location), type=type_name, strand=strand)
-    
+        Bio.SeqFeature.FeatureLocation(start_location, end_location),
+        type=type_name,
+        strand=strand,
+    )
+
     feature.qualifiers["label"] = seq_record_from.id
     seq_record_onto.features.append(feature)
 
 
-def find_sequence_location(sequence:Bio.SeqRecord, sequence_to_search_in : Bio.SeqRecord)->tuple:
-    '''Finds start and end location of a mathced sequence.
-    
+def find_sequence_location(
+    sequence: Bio.SeqRecord, sequence_to_search_in: Bio.SeqRecord
+) -> tuple:
+    """Finds start and end location of a mathced sequence.
+
     Parameters
     ----------
     sequence : str
@@ -463,19 +479,21 @@ def find_sequence_location(sequence:Bio.SeqRecord, sequence_to_search_in : Bio.S
     Returns
     -------
     (start_index,end_index) : tuple
-    '''
+    """
     strand = +1
     start_index = sequence_to_search_in.seq.find(sequence.seq)
     end_index = start_index + len(sequence)
 
-    if start_index == -1: 
+    if start_index == -1:
         # search reverse_comp
-        start_index =  len(sequence_to_search_in) -sequence_to_search_in.reverse_complement().seq.find(sequence.seq)
+        start_index = len(
+            sequence_to_search_in
+        ) - sequence_to_search_in.reverse_complement().seq.find(sequence.seq)
         end_index = start_index - len(sequence)
         strand = -1
 
-        if start_index == -1: 
-            raise ValueError('ValueERROR - couldnt find a match')
+        if start_index == -1:
+            raise ValueError("ValueERROR - couldnt find a match")
 
     return (start_index, end_index, strand)
 
@@ -498,37 +516,42 @@ def crispr_db_break_location(start_location, end_location, strand):
     crispr_db_break : int
         CRISPR cut location in the genome.
     """
-    if strand == +1: 
+    if strand == +1:
         crispr_db_break = start_location + 17
     if strand == -1:
         crispr_db_break = start_location - 3
-        
+
     return crispr_db_break
 
 
-def add_feature_annotation_to_seqrecord(sequence : Bio.SeqRecord, label='', type_name = "misc_feature", strand =0)-> None:
-    ''' Adds feature, label and name to a Bio.Seqrecord sequence.
+def add_feature_annotation_to_seqrecord(
+    sequence: Bio.SeqRecord, label="", type_name="misc_feature", strand=0
+) -> None:
+    """Adds feature, label and name to a Bio.Seqrecord sequence.
     Parameters
     ----------
     sequence : Bio.SeqRecord
     label : str (optional)
     type_name : str (default: "misc_feature")
     strand : int (default 0)
-    
+
     Returns
     -------
     None
-    '''
+    """
     bio_feature = Bio.SeqFeature.SeqFeature(
-                    Bio.SeqFeature.FeatureLocation(0, len(sequence)),
-                    type=type_name, strand=strand)
-    
+        Bio.SeqFeature.FeatureLocation(0, len(sequence)), type=type_name, strand=strand
+    )
+
     # label
     sequence.features.append(bio_feature)
-    sequence.features[0].qualifiers['label'] = label
-    sequence.features[0].qualifiers['name'] = sequence.name
+    sequence.features[0].qualifiers["label"] = label
+    sequence.features[0].qualifiers["name"] = sequence.name
 
-def find_all_occurrences_of_a_sequence(sequence:Bio.SeqRecord, sequence_to_search_in : Bio.SeqRecord)->tuple:
+
+def find_all_occurrences_of_a_sequence(
+    sequence: Bio.SeqRecord, sequence_to_search_in: Bio.SeqRecord
+) -> tuple:
     """
     Searches for all occurrences of a given sequence in a given string.
 
@@ -545,20 +568,21 @@ def find_all_occurrences_of_a_sequence(sequence:Bio.SeqRecord, sequence_to_searc
         Number of occurrences of `sequence` in `sequence_to_search_in`.
 
     """
-    finder = re.finditer(str(sequence.seq.upper()), str(sequence_to_search_in.seq.upper()))
+    finder = re.finditer(
+        str(sequence.seq.upper()), str(sequence_to_search_in.seq.upper())
+    )
     matches_watson = [(match.start(), match.end()) for match in finder]
-    
+
     if len(matches_watson) < 2:
-        finder = re.finditer(str(sequence.seq.upper()), str(sequence_to_search_in.seq.reverse_complement().upper()))
-        matches_crick =[(match.start(), match.end()) for match in finder]
-    
+        finder = re.finditer(
+            str(sequence.seq.upper()),
+            str(sequence_to_search_in.seq.reverse_complement().upper()),
+        )
+        matches_crick = [(match.start(), match.end()) for match in finder]
+
         return len(matches_watson) + len(matches_crick)
-    else: 
-        return len(matches_watson) 
-    
-
-
-
+    else:
+        return len(matches_watson)
 
 
 # def UPandDW(strain, isite_name, path_to_gRNA_table="../data/raw/gRNAtable.csv"):
