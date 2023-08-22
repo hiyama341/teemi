@@ -22,7 +22,7 @@ This release features a re-factored DesignAssembly class with:
 
 
 0.3.0 (2023-22-06)
-------------------
+~~~~~~~~~~~~~~~~~~
 
 * New submodules: gibson_cloning
 
@@ -32,7 +32,7 @@ Next, a golden gate module. Keep posted on the progress.
 
 
 0.2.0 (2023-31-05)
-------------------
+~~~~~~~~~~~~~~~~~~
 
 * New submodules: CRISPRsequencecutter, sequence_finder. 
 
@@ -40,7 +40,7 @@ CRISPRSequenceCutter is a dataclass that is used to cut DNA through CRISPR-cas9 
 SequenceFinder is a dataclass that finds upstream and downstream sequences from a sequence input, annotates them and saves them.
 
 0.1.0 (2023-01-02)
-------------------
+~~~~~~~~~~~~~~~~~~
 
 * First release on PyPI.
 
