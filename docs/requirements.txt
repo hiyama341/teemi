@@ -14,3 +14,7 @@ benchlingapi>=2.1.12
 matplotlib>=3.5.1
 intermine>=1.12.0
 dnachisel>=3.2.10
+h2o>=3.42.0.1
+seaborn>=0.11.2 
+python-dotenv>=0.20.0
+
