@@ -11,7 +11,7 @@ Genotyping module
    :show-inheritance:
 
 Data wrangling module
------------------
+---------------------
 
 .. automodule:: teemi.test.data_wrangling
    :members:
