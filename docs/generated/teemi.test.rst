@@ -1,4 +1,4 @@
-﻿teemi.test
+teemi.test
 ==========
 
 .. automodule:: teemi.test

@@ -1,4 +1,4 @@
-﻿teemi.utils
+teemi.utils
 ===========
 
 .. automodule:: teemi.utils

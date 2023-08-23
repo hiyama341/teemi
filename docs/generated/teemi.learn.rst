@@ -1,4 +1,4 @@
-﻿teemi.learn
+teemi.learn
 ===========
 
 .. automodule:: teemi.learn

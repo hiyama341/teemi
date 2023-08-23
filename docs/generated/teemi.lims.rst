@@ -1,4 +1,4 @@
-﻿teemi.lims
+teemi.lims
 ==========
 
 .. automodule:: teemi.lims

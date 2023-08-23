@@ -1,4 +1,4 @@
-﻿teemi.lims.benchling\_api
+teemi.lims.benchling\_api
 =========================
 
 .. automodule:: teemi.lims.benchling_api

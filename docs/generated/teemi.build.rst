@@ -1,4 +1,4 @@
-﻿teemi.build
+teemi.build
 ===========
 
 .. automodule:: teemi.build

@@ -1,4 +1,4 @@
-﻿teemi.design
+teemi.design
 ============
 
 .. automodule:: teemi.design

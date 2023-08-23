@@ -1,4 +1,4 @@
-﻿teemi.build.containers\_wells\_picklists
+teemi.build.containers\_wells\_picklists
 ========================================
 
 .. automodule:: teemi.build.containers_wells_picklists

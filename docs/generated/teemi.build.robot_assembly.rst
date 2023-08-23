@@ -1,4 +1,4 @@
-﻿teemi.build.robot\_assembly
+teemi.build.robot\_assembly
 ===========================
 
 .. automodule:: teemi.build.robot_assembly

@@ -1,4 +1,4 @@
-﻿teemi.build.transformation
+teemi.build.transformation
 ==========================
 
 .. automodule:: teemi.build.transformation
