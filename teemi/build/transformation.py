@@ -172,71 +172,76 @@ def time_to_inoculate(
         )
         print("How much volume? ~2 ml per transformation.")
 
+        
 def transformation_mix(
     reaction_names, reaction_participants, wanted_amounts, water_dna_p_reac, media=""
 ):
-
-    """Makes a pandas dataframe of the parts (their location)
-     that needs to be put into the transformation mixes.
+    """Create a pandas DataFrame for the parts needed in transformation mixes.
 
     Parameters
     ----------
     reaction_names : list
-        list of reaction names
+        List of reaction names.
     reaction_participants : list
-        list of pydna.Dseqrecord objects of Bio.seqrecord objects
-    wanted_concentrations : dict
-        dict of the names of the reactants with their calculated nmol
+        List of pydna.Dseqrecord objects or Bio.SeqRecord objects.
+    wanted_amounts : dict
+        Dictionary of reactant names with their calculated nmol.
     water_dna_p_reac : int
-        the amount of water wanted for the reaction
-    media : list
-        list of names of the media used. e.g. ['LB_AMP']
+        Amount of water wanted for the reaction.
+    media : list, optional
+        List of names of the media used, e.g., ['LB_AMP'].
 
     Returns
     -------
     pandas.DataFrame
-        with a transformation scheme showing which parts should be
-        mixed for each reaction including positive and negative
-        controls.
+        DataFrame showing the transformation scheme for mixing parts in each reaction,
+        including positive and negative controls.
 
     Examples
     --------
-    # 1. Mention which reaction names you have
-    reaction_names = ["insert", "n.ctr", "n.ctr", "n.ctr", "p. ctr"]
+    # Define reaction names
+    reaction_names = ["insert", "n.ctr", "n.ctr", "n.ctr", "p.ctr"]
 
-    # 2. Add reaction reaction_participants
-    reaction_participants = [[vector, gRNA1_pcr_prod,gRNA2_pcr_prod], #the insert we want
-                     [vector],                                        #negative control
-                     [gRNA1_pcr_prod],                                #negative control
-                     [gRNA2_pcr_prod],                                #negative control
-                     [LEU_plasmid]]                                   #positive control
+    # Define reaction participants
+    reaction_participants = [
+        [vector, gRNA1_pcr_prod, gRNA2_pcr_prod],  # the insert we want
+        [vector],  # negative control
+        [gRNA1_pcr_prod],  # negative control
+        [gRNA2_pcr_prod],  # negative control
+        [LEU_plasmid],  # positive control
+    ]
 
-    # 2. Calculate nmol:
-    nmol_vector = ng_to_nmol(ng = 15, bp = len(vector))
-    nmol_gRNA = ng_to_nmol(ng = 30, bp = len(gRNA1_pcr_prod))
-    nmol_pctr = ng_to_nmol(ng = 10, bp = len(LEU_plasmid))
+    # Calculate nmol
+    nmol_vector = ng_to_nmol(ng=15, bp=len(vector))
+    nmol_gRNA = ng_to_nmol(ng=30, bp=len(gRNA1_pcr_prod))
+    nmol_pctr = ng_to_nmol(ng=10, bp=len(LEU_plasmid))
 
-    # 3. Add the concentrations
-    wanted_concentrations = {'p0056\\(pESC-LEU-ccdB-USER)' : nmol_vector,
-                     'ATF1'                        : nmol_gRNA,
-                     'CroCPR'                      : nmol_gRNA,
-                     'LEU_plasmid'                 : nmol_pctr}
+    # Define wanted concentrations
+    wanted_amounts = {
+        'p0056\\(pESC-LEU-ccdB-USER)': nmol_vector,
+        'ATF1': nmol_gRNA,
+        'CroCPR': nmol_gRNA,
+        'LEU_plasmid': nmol_pctr,
+    }
 
-    # 4. what media the transformants are plated on (5 transformations here)
+    # Define media for transformants
     media = ['LB_AMP'] * 5
 
-    # 5. initate the function
-    transformation_mix(reaction_names, reaction_participants, wanted_amounts =
-    (wanted_concentrations, water_dna_p_reac = 7, media = media)
+    # Call the function
+    transformation_mix(
+        reaction_names, reaction_participants, wanted_amounts, water_dna_p_reac=7, media=media
+    )
 
-    Return:
-                #these are freezer locations
-            name	l4_I06	l4_I07	l4_I08	p1_F06	water	plate on
-    0	insert	0.1	   0.6 	   0.6	    NaN	    5.7	    LB_AMP
-    1	n.ctr	0.1 	NaN    	NaN    	NaN    	6.9    	LB_AMP
-    2	n.ctr	NaN 	0.6    	NaN    	NaN    	6.4    	LB_AMP
-    3	n.ctr	NaN 	NaN    	0.6    	NaN    	6.4    	LB_AMP
-    4	p. ctr	NaN    	NaN    	NaN    	0.1    	6.9    	LB_AMP
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame with freezer locations:
+              name  l4_I06  l4_I07  l4_I08  p1_F06  water  plate on
+    0       insert     0.1     0.6     0.6     NaN    5.7    LB_AMP
+    1       n.ctr     0.1     NaN     NaN     NaN    6.9    LB_AMP
+    2       n.ctr     NaN     0.6     NaN     NaN    6.4    LB_AMP
+    3       n.ctr     NaN     NaN     0.6     NaN    6.4    LB_AMP
+    4       p.ctr     NaN     NaN     NaN     0.1    6.9    LB_AMP
     """
 
     df_comb = pd.DataFrame()

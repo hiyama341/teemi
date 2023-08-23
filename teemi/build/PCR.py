@@ -116,35 +116,41 @@ def grouper(iterable, max_diff):
 def calculate_volumes(
     vol_p_reac=0, no_of_reactions=1, standard_reagents=[], standard_volumes=[]
 ):
-    """Makes a reaction scheme for PCR master mixes.
+    """
+    Makes a reaction scheme for PCR master mixes.
 
     Parameters
     ----------
     vol_p_reac : int (default = 0)
+        Volume per reaction.
     no_of_reactions : int (default = 1)
+        Number of reactions.
     standard_reagents : list
+        List of standard reagents.
     standard_volumes : list
+        List of volumes for standard reagents.
 
     Returns
     -------
     volumes_df : pd.DataFrame
+        DataFrame containing volume information.
 
     Examples
     --------
     calculate_volumes(vol_p_reac = 10,
-                no_of_reactions = 6,
-                standard_reagents = ["DNA","Buffer, Cutsmart","H20","Enz, USER"],
-                standard_volumes = [1,1,7,1])
+                    no_of_reactions = 6,
+                    standard_reagents = ["DNA","Buffer, Cutsmart","H20","Enz, USER"],
+                    standard_volumes = [1,1,7,1])
 
-     The following reaction scheme will be made:
+    The following reaction scheme will be made:
 
-                     vol_p_reac	vol_p_x_reac
-     DNA	            1.0	        6.0
-     Buffer, Cutsmart	1.0	        6.0
-     H20	            7.0	        42.0
-     Enz, USER	        1.0	        6.0
-     Total	            10.0      	60.0
-
+                    vol_p_reac    vol_p_x_reac
+    DNA            1.0           6.0
+    Buffer, Cutsmart 1.0         6.0
+    H20            7.0           42.0
+    Enz, USER      1.0           6.0
+    Total          10.0          60.0
+    
     """
     standard_total_volume = sum(standard_volumes)
     volumes_p_x = [val / standard_total_volume * vol_p_reac for val in standard_volumes]
@@ -288,17 +294,17 @@ def calculate_required_thermal_cyclers(
 
 
 def pcr_locations(amplicons: list):
-    """Obtain information annotation information from amplicons.
+    """Obtain annotation information for amplicons.
 
     Parameters
     ----------
-    amplicon : list
-        List of amplicon objects `pydna.amplicon`() # check this
+    amplicons : list
+        List of amplicon objects from `pydna.amplicon()`
 
     Returns
     -------
     pd.DataFrame
-        Pandas dataframe with locations of your amplicons
+        Pandas DataFrame with amplicon locations
     """
     # initialization
     product_loc = []
