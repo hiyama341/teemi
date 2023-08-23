@@ -8,6 +8,8 @@ PCR module
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:
+
 
 
 Robot assembly module
@@ -17,6 +19,8 @@ Robot assembly module
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:
+
 
 Transformation module
 ---------------------
@@ -25,6 +29,8 @@ Transformation module
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:
+
 
 Containers module 
 -----------------
@@ -33,3 +39,5 @@ Containers module
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:
+

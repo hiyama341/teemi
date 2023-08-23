@@ -9,6 +9,7 @@ Cloning module
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:
 
 Combinatorial library module
 ----------------------------
@@ -17,6 +18,7 @@ Combinatorial library module
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:
 
 Fetch sequences module
 ----------------------
@@ -25,6 +27,8 @@ Fetch sequences module
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:
+
 
 Retrieve gene homologs module
 -----------------------------
@@ -33,3 +37,4 @@ Retrieve gene homologs module
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:

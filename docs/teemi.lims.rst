@@ -9,6 +9,8 @@ Benchling API module
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:
+
 
 CSV database module
 -------------------
@@ -17,4 +19,6 @@ CSV database module
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:
+
 

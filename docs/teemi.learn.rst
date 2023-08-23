@@ -8,6 +8,8 @@ auto_ml module
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:
+
 
 plotting module 
 ---------------
@@ -16,4 +18,6 @@ plotting module
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:
+
 

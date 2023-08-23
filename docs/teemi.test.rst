@@ -9,6 +9,7 @@ Genotyping module
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:
 
 Data wrangling module
 ---------------------
@@ -17,4 +18,6 @@ Data wrangling module
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:
+
 
