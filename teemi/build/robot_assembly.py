@@ -22,30 +22,37 @@ from teemi.build.containers_wells_picklists import (
 )
 import pandas as pd
 
-
+#TODO make this as a subclass of other liquid handler classes.
 class LiquidHandler(Transfer):
-    """This class is a subclass of the synbiopython Transfer
-    class and be used to make flowbot instructions.
+    """
+    This class is a subclass of the synbiopython Transfer class 
+    and can be used to make flowbot instructions.
+    
     Parameters
     ----------
+    None
+
     Returns
     -------
+    None
     """
-
+    
     def __init__(self) -> None:
         super().__init__()
 
     def to_flowbot_instructions(self):
-        """Return Flowbot instructions.
-
-        Example
-        -------
-        source, destination, volume
-        # 4:A3, 4:A6, 20
-        # 3:A1, 7, 50.7
-        # 2:A, 2:B-F, 100
         """
+        Return Flowbot instructions.
 
+        Example:
+        
+        .. code-block:: none
+
+            source, destination, volume
+            4:A3, 4:A6, 20
+            3:A1, 7, 50.7
+            2:A, 2:B-F, 100
+        """
         return (
             "{self.source_well.plate.name}:"
             "{self.source_well.name},"

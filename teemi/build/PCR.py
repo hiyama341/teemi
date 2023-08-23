@@ -113,18 +113,16 @@ def grouper(iterable, max_diff):
         yield group
 
 
-def calculate_volumes(
-    vol_p_reac=0, no_of_reactions=1, standard_reagents=[], standard_volumes=[]
-):
+def calculate_volumes(vol_p_reac=0, no_of_reactions=1, standard_reagents=[], standard_volumes=[]):
     """
     Makes a reaction scheme for PCR master mixes.
 
     Parameters
     ----------
-    vol_p_reac : int (default = 0)
-        Volume per reaction.
-    no_of_reactions : int (default = 1)
-        Number of reactions.
+    vol_p_reac : int, optional
+        Volume per reaction. Default is 0.
+    no_of_reactions : int, optional
+        Number of reactions. Default is 1.
     standard_reagents : list
         List of standard reagents.
     standard_volumes : list
@@ -137,21 +135,29 @@ def calculate_volumes(
 
     Examples
     --------
-    calculate_volumes(vol_p_reac = 10,
-                    no_of_reactions = 6,
-                    standard_reagents = ["DNA","Buffer, Cutsmart","H20","Enz, USER"],
-                    standard_volumes = [1,1,7,1])
+    .. code-block:: python
 
-    The following reaction scheme will be made:
+        calculate_volumes(
+            vol_p_reac = 10,
+            no_of_reactions = 6,
+            standard_reagents = ["DNA","Buffer, Cutsmart","H20","Enz, USER"],
+            standard_volumes = [1,1,7,1]
+        )
 
-                    vol_p_reac    vol_p_x_reac
-    DNA            1.0           6.0
-    Buffer, Cutsmart 1.0         6.0
-    H20            7.0           42.0
-    Enz, USER      1.0           6.0
-    Total          10.0          60.0
-    
+
+    .. code-block:: none
+
+        The following reaction scheme will be made:
+
+            vol_p_reac    vol_p_x_reac
+        DNA            1.0           6.0
+        Buffer, Cutsmart 1.0         6.0
+        H20            7.0           42.0
+        Enz, USER      1.0           6.0
+        Total          10.0          60.0
+
     """
+
     standard_total_volume = sum(standard_volumes)
     volumes_p_x = [val / standard_total_volume * vol_p_reac for val in standard_volumes]
     volumes_p_x_p_y_reactions = [val * no_of_reactions for val in volumes_p_x]

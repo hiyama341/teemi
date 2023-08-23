@@ -374,51 +374,44 @@ def casembler(
 
 
 def plate_plot(df, value):
-    """Plots a 96 well plate as a pandas df.
+    """
+    Plots a 96 well plate as a pandas df.
 
     Parameters
     ----------
-    df: pd.Dataframe
-        A pandas dataframe with
+    df : pd.Dataframe
+        A pandas dataframe.
+    value : str
+        The name of the pandas dataframe column that you want to display.
 
-    value: pandas dataframe column name
-        The name of the pandas dataframe coloumn that you want to display
     Returns
     -------
     pd.Dataframe
-        in a 96 well plate format of the chosen column
+        in a 96 well plate format of the chosen column.
 
     Example
     -------
+    .. code-block:: python
 
-    1. Initialize:
-    Amplicon_df = {
-        name	location	template_name	fw_name	fw_location	rv_name	rv_location	prow	pcol
-    29	PCR_G8H_01	l5_A03	VminG8H_tADH1	PR_G8H_01	op4_A10	PR_G8H_02	op4_A01	A	1
-    25	PCR_G8H_05	l5_A07	SmusG8H_tADH1	PR_G8H_01	op4_A10	PR_G8H_06	op4_A02	A	2
-    21	PCR_G8H_09	l5_B02	RsepG8H_tADH1	PR_G8H_01	op4_A10	PR_G8H_10	op4_A03	A	3
-    17	PCR_G8H_13	l5_B06	CacuG8H_tADH1	PR_G8H_01	op4_A10	PR_G8H_14	op4_A04	A	4
-    13	PCR_G8H_17	l5_C01	OpumG8H_tADH1	PR_G8H_01	op4_A10	PR_G8H_18	op4_A05	A	5
-    }
+        # Initialize:
+        Amplicon_df = {
+            'name': ['PCR_G8H_01', 'PCR_G8H_05', ...],
+            'location': ['l5_A03', 'l5_A07', ...],
+            ...
+        }
 
-    2. Call the function:  # here we call the name coloumn
-    plate_plot(amplicon_df, 'name')
+        # Call the function:
+        plate_plot(amplicon_df, 'name')
 
-    <<Result:
-    name
-    pcol	1	2	3	4	5	6	7	8	9	10	11	12
-    prow
-    A	PCR_G8H_01	PCR_G8H_05	PCR_G8H_09	PCR_G8H_13	PCR_G8H_17	PCR_G8H_21	PCR_G8H_25	PCR_G8H_29	PCR_G8H_33	PCR_UP_tADH1_01	PCR_PRO_01	NaN1
-    B	PCR_G8H_02	PCR_G8H_06	PCR_G8H_10	PCR_G8H_14	PCR_G8H_18	PCR_G8H_22	PCR_G8H_26	PCR_G8H_30	PCR_G8H_34	PCR_TRP1-DW_02	PCR_PRO_02	NaN2
-    C	PCR_G8H_03	PCR_G8H_07	PCR_G8H_11	PCR_G8H_15	PCR_G8H_19	PCR_G8H_23	PCR_G8H_27	PCR_G8H_31	PCR_G8H_35	PCR_TRP1-DW_01	PCR_PRO_03	NaN3
-    D	PCR_G8H_04	PCR_G8H_08	PCR_G8H_12	PCR_G8H_16	PCR_G8H_20	PCR_G8H_24	PCR_G8H_28	PCR_G8H_32	PCR_G8H_36	NaN4	PCR_PRO_04	NaN5
-    E	PCR_CPR_01	PCR_CPR_10	PCR_CPR_03	PCR_CPR_09	PCR_CPR_02	PCR_CPR_06	PCR_CPR_07	PCR_CPR_08	PCR_CPR_04	PCR_CPR_05	PCR_PRO_05	NaN6
-    F	PCR_CPR_11	PCR_CPR_20	PCR_CPR_13	PCR_CPR_19	PCR_CPR_12	PCR_CPR_16	PCR_CPR_17	PCR_CPR_18	PCR_CPR_14	PCR_CPR_15	PCR_PRO_06	NaN7
-    G	PCR_CPR_21	PCR_CPR_30	PCR_CPR_23	PCR_CPR_29	PCR_CPR_22	PCR_CPR_26	PCR_CPR_27	PCR_CPR_28	PCR_CPR_24	PCR_CPR_25	PCR_PRO_07	NaN8
-    H	PCR_CPR_31	PCR_CPR_40	PCR_CPR_33	PCR_CPR_39	PCR_CPR_32	PCR_CPR_36	PCR_CPR_37	PCR_CPR_38	PCR_CPR_34	PCR_CPR_35	PCR_PRO_08	NaN9
+    .. code-block:: none
+
+        name
+        pcol	1	2	3	4	5	6	7	8	9	10	11	12
+        prow
+        A	PCR_G8H_01	PCR_G8H_05	PCR_G8H_09	PCR_G8H_13	PCR_G8H_17	...
+        ...
 
     """
-
     cols = [value, "prow", "pcol"]
     return df[cols].set_index(["prow", "pcol"]).unstack(level=-1)
 

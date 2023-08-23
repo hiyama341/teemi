@@ -659,20 +659,26 @@ class Transfer:
             self.destination_well.sources.append(self)
 
     def to_flowbot_instructions(self):
-        # Made to accomodate flowbot instructions - not part of synbiopython
-        """Return Flowbot instructions: i.e
-                source, destination, volume
-                # 4:A3, 4:A6, 20
-                # 3:A1, 7, 50.7
-                # 2:A, 2:B-F, 100
-        ."""
+        """
+        Return Flowbot instructions.
 
+        Example:
+        
+        .. code-block:: none
+
+            source, destination, volume
+            4:A3, 4:A6, 20
+            3:A1, 7, 50.7
+            2:A, 2:B-F, 100
+        """
+        # Made to accommodate flowbot instructions - not part of synbiopython
         return (
             "{self.source_well.plate.name}:"
             "{self.source_well.name},"
             " {self.destination_well.plate.name}:"
             "{self.destination_well.name}, {self.volume} "
         ).format(self=self)
+
 
     def __repr__(self):
         """Return  "Transfer {volume}L from {source_well} into {dest_well}"."""

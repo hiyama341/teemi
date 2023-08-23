@@ -172,11 +172,11 @@ def time_to_inoculate(
         )
         print("How much volume? ~2 ml per transformation.")
 
-        
 def transformation_mix(
     reaction_names, reaction_participants, wanted_amounts, water_dna_p_reac, media=""
 ):
-    """Create a pandas DataFrame for the parts needed in transformation mixes.
+    """
+    Create a pandas DataFrame for the parts needed in transformation mixes.
 
     Parameters
     ----------
@@ -199,50 +199,52 @@ def transformation_mix(
 
     Examples
     --------
-    # Define reaction names
-    reaction_names = ["insert", "n.ctr", "n.ctr", "n.ctr", "p.ctr"]
+    .. code-block:: python
 
-    # Define reaction participants
-    reaction_participants = [
-        [vector, gRNA1_pcr_prod, gRNA2_pcr_prod],  # the insert we want
-        [vector],  # negative control
-        [gRNA1_pcr_prod],  # negative control
-        [gRNA2_pcr_prod],  # negative control
-        [LEU_plasmid],  # positive control
-    ]
+        # Define reaction names
+        reaction_names = ["insert", "n.ctr", "n.ctr", "n.ctr", "p.ctr"]
 
-    # Calculate nmol
-    nmol_vector = ng_to_nmol(ng=15, bp=len(vector))
-    nmol_gRNA = ng_to_nmol(ng=30, bp=len(gRNA1_pcr_prod))
-    nmol_pctr = ng_to_nmol(ng=10, bp=len(LEU_plasmid))
+        # Define reaction participants
+        reaction_participants = [
+            [vector, gRNA1_pcr_prod, gRNA2_pcr_prod],  # the insert we want
+            [vector],  # negative control
+            [gRNA1_pcr_prod],  # negative control
+            [gRNA2_pcr_prod],  # negative control
+            [LEU_plasmid],  # positive control
+        ]
 
-    # Define wanted concentrations
-    wanted_amounts = {
-        'p0056\\(pESC-LEU-ccdB-USER)': nmol_vector,
-        'ATF1': nmol_gRNA,
-        'CroCPR': nmol_gRNA,
-        'LEU_plasmid': nmol_pctr,
-    }
+        # Calculate nmol
+        nmol_vector = ng_to_nmol(ng=15, bp=len(vector))
+        nmol_gRNA = ng_to_nmol(ng=30, bp=len(gRNA1_pcr_prod))
+        nmol_pctr = ng_to_nmol(ng=10, bp=len(LEU_plasmid))
 
-    # Define media for transformants
-    media = ['LB_AMP'] * 5
+        # Define wanted concentrations
+        wanted_amounts = {
+            'p0056\\(pESC-LEU-ccdB-USER)': nmol_vector,
+            'ATF1': nmol_gRNA,
+            'CroCPR': nmol_gRNA,
+            'LEU_plasmid': nmol_pctr,
+        }
 
-    # Call the function
-    transformation_mix(
-        reaction_names, reaction_participants, wanted_amounts, water_dna_p_reac=7, media=media
-    )
+        # Define media for transformants
+        media = ['LB_AMP'] * 5
 
-    Returns
-    -------
-    pandas.DataFrame
+        # Call the function
+        transformation_mix(
+            reaction_names, reaction_participants, wanted_amounts, water_dna_p_reac=7, media=media
+        )
+
+    .. code-block:: none
+
         DataFrame with freezer locations:
               name  l4_I06  l4_I07  l4_I08  p1_F06  water  plate on
-    0       insert     0.1     0.6     0.6     NaN    5.7    LB_AMP
-    1       n.ctr     0.1     NaN     NaN     NaN    6.9    LB_AMP
-    2       n.ctr     NaN     0.6     NaN     NaN    6.4    LB_AMP
-    3       n.ctr     NaN     NaN     0.6     NaN    6.4    LB_AMP
-    4       p.ctr     NaN     NaN     NaN     0.1    6.9    LB_AMP
+        0       insert     0.1     0.6     0.6     NaN    5.7    LB_AMP
+        1       n.ctr     0.1     NaN     NaN     NaN    6.9    LB_AMP
+        2       n.ctr     NaN     0.6     NaN     NaN    6.4    LB_AMP
+        3       n.ctr     NaN     NaN     0.6     NaN    6.4    LB_AMP
+        4       p.ctr     NaN     NaN     NaN     0.1    6.9    LB_AMP
     """
+
 
     df_comb = pd.DataFrame()
 
