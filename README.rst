@@ -677,7 +677,7 @@ examples on how to use teemi and how we use these notebooks for strain
 construnction. The Colab notebooks can be found here 
 `teemi.notebooks <https://github.com/hiyama341/teemi/tree/main/colab_notebooks>`__. 
 
-* Documentation: https://teemi.readthedocs.io.
+* Documentation: https://teemi.readthedocs.io
 
 
 Contributions
