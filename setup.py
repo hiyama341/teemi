@@ -13,7 +13,7 @@ with open("HISTORY.rst") as history_file:
 
 # Requirements
 install_requires = [
-    "pydna>=4.0.7",
+    "pydna==5.2.0", ## TODO There is a new version of pydna 5.2 but has induced breaking changes
     "pandas>=1.3.0",
     "benchlingapi>=2.1.12",
     "numpy>=1.21.0",
