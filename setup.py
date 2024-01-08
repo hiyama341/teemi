@@ -17,7 +17,7 @@ install_requires = [
     "pandas>=1.3.0",
     "benchlingapi>=2.1.12",
     "numpy>=1.21.0",
-    "biopython>=1.79",
+    "biopython==1.79",   # TODO There is a new version of Biopython 1.82 but has induced breaking changes
     "python-dotenv>=0.20.0",
     "openpyxl>=3.0.9",
     "wheel>=0.37.1",
