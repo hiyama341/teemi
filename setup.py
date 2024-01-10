@@ -10,28 +10,17 @@ with open("README.rst") as readme_file:
 with open("HISTORY.rst") as history_file:
     history = history_file.read()
 
-
 # Requirements
-install_requires = [
-    "pydna==5.2.0", ## TODO There is a new version of pydna 5.2 but has induced breaking changes
-    "pandas>=1.3.0",
-    "benchlingapi>=2.1.12",
-    "numpy>=1.21.0",
-    "biopython==1.79",   # TODO There is a new version of Biopython 1.82 but has induced breaking changes
-    "python-dotenv>=0.20.0",
-    "openpyxl>=3.0.9",
-    "wheel>=0.37.1",
-    "matplotlib>=3.5.1",
-    "intermine>=1.12.0",
-    "dnachisel>=3.2.10",
-]
-
+requirements = []
+with open('requirements.txt', 'r') as fh:
+    for line in fh:
+        requirements.append(line.strip())
 
 extra_requirements={
     "dev": ["pytest==7.1.2", "pylint==2.13.9", "black==22.3.0", "pytest-cov==4.1.0"]
 }
 
-
+# Main setup scripts
 setup(
     author="Lucas Levassor",
     author_email="lucaslevassor@gmail.com",
@@ -55,7 +44,6 @@ setup(
     },
 
     tests_require=extra_requirements["dev"],
-
     license="MIT license",
     long_description=readme + "\n\n" + history,
     long_description_content_type="text/x-rst",  
@@ -65,6 +53,7 @@ setup(
     packages=find_packages(include=["teemi", "teemi.*"]),
     test_suite="tests",
     url="https://github.com/hiyama341/teemi",
+    install_requires = requirements,
     ### Change version and put tag to release on PYPI
     # First time making a package, then comment this section and write: version= "0.0.1"
     version=versioneer.get_version(),
