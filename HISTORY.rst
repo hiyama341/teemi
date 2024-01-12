@@ -1,5 +1,11 @@
 History
 -------
+0.3.4 (2024-10-01)
+
+From issues #16 - Including dependencies in Pypi package
+- Have updated setup.py file and dependencies are included in Pypi directly. 
+
+Thanks to @manulera for raising this issue.   
 
 0.3.3 (2023-11-08)
 
