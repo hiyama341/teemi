@@ -2,8 +2,8 @@
   :width: 400
   :alt: teemi logo 
 
-teemi: a python package designed to make high-throughput strain construction reproducible and FAIR
---------------------------------------------------------------------------------------------------
+teemi: An open-source literate programming approach for iterative design-build-test-learn cycles in bioengineering
+------------------------------------------------------------------------------------------------------------------
 
 .. summary-start
 
