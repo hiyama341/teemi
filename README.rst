@@ -33,7 +33,7 @@ teemi: An open-source literate programming approach for iterative design-build-t
 .. image:: https://img.shields.io/github/last-commit/hiyama341/teemi
 
 .. image:: https://img.shields.io/badge/DOI-10_1101_2023_06_18_545451
-        :target: https://doi.org/10.1101/2023.06.18.545451
+        :target: https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011929
     
 
 
