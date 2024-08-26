@@ -71,8 +71,8 @@ def plat_seq_data_wrangler(sequencing_plates: list) -> list:
             ["AvgQual", "Length", "GoodQualFrom", "GoodQualTo", "used"]
         ]
 
-        # if values are non nummeric make them NaN
-        numeric_values = numeric_values.replace("n.a.", np.NaN)
+        # if values are non numeric make them NaN
+        numeric_values = numeric_values.replace("n.a.", np.nan)  # Use np.nan here
 
         # Making them numeric
         numeric_values = numeric_values.apply(pd.to_numeric, errors="coerce")
