@@ -74,6 +74,12 @@ For a quick introduction, check our quick guides:
 teemi has been published in PLOS COMPUTATIONAL BIOLOGY: `"teemi: An open-source literate programming approach for iterative design-build-test-learn cycles in bioengineering" <https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011929>`__.
 Please cite it if you've used teemi in a scientific publication.
 
+
+.. image:: https://raw.githubusercontent.com/hiyama341/teemi/refs/heads/main/pictures/PLOS_publication.png
+  :width: 400
+  :alt: PLOS publication
+
+
 .. summary-end
 
 Overview
