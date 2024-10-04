@@ -76,7 +76,7 @@ Please cite it if you've used teemi in a scientific publication.
 
 
 .. image:: https://raw.githubusercontent.com/hiyama341/teemi/refs/heads/main/pictures/PLOS_publication.png
-  :width: 400
+  :width: 700
   :alt: PLOS publication
 
 
