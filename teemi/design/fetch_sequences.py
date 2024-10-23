@@ -159,7 +159,6 @@ def fetch_promoter(promoter_name: str):
 
 
 def fetch_multiple_promoters(List_of_promoter_names: list):
-
     """Retrieves a yeast promoter sequence from intermine.
     Parameters
     ----------

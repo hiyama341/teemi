@@ -175,7 +175,6 @@ def add_annotations(
     comments: str = "",
     location: str = "",
 ) -> list:
-
     """Adds the neccessary annotations to a list of
     SeqRecord objects to be uploaded to the database"""
     for annotations in list_of_parts:

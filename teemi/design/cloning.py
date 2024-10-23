@@ -291,7 +291,6 @@ def casembler(
     verbose=False,
     to_benchling=False,
 ):
-
     """Simulate in vivo assembly and integration with the possibility
     of printing to gb files or send it directly to benchling.
 

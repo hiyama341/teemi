@@ -468,7 +468,6 @@ def unique_primers(primers: list, list_of_assemblies):
 
 
 def unique_amplicons(list_of_assemblies: list):
-
     """Finds Unique amplicons from a list of assemblies
     Parameters
     ----------

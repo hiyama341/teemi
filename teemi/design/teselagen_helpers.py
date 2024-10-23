@@ -177,12 +177,12 @@ def amplicon_matrix_teselagen(
                 }
             )
 
-            amplicon.forward_primer.annotations[
-                "tm Q5 Hot Start"
-            ] = teselagen_parts_matrix.loc[comb_seq_idx, ["Q5_fw_tm"]].values[0][0]
-            amplicon.reverse_primer.annotations[
-                "tm Q5 Hot Start"
-            ] = teselagen_parts_matrix.loc[comb_seq_idx, ["Q5_rv_tm"]].values[0][0]
+            amplicon.forward_primer.annotations["tm Q5 Hot Start"] = (
+                teselagen_parts_matrix.loc[comb_seq_idx, ["Q5_fw_tm"]].values[0][0]
+            )
+            amplicon.reverse_primer.annotations["tm Q5 Hot Start"] = (
+                teselagen_parts_matrix.loc[comb_seq_idx, ["Q5_rv_tm"]].values[0][0]
+            )
             amplicon.annotations["ta Q5 Hot Start"] = teselagen_parts_matrix.loc[
                 comb_seq_idx, ["Q5_ta"]
             ].values[0][0]
