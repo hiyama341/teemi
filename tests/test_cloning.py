@@ -134,9 +134,12 @@ def test_seq_to_annotation():
     # The actual test
     seq_to_annotation(test_sequence, test_plasmid, 'AMPLICON2')
 
-    assert test_plasmid.features[-1].type == 'AMPLICON2'
-    assert test_plasmid.features[-1].location.start.position == 0
-    assert test_plasmid.features[-1].location.end.position == 100
+    ## Assertions to verify the annotation
+    assert test_plasmid.features[-1].type == 'AMPLICON2', "Feature type should be 'AMPLICON2'"
+    
+    # Access the start and end positions correctly
+    assert int(test_plasmid.features[-1].location.start) == 0, "Feature start position should be 0"
+    assert int(test_plasmid.features[-1].location.end) == 100, "Feature end position should be 100"
 
 
 def test_casembler():
@@ -205,11 +208,12 @@ def test_crispr_db_break_location():
 
 def test_add_feature_annotation_to_seqrecord(): 
     test_plasmid = SeqIO.read('../teemi/tests/files_for_testing/MIA-HA-1.gb', 'gb')
-    add_feature_annotation_to_seqrecord(test_plasmid,label=f'This a test', strand = 1)
+    add_feature_annotation_to_seqrecord(test_plasmid,label=f'This a test')
     
     assert test_plasmid.features[0].qualifiers['label'] == 'This a test'
-    assert test_plasmid.features[-1].location.start.position == 0
-    assert test_plasmid.features[-1].location.end.position == len(test_plasmid)
+    # Directly use the ExactPosition as an integer
+    assert int(test_plasmid.features[-1].location.start) == 0
+    assert int(test_plasmid.features[-1].location.end) == len(test_plasmid)
 
 
 
