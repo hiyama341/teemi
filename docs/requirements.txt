@@ -2,7 +2,7 @@
 # See https://docs.readthedocs.io/en/stable/config-file/index.html
 # For building
 sphinx==4.0.1
-sphinx_rtd_theme==0.5.2
+sphinx_rtd_theme==2.0.0
 nbsphinx==0.8.7
 
 # Extra
