@@ -84,6 +84,7 @@ Please cite it if you've used teemi in a scientific publication.
 
 Overview
 --------
+- `New Features`_
 - `Features`_
 - `Getting started`_
 - `A Quick Guide to Creating a Combinatorial Library`_
@@ -96,6 +97,16 @@ Overview
 - `Contributions`_
 - `License`_
 - `Credits`_
+
+
+New Features
+--------
+* CRISPR-Cas3
+* CRISPR-Cas9
+* CRISPR-Cas12a
+* CRISPR-inteference 
+* CRISPR-BEST (base-editing)
+
 
 Features
 --------
