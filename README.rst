@@ -100,11 +100,11 @@ Overview
 
 
 New Features
---------
+------------
 * CRISPR-Cas3
 * CRISPR-Cas9
 * CRISPR-Cas12a
-* CRISPR-inteference 
+* CRISPRi
 * CRISPR-BEST (base-editing)
 
 
