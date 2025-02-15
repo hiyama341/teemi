@@ -279,6 +279,44 @@ def nicking_enzyme(vector):
         print("No nicking sequnce")
 
 
+def Nt_Bbc_CI(linearized_vector):
+    """
+    Simulate nicking with Nt.Bbc.CI for USER cloning.
+
+    This enzyme nicks a vector that has:
+      - The first 6 bases of the Crick strand equal to "TAAACC"
+      - The last 6 bases of the Watson strand equal to "TTTAAT"
+
+    The nick is simulated by removing the first 6 bases from both strands,
+    resulting in a new Dseq with an overhang of 8 bases.
+
+    Parameters
+    ----------
+    linearized_vector : Dseq
+        A linearized Dseq record, typically generated with AsiSI or a similar enzyme.
+
+    Returns
+    -------
+    Dseq
+        A new Dseq record with the nick applied, ready for USER cloning.
+
+    Raises
+    ------
+    ValueError
+        If the expected nicking sequence is not found.
+    """
+    if (linearized_vector.seq.crick[:6] == "TAAACC" and 
+        linearized_vector.seq.watson[-6:] == "TTTAAT"):
+        return Dseq(
+            watson=linearized_vector.seq.watson[6:],
+            crick=linearized_vector.seq.crick[6:],
+            ovhg=8
+        )
+    else:
+        raise ValueError("ERROR: No nicking sequence found.")
+
+
+
 def casembler(
     bg_strain,
     site_names=None,
