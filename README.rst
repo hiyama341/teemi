@@ -71,6 +71,11 @@ For a quick introduction, check our quick guides:
 - `A Quick Guide to Creating a Combinatorial Library`_
 - `A Quick Guide to making a CRISPR plasmid with USER cloning (for the beginner)`_
 
+For more examples of literate programming in action, explore our
+`Teemi CAD Workflows <https://github.com/hiyama341/teemi/tree/main/teemi_cad_workflows>`__ —
+a collection of Jupyter notebooks demonstrating bioengineering workflows built with teemi.
+
+
 teemi has been published in PLOS COMPUTATIONAL BIOLOGY: `"teemi: An open-source literate programming approach for iterative design-build-test-learn cycles in bioengineering" <https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011929>`__.
 Please cite it if you've used teemi in a scientific publication.
 
