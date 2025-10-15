@@ -1,6 +1,6 @@
-# 🧬 Teemi CAD Workflows
+# 🧬 teemi CAD workflows
 
-Welcome to **teemi CAD Workflows** — a growing collection of **cool bioengineering workflows, teemi-style**.
+Welcome to **teemi CAD workflows** — a growing collection of **cool bioengineering workflows, teemi-style**.
 
 This folder is meant to **inspire** and **demonstrate** what’s possible when you combine  
 **computational design**, **biological insight**, and **literate programming**.

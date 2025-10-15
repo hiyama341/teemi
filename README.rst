@@ -72,7 +72,7 @@ For a quick introduction, check our quick guides:
 - `A Quick Guide to making a CRISPR plasmid with USER cloning (for the beginner)`_
 
 For more examples of literate programming in action, explore our
-`Teemi CAD Workflows <https://github.com/hiyama341/teemi/tree/main/teemi_cad_workflows>`__ —
+`teemi CAD workflows <https://github.com/hiyama341/teemi/tree/main/teemi_cad_workflows>`__ —
 a collection of Jupyter notebooks demonstrating bioengineering workflows built with teemi.
 
 
