@@ -167,8 +167,10 @@ def extract_template_amplification_sites(templates, names, terminator):
     template_amplification_sites = []
     for name, template in zip(names, templates):
         for feature in template.features:
+            strand = feature.location.strand
+            if strand is None:
+                strand = 1
             if feature.qualifiers["name"] == name:
-
                 CDS_strand = feature.strand
                 if CDS_strand == 1:
                     start = feature.location.start
