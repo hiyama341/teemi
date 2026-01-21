@@ -54,7 +54,7 @@ jobs:
         # we only publish a new version when there is a tag to the push
         if: startsWith(github.ref, 'refs/tags')
 
-        uses: pypa/gh-action-pypi-publish@v1.5.0
+        uses: pypa/gh-action-pypi-publish@v1.13.0
         with:
           # PyPI user
           user: __token__
