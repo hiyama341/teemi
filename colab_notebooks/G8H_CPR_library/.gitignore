@@ -1,0 +1,62 @@
+# Ignore env file
+.env
+
+# ignore 
+.pytest_cache
+__pycache__/
+
+# Mac OS-specific storage files
+.DS_Store
+**/.DS_Store
+
+# Egg files
+*.egg-info/
+*.egg
+eggs/
+.eggs/
+
+# R_project initializer
+.Rproj.user
+.RData
+
+# Sphinx documentation
+docs/_build/
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+
+# Jupyter NB Checkpoints
+.ipynb_checkpoints/
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
