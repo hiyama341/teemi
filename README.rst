@@ -89,6 +89,8 @@ Please cite it if you've used teemi in a scientific publication.
 
 Overview
 --------
+- `Roadmap <./ROADMAP.md>`_
+- `Releasing <./RELEASING.md>`_
 - `New Features`_
 - `Features`_
 - `Getting started`_
@@ -102,6 +104,12 @@ Overview
 - `Contributions`_
 - `License`_
 - `Credits`_
+
+Project docs
+------------
+
+- `Roadmap <./ROADMAP.md>`_
+- `Releasing <./RELEASING.md>`_
 
 
 New Features
