@@ -38,3 +38,48 @@ Retrieve gene homologs module
    :undoc-members:
    :show-inheritance:
    :noindex:
+
+Gibson cloning module
+---------------------
+
+.. automodule:: teemi.design.gibson_cloning
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :noindex:
+
+Crispr cas module
+-----------------
+
+.. automodule:: teemi.design.crispr_cas
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :noindex:
+
+Crispr best module
+------------------
+
+.. automodule:: teemi.design.crispr_best
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :noindex:
+
+Sequence finder module
+----------------------
+
+.. automodule:: teemi.design.sequence_finder
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :noindex:
+
+Teselagen helpers module
+------------------------
+
+.. automodule:: teemi.design.teselagen_helpers
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :noindex:

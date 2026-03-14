@@ -33,7 +33,29 @@ import teemi
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones. 
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'sphinx.ext.autosummary', 'sphinx.ext.napoleon', 'nbsphinx']
 
-autosummary_generate = True 
+autosummary_generate = True
+
+autodoc_default_options = {
+    'members': True,
+    'undoc-members': False,
+    'show-inheritance': True,
+}
+
+autodoc_mock_imports = [
+    'benchlingapi',
+    'dnachisel',
+    'h2o',
+    'intermine',
+    'matplotlib',
+    'matplotlib.pyplot',
+    'matplotlib.patches',
+    'pylab',
+    'scipy',
+    'scipy.stats',
+    'seaborn',
+]
+
+nbsphinx_execute = 'never'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -71,7 +93,12 @@ language = 'en'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = [
+    '_build',
+    'Thumbs.db',
+    '.DS_Store',
+    'generated/teemi.design.CRISPRsequencecutter.rst',
+]
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -159,6 +186,4 @@ texinfo_documents = [
      'One line description of project.',
      'Miscellaneous'),
 ]
-
-
 
