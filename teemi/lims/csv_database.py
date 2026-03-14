@@ -21,6 +21,35 @@ import os
 import numpy as np
 
 
+_TEXT_COLUMNS = {
+    "name",
+    "date",
+    "row",
+    "seq",
+    "features",
+    "location",
+    "reference",
+    "comments",
+    "description",
+}
+
+
+def _normalize_database_dtypes(dataframe: pd.DataFrame) -> pd.DataFrame:
+    """Make CSV-backed text columns writable across pandas versions.
+
+    Empty columns are often inferred as float because they only contain NaN in
+    the fixture CSV files. Later assignments of strings into those columns now
+    fail on newer pandas unless we coerce them back to an object dtype.
+    """
+
+    text_columns = {
+        column: "object" for column in _TEXT_COLUMNS if column in dataframe.columns
+    }
+    if text_columns:
+        dataframe = dataframe.astype(text_columns)
+    return dataframe
+
+
 def get_unique_id(path="../data/csv_database") -> int:
     """Makes a single unique ID from the csv_database files.
 
@@ -376,7 +405,7 @@ def get_database(name: str, path="../data/csv_database/"):
     """Fetches the csv database as a pd.dataframe"""
     try:
         dataframe = pd.read_csv(path + name + ".csv", index_col=False)
-        return dataframe
+        return _normalize_database_dtypes(dataframe)
     except:
         print("Couldnt find that databse. Hack: Dont add csv extention.")
 
