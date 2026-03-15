@@ -5,6 +5,9 @@ name: ci-cd
 # WIll run on push commands
 on: [push]
 
+permissions:
+  contents: write
+
 jobs:
   ci:
     # Set up operating system
@@ -62,3 +65,11 @@ jobs:
           password: ${{secrets.PYPI_TOKEN_TEEMI}}
           skip-existing: true
           verbose: true
+
+      - name: Create GitHub release
+        if: startsWith(github.ref, 'refs/tags') && matrix.python-version == '3.11'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
