@@ -126,7 +126,6 @@ Features
 
 * Combinatorial library generation
 * HT cloning and transformation workflows
-* Flowbot One instructions
 * CSV-based LIMS system as well as integration to Benchling
 * Genotyping of microbial strains
 * Advanced Machine Learning of biological datasets with the AutoML `H2O <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html>`__
@@ -530,7 +529,7 @@ Feal free to check out the notebooks for more information on how we did it.
 
 
 
-02. Combinatorial libraries can be generated with the DesignAssembly class along with robot executable intructions 
+02. Combinatorial libraries can be generated with the DesignAssembly class and prepared for downstream build planning
 
 |Notebook 02| 
 

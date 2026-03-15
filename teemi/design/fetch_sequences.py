@@ -23,6 +23,55 @@ from io import StringIO
 # from __future__ import print_function
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
+from Bio.SeqFeature import SeqFeature
+
+
+def concatenate_genbank_records(
+    records: list, record_id: str = "combined_record", record_name: str = "combined_record"
+):
+    """Concatenate multiple GenBank records into one sequence record.
+
+    Parameters
+    ----------
+    records : list of Bio.SeqRecord.SeqRecord
+        Ordered list of chromosome or contig records.
+    record_id : str, optional
+        Identifier for the concatenated record.
+    record_name : str, optional
+        Name for the concatenated record.
+
+    Returns
+    -------
+    Bio.SeqRecord.SeqRecord
+        A new record with concatenated sequence and shifted feature locations.
+    """
+    concatenated_sequence = Seq("")
+    concatenated_features = []
+    sequence_offset = 0
+
+    for record in records:
+        concatenated_sequence += record.seq
+
+        for feature in record.features:
+            shifted_feature = SeqFeature(
+                location=feature.location._shift(sequence_offset),
+                type=feature.type,
+                id=feature.id,
+                qualifiers=feature.qualifiers.copy(),
+            )
+            concatenated_features.append(shifted_feature)
+
+        sequence_offset += len(record.seq)
+
+    concatenated_record = SeqRecord(
+        concatenated_sequence,
+        id=record_id,
+        name=record_name,
+        description=f"Concatenated record built from {len(records)} GenBank records",
+        features=concatenated_features,
+    )
+
+    return concatenated_record
 
 
 def retrieve_sequences_from_ncbi(

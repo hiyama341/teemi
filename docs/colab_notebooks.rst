@@ -59,7 +59,7 @@ Strictosidine case : First DBTL cycle
 
 
 
-02. Describes how a combinatorial library can be generated with the DesignAssembly class along with robot executable intructions |Notebook 02|. 
+02. Describes how a combinatorial library can be generated with the DesignAssembly class and prepared for downstream build planning |Notebook 02|. 
 
 
 
@@ -162,4 +162,3 @@ Strictosidine case : Second DBTL cycle
 
 
 For more information head over to our `publication <https://www.biorxiv.org/content/10.1101/2023.06.18.545451v1>`__ describing the use of teemi in a literate programming context. 
-

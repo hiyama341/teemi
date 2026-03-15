@@ -171,8 +171,9 @@ def find_sgrna_hits_cas9_crispri(record: Dseqrecord, strain_name: str, locus_tag
                     sgrna_seed = sgrna[(protospacer_len - off_target_seed):protospacer_len]
 
                     # Get number of off-target hits for the seed sequence
-                    off_target_count = (
-                        off_target_counter[sgrna_seed] - 1 # if it turns out to be minus 1 it has not found the seed and there is a mistake.
+                    off_target_count = max(
+                        off_target_counter[sgrna_seed] - 1,
+                        0,
                     )
 
                     # Store sgRNA hit
@@ -257,5 +258,4 @@ def extract_sgRNAs_for_crispri(args: SgRNAargs) -> Tuple[pd.DataFrame, Counter, 
         sgrna_df = filter_crispri_guides(args, sgrna_df)
 
     return  sgrna_df
-
 

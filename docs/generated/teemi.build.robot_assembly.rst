@@ -3,6 +3,12 @@ teemi.build.robot\_assembly
 
 .. automodule:: teemi.build.robot_assembly
 
+.. note::
+
+   This module is legacy and is retained for backwards compatibility with
+   older robot-oriented workflows. New code should prefer newer build-planning
+   interfaces over direct use of these abstractions.
+
    
    
    
@@ -33,6 +39,5 @@ teemi.build.robot\_assembly
    
    
    
-
 
 

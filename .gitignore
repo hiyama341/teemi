@@ -25,6 +25,7 @@ eggs/
 
 # ignore the data directory
 data/
+teemi_cad_workflows/workflow_data/09_aspergillus_crispr_example/chrom*.gb
 
 # Unit test / coverage reports
 htmlcov/
@@ -43,6 +44,9 @@ coverage.xml
 build/
 # we keep the teemi build folder 
 !teemi/build
+!teemi/legacy/build
+!teemi/legacy/build/
+!teemi/legacy/build/*.py
 develop-eggs/
 dist/
 downloads/

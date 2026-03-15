@@ -3,6 +3,12 @@ teemi.build.containers\_wells\_picklists
 
 .. automodule:: teemi.build.containers_wells_picklists
 
+.. note::
+
+   This module is legacy and is retained for backwards compatibility with
+   historical picklist and Flowbot-style workflows. It is not a preferred
+   foundation for future build APIs.
+
    
    
    
@@ -51,6 +57,5 @@ teemi.build.containers\_wells\_picklists
       TransferError
    
    
-
 
 

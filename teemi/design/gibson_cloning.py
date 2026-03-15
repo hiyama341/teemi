@@ -19,6 +19,7 @@ from Bio.SeqRecord import SeqRecord
 from pydna.design import primer_design
 from pydna.design import assembly_fragments
 from typing import List
+import pandas as pd
 from teemi.build.PCR import primer_tm_neb
 
 
@@ -124,6 +125,82 @@ def find_up_dw_repair_templates(
                 repair_DNA_templates.append(record)
 
     return repair_DNA_templates
+
+
+def extract_locus_tag_homology_arms(
+    genome: SeqRecord, locus_tags: List[str], arm_length: int = 45
+) -> pd.DataFrame:
+    """
+    Extract fixed-length upstream and downstream homology arms for CDS features.
+
+    Parameters
+    ----------
+    genome : Bio.SeqRecord.SeqRecord
+        Genome record containing CDS features with ``locus_tag`` qualifiers.
+    locus_tags : List[str]
+        Locus tags to extract homology arms for.
+    arm_length : int, optional
+        Number of base pairs to fetch directly upstream and downstream of each
+        CDS. Default is 45 bp.
+
+    Returns
+    -------
+    pandas.DataFrame
+        One row per locus tag with genomic coordinates, strand, separate arm
+        sequences, and a concatenated repair oligo sequence for ordering.
+    """
+    locus_tag_set = set(locus_tags)
+    homology_arms = []
+
+    for feature in genome.features:
+        if feature.type != "CDS":
+            continue
+
+        feature_locus_tag = feature.qualifiers.get("locus_tag", [""])[0]
+        if feature_locus_tag not in locus_tag_set:
+            continue
+
+        gene_start = int(feature.location.start)
+        gene_end = int(feature.location.end)
+        gene_strand = int(feature.location.strand or 1)
+
+        upstream_start = max(0, gene_start - arm_length)
+        upstream_end = gene_start
+        downstream_start = gene_end
+        downstream_end = min(len(genome.seq), gene_end + arm_length)
+
+        upstream_arm = str(genome.seq[upstream_start:upstream_end])
+        downstream_arm = str(genome.seq[downstream_start:downstream_end])
+        repair_oligo = upstream_arm + downstream_arm
+
+        homology_arms.append(
+            {
+                "locus_tag": feature_locus_tag,
+                "gene_start": gene_start,
+                "gene_end": gene_end,
+                "gene_strand": gene_strand,
+                "upstream_arm_name": f"{feature_locus_tag}_UP{arm_length}",
+                "downstream_arm_name": f"{feature_locus_tag}_DW{arm_length}",
+                "repair_oligo_name": f"{feature_locus_tag}_DEL_{arm_length}bp_arms",
+                "upstream_arm_start": upstream_start,
+                "upstream_arm_end": upstream_end,
+                "downstream_arm_start": downstream_start,
+                "downstream_arm_end": downstream_end,
+                "upstream_arm_length": len(upstream_arm),
+                "downstream_arm_length": len(downstream_arm),
+                "repair_oligo_length": len(repair_oligo),
+                "upstream_arm": upstream_arm,
+                "downstream_arm": downstream_arm,
+                "repair_oligo": repair_oligo,
+            }
+        )
+
+    homology_arms_df = pd.DataFrame(homology_arms)
+
+    if homology_arms_df.empty:
+        return homology_arms_df
+
+    return homology_arms_df.sort_values("locus_tag").reset_index(drop=True)
 
 
 def update_primer_names(list_of_records: list) -> list:

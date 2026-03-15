@@ -10,6 +10,7 @@ from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
 from Bio import SeqIO
 from teemi.design.fetch_sequences import read_fasta_files, read_genbank_files
+from teemi.design.gibson_cloning import extract_locus_tag_homology_arms
 
 
 def test_USER_enzyme(): 
@@ -214,6 +215,32 @@ def test_add_feature_annotation_to_seqrecord():
     # Directly use the ExactPosition as an integer
     assert int(test_plasmid.features[-1].location.start) == 0
     assert int(test_plasmid.features[-1].location.end) == len(test_plasmid)
+
+
+def test_extract_locus_tag_homology_arms():
+    feature = SeqFeature(FeatureLocation(100, 160, strand=1), type="CDS")
+    feature.qualifiers["locus_tag"] = ["AO_TEST_001"]
+    genome = SeqRecord(Seq("A" * 300), id="chrom1", name="chrom1", features=[feature])
+
+    homology_arms = extract_locus_tag_homology_arms(
+        genome, ["AO_TEST_001"], arm_length=45
+    )
+
+    assert homology_arms.shape[0] == 1
+    assert homology_arms.loc[0, "locus_tag"] == "AO_TEST_001"
+    assert homology_arms.loc[0, "upstream_arm_name"] == "AO_TEST_001_UP45"
+    assert homology_arms.loc[0, "downstream_arm_name"] == "AO_TEST_001_DW45"
+    assert homology_arms.loc[0, "repair_oligo_name"] == "AO_TEST_001_DEL_45bp_arms"
+    assert homology_arms.loc[0, "upstream_arm_start"] == 55
+    assert homology_arms.loc[0, "upstream_arm_end"] == 100
+    assert homology_arms.loc[0, "downstream_arm_start"] == 160
+    assert homology_arms.loc[0, "downstream_arm_end"] == 205
+    assert homology_arms.loc[0, "upstream_arm_length"] == 45
+    assert homology_arms.loc[0, "downstream_arm_length"] == 45
+    assert homology_arms.loc[0, "repair_oligo_length"] == 90
+    assert homology_arms.loc[0, "upstream_arm"] == "A" * 45
+    assert homology_arms.loc[0, "downstream_arm"] == "A" * 45
+    assert homology_arms.loc[0, "repair_oligo"] == "A" * 90
 
 
 

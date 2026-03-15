@@ -13,7 +13,7 @@ Below is a summary of the notebooks, ordered by DBTL round and stage, with a sho
 | ---------- | ----------------------------------------------------- | ------ | ---------------------------------------------------------------------------- |
 | 1          | `00_1_DESIGN_Homologs`                                | DESIGN | Automatic selection of homologs from NCBI (repeatable, programmatic)         |
 | 1          | `01_1_DESIGN_Promoters`                               | DESIGN | Promoter selection from RNA-seq / database with quality filters              |
-| 1          | `02_1_DESIGN_Combinatorial_library`                   | DESIGN | Generation of combinatorial library via `DesignAssembly`, robot instructions |
+| 1          | `02_1_DESIGN_Combinatorial_library`                   | DESIGN | Generation of combinatorial library via `DesignAssembly`, downstream build planning |
 | 1          | `03_1_BUILD_gRNA_plasmid`                             | BUILD  | Assembly of CRISPR plasmid using USER cloning                                |
 | 1          | `04_1_BUILD_Background_strain`                        | BUILD  | Construction of background strain via genomic knockouts (G8H, CPR)           |
 | 1          | `05_1_BUILD_Combinatorial_library`                    | BUILD  | Build of large combinatorial library (1,280 combinations)                    |
