@@ -136,7 +136,7 @@ def find_sgrna_hits_cas9_crispri(record: Dseqrecord, strain_name: str, locus_tag
                 crick = 1
 
             # Find potential sgRNAs in both the coding sequence and its reverse complement
-            for sequence in [(crick, coding_sequence), (watson, coding_sequence_revcomp)]:
+            for sequence in [(watson, coding_sequence), (crick, coding_sequence_revcomp)]:
 
                 for match in re.finditer(pam_pattern, sequence[1]):
                     strand_sgrna = sequence[0]
@@ -258,4 +258,3 @@ def extract_sgRNAs_for_crispri(args: SgRNAargs) -> Tuple[pd.DataFrame, Counter, 
         sgrna_df = filter_crispri_guides(args, sgrna_df)
 
     return  sgrna_df
-

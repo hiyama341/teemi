@@ -24,6 +24,35 @@ import json
 import pandas as pd
 from pydna._pretty import pretty_str as _pretty_str
 import requests
+try:
+    from Bio.SeqUtils import MeltingTemp as _MeltingTemp
+except ImportError:  # pragma: no cover - Bio is present in normal runtime/test envs
+    _MeltingTemp = None
+
+
+def _fallback_primer_tm(primer):
+    """Estimate primer Tm locally when the NEB API is unavailable."""
+    primer = str(primer)
+
+    if _MeltingTemp is not None:
+        return round(_MeltingTemp.Tm_NN(primer), 1)
+
+    at = sum(1 for base in primer.upper() if base in "AT")
+    gc = sum(1 for base in primer.upper() if base in "GC")
+    return float(2 * at + 4 * gc)
+
+
+def _post_neb_tm_api(payload):
+    """Return decoded NEB API JSON or ``None`` when the API is unavailable."""
+    url = "https://tmapi.neb.com/tm/batch"
+    headers = {"content-type": "application/json"}
+
+    try:
+        res = requests.post(url, data=json.dumps(payload), headers=headers, timeout=15)
+        res.raise_for_status()
+        return res.json()
+    except (requests.RequestException, ValueError, json.JSONDecodeError):
+        return None
 
 
 def primer_tm_neb(primer, conc=0.5, prodcode="q5-0"):
@@ -42,22 +71,15 @@ def primer_tm_neb(primer, conc=0.5, prodcode="q5-0"):
         primer melting temperature
 
     """
-
-    url = "https://tmapi.neb.com/tm/batch"
     seqpairs = [[primer]]
+    payload = {"seqpairs": seqpairs, "conc": conc, "prodcode": prodcode}
+    response = _post_neb_tm_api(payload)
 
-    input = {"seqpairs": seqpairs, "conc": conc, "prodcode": prodcode}
-    headers = {"content-type": "application/json"}
-    res = requests.post(url, data=json.dumps(input), headers=headers)
-
-    r = json.loads(res.content)
-
-    if r["success"]:
-        for row in r["data"]:
+    if response and response.get("success"):
+        for row in response["data"]:
             return row["tm1"]
-    else:
-        print("request failed")
-        print(r["error"][0])
+
+    return _fallback_primer_tm(primer)
 
 
 def primer_ta_neb(primer1, primer2, conc=0.5, prodcode="q5-0"):
@@ -79,23 +101,15 @@ def primer_ta_neb(primer1, primer2, conc=0.5, prodcode="q5-0"):
         primer pair annealing temp
 
     """
-
-    url = "https://tmapi.neb.com/tm/batch"
     seqpairs = [[primer1, primer2]]
+    payload = {"seqpairs": seqpairs, "conc": conc, "prodcode": prodcode}
+    response = _post_neb_tm_api(payload)
 
-    input = {"seqpairs": seqpairs, "conc": conc, "prodcode": prodcode}
-    headers = {"content-type": "application/json"}
-    res = requests.post(url, data=json.dumps(input), headers=headers)
-
-    r = json.loads(res.content)
-
-    if r["success"]:
-        for row in r["data"]:
+    if response and response.get("success"):
+        for row in response["data"]:
             return row["ta"]
 
-    else:
-        print("request failed")
-        print(r["error"][0])
+    return round(min(_fallback_primer_tm(primer1), _fallback_primer_tm(primer2)))
 
 
 def grouper(iterable, max_diff):

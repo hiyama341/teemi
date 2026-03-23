@@ -171,7 +171,7 @@ def extract_template_amplification_sites(templates, names, terminator):
             if strand is None:
                 strand = 1
             if feature.qualifiers["name"] == name:
-                CDS_strand = feature.strand
+                CDS_strand = strand
                 if CDS_strand == 1:
                     start = feature.location.start
                     print(start)
@@ -180,7 +180,7 @@ def extract_template_amplification_sites(templates, names, terminator):
                     print(end)
 
             if feature.qualifiers["name"].endswith(terminator):
-                terminator_strand = feature.strand
+                terminator_strand = strand
                 if terminator_strand == 1:
                     end = feature.location.end
                 else:
@@ -610,5 +610,4 @@ def find_all_occurrences_of_a_sequence(
         return len(matches_watson) + len(matches_crick)
     else:
         return len(matches_watson)
-
 

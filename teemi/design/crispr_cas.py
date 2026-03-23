@@ -275,7 +275,10 @@ def find_sgrna_hits_cas9(
                 gene_strand = feature.location.strand
 
                 # Find potential sgRNAs in both the coding sequence and its reverse complement
-                for sequence in [(-1, coding_sequence), (1, coding_sequence_revcomp)]:
+                for sequence in [
+                    (gene_strand, coding_sequence),
+                    (-gene_strand, coding_sequence_revcomp),
+                ]:
                     # Increment gene counter
                     gene_counter = gene_counter + 1
                     for match in re.finditer(pam_pattern, sequence[1]):
@@ -325,28 +328,12 @@ def find_sgrna_hits_cas9(
                         if sequence[0] == 1:
                             genome_location = (int(location.start)) + 1
                             position_sgrna = len(sequence[1]) - match.start() - 3
-
-                            # ORIENTATION FLAG: To account for when we are looking at the -1 strand
-                            orientation = sequence[
-                                0
-                            ]  # +1 if you’re looking in the forward seq, –1 if in the rev-comp
-                            gene_strand = (
-                                feature.location.strand
-                            )  # +1 or –1 depending on how the CDS is annotated
-                            strand_sgrna = orientation * gene_strand
+                            strand_sgrna = -sequence[0]
 
                         elif sequence[0] == -1:
                             genome_location = int(location.start) + 1
                             position_sgrna = match.end() + protospacer_len + 3
-
-                            # ORIENTATION FLAG: To account for when we are looking at the -1 strand
-                            orientation = sequence[
-                                0
-                            ]  # +1 if you’re looking in the forward seq, –1 if in the rev-comp
-                            gene_strand = (
-                                feature.location.strand
-                            )  # +1 or –1 depending on how the CDS is annotated
-                            strand_sgrna = orientation * gene_strand
+                            strand_sgrna = -sequence[0]
 
                         sgrna_seed = sgrna[
                             (protospacer_len - off_target_seed) : protospacer_len
@@ -401,7 +388,7 @@ def find_sgrna_hits_cas12a(
     off_target_counter: Counter,
     off_target_seed: int,
     revcomp: callable,
-    protospacer_len=21,
+    protospacer_len=23,
 ) -> pd.DataFrame:
     """
     Parse a genbank file to find sgRNA hits.
@@ -452,7 +439,10 @@ def find_sgrna_hits_cas12a(
                 gene_strand = feature.location.strand
 
                 # Find potential sgRNAs in both the coding sequence and its reverse complement
-                for sequence in [(-1, coding_sequence), (1, coding_sequence_revcomp)]:
+                for sequence in [
+                    (gene_strand, coding_sequence),
+                    (-gene_strand, coding_sequence_revcomp),
+                ]:
                     # Counter for sgRNAs found in the current gene
                     sgrna_counter = 0
 
@@ -500,28 +490,12 @@ def find_sgrna_hits_cas12a(
                         if sequence[0] == 1:
                             genome_location = (int(location.start)) + 1
                             position_sgrna = len(sequence[1]) - match.start() - 3
-
-                            # ORIENTATION FLAG: To account for when we are looking at the -1 strand
-                            orientation = sequence[
-                                0
-                            ]  # +1 if you’re looking in the forward seq, –1 if in the rev-comp
-                            gene_strand = (
-                                feature.location.strand
-                            )  # +1 or –1 depending on how the CDS is annotated
-                            strand_sgrna = orientation * gene_strand
+                            strand_sgrna = sequence[0]
 
                         elif sequence[0] == -1:
                             genome_location = int(location.start) + 1
                             position_sgrna = match.end() + protospacer_len + 3
-
-                            # ORIENTATION FLAG: To account for when we are looking at the -1 strand
-                            orientation = sequence[
-                                0
-                            ]  # +1 if you’re looking in the forward seq, –1 if in the rev-comp
-                            gene_strand = (
-                                feature.location.strand
-                            )  # +1 or –1 depending on how the CDS is annotated
-                            strand_sgrna = orientation * gene_strand
+                            strand_sgrna = sequence[0]
 
                         # For Cas12a, extract the seed sequence from the beginning of the sgRNA
                         sgrna_seed = sgrna[:off_target_seed]
@@ -624,7 +598,10 @@ def find_sgrna_hits_cas3(
                 gene_strand = feature.location.strand
 
                 # Find potential sgRNAs in both the coding sequence and its reverse complement
-                for sequence in [(-1, coding_sequence), (1, coding_sequence_revcomp)]:
+                for sequence in [
+                    (gene_strand, coding_sequence),
+                    (-gene_strand, coding_sequence_revcomp),
+                ]:
                     # Counter for sgRNAs found in the current gene
                     sgrna_counter = 0
 
@@ -678,27 +655,11 @@ def find_sgrna_hits_cas3(
                         if sequence[0] == 1:
                             genome_location = (int(location.start)) + 1
                             position_sgrna = len(sequence[1]) - match.start() - 3
-
-                            # ORIENTATION FLAG: To account for when we are looking at the -1 strand
-                            orientation = sequence[
-                                0
-                            ]  # +1 if you’re looking in the forward seq, –1 if in the rev-comp
-                            gene_strand = (
-                                feature.location.strand
-                            )  # +1 or –1 depending on how the CDS is annotated
-                            strand_sgrna = orientation * gene_strand
+                            strand_sgrna = sequence[0]
                         elif sequence[0] == -1:
                             genome_location = int(location.start) + 1
                             position_sgrna = match.end() + protospacer_len + 3
-
-                            # ORIENTATION FLAG: To account for when we are looking at the -1 strand
-                            orientation = sequence[
-                                0
-                            ]  # +1 if you’re looking in the forward seq, –1 if in the rev-comp
-                            gene_strand = (
-                                feature.location.strand
-                            )  # +1 or –1 depending on how the CDS is annotated
-                            strand_sgrna = orientation * gene_strand
+                            strand_sgrna = sequence[0]
 
                         # For Cas12a, extract the seed sequence from the beginning of the sgRNA
                         sgrna_seed = sgrna[:off_target_seed]
@@ -841,6 +802,7 @@ def extract_sgRNAs(args: SgRNAargs) -> Tuple[pd.DataFrame, Counter, pd.DataFrame
                 off_target_counter,
                 args.off_target_seed,
                 revcomp,
+                protospacer_len=args.protospacer_len,
             )
 
         # Sort sgrna_df by 'off-targets' in ascending order
