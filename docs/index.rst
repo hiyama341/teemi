@@ -25,12 +25,15 @@ To get started with making microbial strains in an HT manner please follow the s
 
 3. You can start making your own workflows by importing teemi into either Google colab or Jupyter lab/notebooks.
 
+If you want workflow inspiration first, start with the :doc:`workflow_gallery`.
+
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
    readme
+   workflow_gallery
    installation
    usage
    contributing
