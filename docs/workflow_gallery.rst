@@ -7,7 +7,7 @@ This page highlights example notebooks that can be adapted to new hosts, targets
 CAD Workflows
 -------------
 
-These notebooks live in ``teemi_cad_workflows/notebooks`` and are meant to be compact,
+These notebooks live in ``teemi_cad_workflows/inspiration_notebooks/notebooks`` and are meant to be compact,
 project-oriented examples.
 
 CRISPR and Strain Engineering
@@ -45,7 +45,7 @@ Legacy Colab Notebooks
 
 The ``colab_notebooks`` directory contains larger, older, end-to-end case-study notebooks.
 They are still useful, but the long-term direction of the repo is to expand the lighter workflow-oriented
-examples in ``teemi_cad_workflows``.
+examples in ``teemi_cad_workflows/inspiration_notebooks``.
 
 Recommended Next Examples
 -------------------------

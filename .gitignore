@@ -26,6 +26,8 @@ eggs/
 # ignore the data directory
 data/
 teemi_cad_workflows/workflow_data/09_aspergillus_crispr_example/chrom*.gb
+!teemi_cad_workflows/inspiration_notebooks/data/
+!teemi_cad_workflows/inspiration_notebooks/data/**
 
 # Unit test / coverage reports
 htmlcov/
