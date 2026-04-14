@@ -70,3 +70,7 @@ share/python-wheels/
 
 # Sphinx documentation
 docs/_build/
+docs/api/generated/
+
+# Local virtual environments
+.venv/
