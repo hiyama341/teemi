@@ -14,6 +14,11 @@
 The project is for researchers who want a practical Python toolkit for moving from biological design ideas to
 documented build plans, test workflows, and analysis outputs in one place.
 
+<p class="fair-callout">
+  The name <code>teemi</code> comes from the Greek goddess of fairness, reflecting the project's goal of making
+  bioengineering more FAIR: findable, accessible, interoperable, and reusable.
+</p>
+
 ## Start here
 
 <div class="link-grid">

@@ -5,19 +5,12 @@
   --teemi-border: #cbd5e1;
 }
 
-.bd-header-announcement {
-  background: linear-gradient(90deg, var(--teemi-accent-dark), var(--teemi-accent));
-  color: #f8fafc;
-}
-
 .bd-main .hero {
   margin: 0 0 2rem;
-  padding: 2rem;
-  border: 1px solid var(--teemi-border);
-  border-radius: 20px;
-  background:
-    radial-gradient(circle at top right, rgba(15, 118, 110, 0.18), transparent 32%),
-    linear-gradient(135deg, #f8fffe, var(--teemi-soft));
+  padding: 0.5rem 0 1rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .bd-main .hero h1 {
@@ -25,6 +18,7 @@
   font-size: clamp(2rem, 4vw, 3.2rem);
   line-height: 1.05;
   max-width: 12ch;
+  color: #e2e8f0;
 }
 
 .bd-main .hero-kicker {
@@ -39,6 +33,15 @@
 .bd-main .hero-lead {
   max-width: 58rem;
   font-size: 1.08rem;
+  color: #cbd5e1;
+}
+
+.bd-main .fair-callout {
+  max-width: 58rem;
+  margin: 0.25rem 0 2rem;
+  font-size: 1.34rem;
+  line-height: 1.5;
+  color: #e2e8f0;
 }
 
 .bd-main .link-grid {

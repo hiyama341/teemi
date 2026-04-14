@@ -99,7 +99,7 @@ html_theme_options = {
     "navigation_depth": 3,
     "show_toc_level": 2,
     "logo": {
-        "text": "teemi",
+        "text": "",
     },
     "icon_links": [
         {
@@ -108,5 +108,4 @@ html_theme_options = {
             "icon": "fa-brands fa-github",
         },
     ],
-    "announcement": "Modernized Sphinx documentation for reproducible DBTL workflows in bioengineering.",
 }

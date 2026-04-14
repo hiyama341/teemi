@@ -1,53 +1,78 @@
 History
 -------
-0.3.4 (2024-10-01)
 
-From issues #16 - Including dependencies in Pypi package
-- Have updated setup.py file and dependencies are included in Pypi directly. 
+Unreleased
+~~~~~~~~~~
 
-Thanks to @manulera for raising this issue.   
+- Repaired and modernized the documentation with a Sphinx + PyData Sphinx Theme setup.
+- Added a cleaner front page, quickstart example, workflow gallery refresh, and improved Colab notebook links.
 
-0.3.3 (2023-11-08)
-
-- Updated readme file with extra examples
-
-- Fixed setup.py file for installation of development packages like: pip install teemi[dev]
-
-
-0.3.2 (2023-01-08)
-
-This release features a re-factored DesignAssembly class with: 
-
-- Simplified methods i.e. redundant methods have been removed.
-
-- The ability to add more than one pad, which can be used to make constructs with overlapping ends for for plasmid cloning.
- 
-
-0.3.1 (2023-31-07)
-- This release failed due to a bug in the readme file.
-
-
-0.3.0 (2023-22-06)
+1.0.5 (2026-03-15)
 ~~~~~~~~~~~~~~~~~~
 
-* New submodules: gibson_cloning
+- Added the Aspergillus CRISPR workflow notebook.
+- Introduced the ``teemi.legacy.build`` namespace to preserve older build helpers while simplifying the main build modules.
+- Added tests around CRISPR guide logic and sequence fetching.
 
-This module is used to perform simple Gibson cloning workflows. 
-While the addition of the "gibson_cloning" submodule is an exciting development, this module is still a work in progress.
-Next, a golden gate module. Keep posted on the progress. 
-
-
-0.2.0 (2023-31-05)
+1.0.4 (2026-03-14)
 ~~~~~~~~~~~~~~~~~~
 
-* New submodules: CRISPRsequencecutter, sequence_finder. 
+- Updated the PyPI publishing workflow.
 
-CRISPRSequenceCutter is a dataclass that is used to cut DNA through CRISPR-cas9 double-stranded break.
-SequenceFinder is a dataclass that finds upstream and downstream sequences from a sequence input, annotates them and saves them.
-
-0.1.0 (2023-01-02)
+1.0.3 (2026-03-14)
 ~~~~~~~~~~~~~~~~~~
 
-* First release on PyPI.
+- Added roadmap and release documentation to support project planning and maintenance.
 
+1.0.2 (2025-11-14)
+~~~~~~~~~~~~~~~~~~
 
+- Fixed a small packaging/versioning issue in the release process.
+
+1.0.1 (2025-02-15)
+~~~~~~~~~~~~~~~~~~
+
+- Fixed a PyPI packaging syntax issue in the README metadata used during release.
+
+1.0.0 (2025-02-15)
+~~~~~~~~~~~~~~~~~~
+
+- Updated CI/test configuration around supported Python versions for the 1.0 release line.
+
+0.5.1 (2024-10-01)
+~~~~~~~~~~~~~~~~~~
+
+- Updated packaging so project dependencies are included directly in the PyPI package.
+
+0.5.0 (2023-11-08)
+~~~~~~~~~~~~~~~~~~
+
+- Expanded the README with more examples.
+- Fixed installation of development extras such as ``pip install teemi[dev]``.
+
+0.4.0 (2023-01-08)
+~~~~~~~~~~~~~~~~~~
+
+- Refactored the ``DesignAssembly`` class.
+- Simplified redundant methods.
+- Added support for multiple pads when constructing assemblies.
+
+0.3.1 (2023-07-31)
+~~~~~~~~~~~~~~~~~~
+
+- Release attempt affected by a README bug.
+
+0.3.0 (2023-06-22)
+~~~~~~~~~~~~~~~~~~
+
+- Added the ``gibson_cloning`` submodule for simple Gibson cloning workflows.
+
+0.2.0 (2023-05-31)
+~~~~~~~~~~~~~~~~~~
+
+- Added the ``CRISPRsequencecutter`` and ``sequence_finder`` submodules.
+
+0.1.0 (2023-02-01)
+~~~~~~~~~~~~~~~~~~
+
+- First release on PyPI.
