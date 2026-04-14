@@ -164,15 +164,16 @@ def split_based_on_keys(
     dictionary: Dict[Any, Any], key_list: List[str]
 ) -> Tuple[Dict[Any, Any], Dict[Any, Any]]:
     """Split a dictionary into two based on a list of keys.
-    Parameters:
-    -----------
+
+    Parameters
+    ----------
     dictionary : Dict[Any, Any]
         The input dictionary
     key_list : List[str]
         The list of keys to split the dictionary on
 
-    Returns:
-    --------
+    Returns
+    -------
     first_dict : Dict[Any, Any]
         The dictionary containing the keys specified in key_list
     other_dict : Dict[Any, Any]
@@ -190,16 +191,17 @@ def split_based_on_keys(
 
 
 def rename_dict_keys(dictionary: Dict, trans_dictionary: Dict) -> Dict:
-    """rename the keys of a dictionary using another dictionary
-    Parameters:
-    -----------
+    """Rename the keys of a dictionary using another dictionary.
+
+    Parameters
+    ----------
     dictionary : Dict[K, V]
         The input dictionary
     trans_dictionary : Dict[K, K]
         The dictionary containing the keys to be replaced as keys and the new keys as values
 
-    Returns:
-    --------
+    Returns
+    -------
     dictionary : Dict[K, V]
         The dictionary with the keys renamed.
     """

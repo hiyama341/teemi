@@ -16,8 +16,9 @@ with open('requirements.txt', 'r') as fh:
     for line in fh:
         requirements.append(line.strip())
 
-extra_requirements={
-    "dev": ["pytest==7.1.2", "pylint==2.13.9", "black==22.3.0", "pytest-cov==4.1.0"]
+extra_requirements = {
+    "dev": ["pytest==7.1.2", "pylint==2.13.9", "black==22.3.0", "pytest-cov==4.1.0"],
+    "docs": ["sphinx", "pydata-sphinx-theme", "myst-parser"],
 }
 
 # Main setup scripts

@@ -1,0 +1,79 @@
+:root {
+  --teemi-accent: #0f766e;
+  --teemi-accent-dark: #134e4a;
+  --teemi-soft: #ecfeff;
+  --teemi-border: #cbd5e1;
+}
+
+.bd-header-announcement {
+  background: linear-gradient(90deg, var(--teemi-accent-dark), var(--teemi-accent));
+  color: #f8fafc;
+}
+
+.bd-main .hero {
+  margin: 0 0 2rem;
+  padding: 2rem;
+  border: 1px solid var(--teemi-border);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at top right, rgba(15, 118, 110, 0.18), transparent 32%),
+    linear-gradient(135deg, #f8fffe, var(--teemi-soft));
+}
+
+.bd-main .hero h1 {
+  margin: 0.25rem 0 1rem;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 1.05;
+  max-width: 12ch;
+}
+
+.bd-main .hero-kicker {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--teemi-accent-dark);
+}
+
+.bd-main .hero-lead {
+  max-width: 58rem;
+  font-size: 1.08rem;
+}
+
+.bd-main .link-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0 2rem;
+}
+
+.bd-main .link-card {
+  display: block;
+  padding: 1.25rem;
+  border: 1px solid var(--teemi-border);
+  border-radius: 18px;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+  box-shadow: 0 14px 30px -24px rgba(15, 23, 42, 0.45);
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.bd-main .link-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--teemi-accent);
+  box-shadow: 0 18px 30px -24px rgba(15, 23, 42, 0.55);
+  text-decoration: none;
+}
+
+.bd-main .link-card h2 {
+  margin-top: 0;
+  margin-bottom: 0.4rem;
+  font-size: 1.1rem;
+}
+
+.bd-main .link-card p {
+  margin: 0;
+  color: #475569;
+}
