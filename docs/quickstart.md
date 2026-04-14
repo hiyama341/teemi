@@ -11,10 +11,10 @@ import teemi
 ## Explore the main namespaces
 
 - `teemi.design` for sequence design, cloning, and workflow planning helpers.
-- `teemi.build` for assembly, PCR, and transformation-oriented utilities.
+- `teemi.build` for active assembly, PCR, and transformation-oriented utilities.
 - `teemi.test` for genotyping and data wrangling helpers.
 - `teemi.learn` for analysis and plotting utilities.
-- `teemi.lims` for sample and sequence tracking integrations.
+- `teemi.lims` for legacy sample and sequence tracking integrations.
 
 ## Example: combinatorial library planning
 
