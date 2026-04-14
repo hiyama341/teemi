@@ -49,6 +49,7 @@ Benchling API and a low-level CSV file database.
 This tool can be used in literate programming to 
 increase efficiency and speed in metabolic engineering tasks. 
 To try teemi, visit our `Google Colab notebooks <https://github.com/hiyama341/teemi/tree/main/colab_notebooks>`__.
+For the polished documentation site, visit our `teemi docs <https://teemi.readthedocs.io>`__.
 
 
 teemi not only simplifies the strain construction process but also offers the 
