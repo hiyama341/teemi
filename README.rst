@@ -36,6 +36,13 @@ teemi: An open-source literate programming approach for iterative design-build-t
         :target: https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011929
     
 
+Start here
+~~~~~~~~~~
+
+- `Documentation <https://teemi.readthedocs.io>`__
+- `Google Colab notebooks <https://github.com/hiyama341/teemi/tree/main/colab_notebooks>`__
+- `GitHub repository <https://github.com/hiyama341/teemi>`__
+
 
 What is teemi?
 ~~~~~~~~~~~~~~
