@@ -1,0 +1,9 @@
+0,1,2,3,4,5,6,7,8,9,10,11,12,13,Systematic_name,Variant,promoter_index,terminator_index
+PABA-UP,PKG1_promoter,pfa1,PKG1_terminator,PKG1_promoter,pfa2,PKG1_terminator,PKG1_promoter,pfa3,PKG1_terminator,PKG1_promoter,PPtase_BBa_K5300011,PKG1_terminator,PABA-DW,"(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)",0,0,0
+PABA-UP,PKG1_promoter,pfa1,TEF1_terminator,PKG1_promoter,pfa2,TEF1_terminator,PKG1_promoter,pfa3,TEF1_terminator,PKG1_promoter,PPtase_BBa_K5300011,TEF1_terminator,PABA-DW,"(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)",0,0,1
+PABA-UP,ADH1_promoter,pfa1,PKG1_terminator,ADH1_promoter,pfa2,PKG1_terminator,ADH1_promoter,pfa3,PKG1_terminator,ADH1_promoter,PPtase_BBa_K5300011,PKG1_terminator,PABA-DW,"(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)",0,1,0
+PABA-UP,ADH1_promoter,pfa1,TEF1_terminator,ADH1_promoter,pfa2,TEF1_terminator,ADH1_promoter,pfa3,TEF1_terminator,ADH1_promoter,PPtase_BBa_K5300011,TEF1_terminator,PABA-DW,"(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)",0,1,1
+PABA-UP,DED1_promoter,pfa1,PKG1_terminator,DED1_promoter,pfa2,PKG1_terminator,DED1_promoter,pfa3,PKG1_terminator,DED1_promoter,PPtase_BBa_K5300011,PKG1_terminator,PABA-DW,"(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)",0,2,0
+PABA-UP,DED1_promoter,pfa1,TEF1_terminator,DED1_promoter,pfa2,TEF1_terminator,DED1_promoter,pfa3,TEF1_terminator,DED1_promoter,PPtase_BBa_K5300011,TEF1_terminator,PABA-DW,"(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)",0,2,1
+PABA-UP,synthetic_temp=2.50,pfa1,PKG1_terminator,synthetic_temp=2.50,pfa2,PKG1_terminator,synthetic_temp=2.50,pfa3,PKG1_terminator,synthetic_temp=2.50,PPtase_BBa_K5300011,PKG1_terminator,PABA-DW,"(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)",0,3,0
+PABA-UP,synthetic_temp=2.50,pfa1,TEF1_terminator,synthetic_temp=2.50,pfa2,TEF1_terminator,synthetic_temp=2.50,pfa3,TEF1_terminator,synthetic_temp=2.50,PPtase_BBa_K5300011,TEF1_terminator,PABA-DW,"(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)",0,3,1
