@@ -1,0 +1,233 @@
+jobid=692028C3003142477E885E1B&wait=20 Server Output - DTU Health Tech
+
+synthetic_temp_0.10, 1000 nucleotides
+
+  Position  Score  Likelihood
+       400  0.681  Marginal prediction
+
+synthetic_temp_1.00, 1000 nucleotides
+
+  Position  Score  Likelihood
+       300  0.646  Marginal prediction
+
+synthetic_temp_1.10, 1000 nucleotides
+
+  Position  Score  Likelihood
+       600  0.626  Marginal prediction
+
+synthetic_temp_1.20, 1000 nucleotides
+
+  Position  Score  Likelihood
+       300  0.553  Marginal prediction
+
+synthetic_temp_1.30, 1000 nucleotides
+
+  No promoter predicted
+
+synthetic_temp_1.40, 1000 nucleotides
+
+  No promoter predicted
+
+synthetic_temp_1.50, 1000 nucleotides
+
+  Position  Score  Likelihood
+       300  0.618  Marginal prediction
+
+synthetic_temp_1.60, 1000 nucleotides
+
+  Position  Score  Likelihood
+       200  1.090  Highly likely prediction
+       800  0.611  Marginal prediction
+
+synthetic_temp_1.70, 1000 nucleotides
+
+  No promoter predicted
+
+synthetic_temp_1.80, 1000 nucleotides
+
+  Position  Score  Likelihood
+       500  1.090  Highly likely prediction
+
+synthetic_temp_1.90, 1000 nucleotides
+
+  Position  Score  Likelihood
+       400  0.558  Marginal prediction
+
+synthetic_temp_0.20, 1000 nucleotides
+
+  No promoter predicted
+
+synthetic_temp_2.00, 1000 nucleotides
+
+  Position  Score  Likelihood
+       700  0.650  Marginal prediction
+
+synthetic_temp_2.10, 1000 nucleotides
+
+  Position  Score  Likelihood
+       600  0.516  Marginal prediction
+
+synthetic_temp_2.20, 1000 nucleotides
+
+  Position  Score  Likelihood
+       200  0.583  Marginal prediction
+
+synthetic_temp_2.30, 1000 nucleotides
+
+  No promoter predicted
+
+synthetic_temp_2.40, 1000 nucleotides
+
+  No promoter predicted
+
+synthetic_temp_2.50, 1000 nucleotides
+
+  Position  Score  Likelihood
+       400  1.115  Highly likely prediction
+
+synthetic_temp_2.60, 1000 nucleotides
+
+  Position  Score  Likelihood
+       800  0.649  Marginal prediction
+
+synthetic_temp_2.70, 1000 nucleotides
+
+  No promoter predicted
+
+synthetic_temp_2.80, 1000 nucleotides
+
+  No promoter predicted
+
+synthetic_temp_2.90, 1000 nucleotides
+
+  No promoter predicted
+
+synthetic_temp_0.30, 1000 nucleotides
+
+  Position  Score  Likelihood
+       200  0.560  Marginal prediction
+
+synthetic_temp_3.00, 1000 nucleotides
+
+  Position  Score  Likelihood
+       600  0.741  Marginal prediction
+
+synthetic_temp_3.10, 1000 nucleotides
+
+  Position  Score  Likelihood
+       400  0.744  Marginal prediction
+
+synthetic_temp_3.20, 1000 nucleotides
+
+  No promoter predicted
+
+synthetic_temp_3.30, 1000 nucleotides
+
+  Position  Score  Likelihood
+       200  0.539  Marginal prediction
+
+synthetic_temp_3.40, 1000 nucleotides
+
+  Position  Score  Likelihood
+       300  0.737  Marginal prediction
+
+synthetic_temp_3.50, 1000 nucleotides
+
+  Position  Score  Likelihood
+       600  0.719  Marginal prediction
+
+synthetic_temp_3.60, 1000 nucleotides
+
+  Position  Score  Likelihood
+       600  1.043  Highly likely prediction
+
+synthetic_temp_3.70, 1000 nucleotides
+
+  No promoter predicted
+
+synthetic_temp_3.80, 1000 nucleotides
+
+  No promoter predicted
+
+synthetic_temp_3.90, 1000 nucleotides
+
+  Position  Score  Likelihood
+       500  1.107  Highly likely prediction
+       800  0.503  Marginal prediction
+
+synthetic_temp_0.40, 1000 nucleotides
+
+  Position  Score  Likelihood
+       600  0.649  Marginal prediction
+
+synthetic_temp_4.00, 1000 nucleotides
+
+  No promoter predicted
+
+synthetic_temp_4.10, 1000 nucleotides
+
+  No promoter predicted
+
+synthetic_temp_4.20, 1000 nucleotides
+
+  Position  Score  Likelihood
+       300  0.518  Marginal prediction
+
+synthetic_temp_4.30, 1000 nucleotides
+
+  Position  Score  Likelihood
+       300  0.515  Marginal prediction
+       700  0.697  Marginal prediction
+
+synthetic_temp_4.40, 1000 nucleotides
+
+  No promoter predicted
+
+synthetic_temp_4.50, 1000 nucleotides
+
+  No promoter predicted
+
+synthetic_temp_4.60, 1000 nucleotides
+
+  No promoter predicted
+
+synthetic_temp_4.70, 1000 nucleotides
+
+  Position  Score  Likelihood
+       700  0.538  Marginal prediction
+
+synthetic_temp_4.80, 1000 nucleotides
+
+  No promoter predicted
+
+synthetic_temp_4.90, 1000 nucleotides
+
+  Position  Score  Likelihood
+       400  0.620  Marginal prediction
+
+synthetic_temp_0.50, 1000 nucleotides
+
+  Position  Score  Likelihood
+       500  1.076  Highly likely prediction
+
+synthetic_temp_5.00, 1000 nucleotides
+
+  Position  Score  Likelihood
+       200  0.502  Marginal prediction
+
+synthetic_temp_0.60, 1000 nucleotides
+
+  No promoter predicted
+
+synthetic_temp_0.70, 1000 nucleotides
+
+  No promoter predicted
+
+synthetic_temp_0.80, 1000 nucleotides
+
+  No promoter predicted
+
+synthetic_temp_0.90, 1000 nucleotides
+
+  Position  Score  Likelihood
+       600  0.620  Marginal prediction
