@@ -23,7 +23,7 @@ import pydna.primer
 with mock.patch("dotenv.load_dotenv"), mock.patch(
     "dotenv.find_dotenv", return_value=""
 ), mock.patch("benchlingapi.Session"):
-    import teemi.lims.benchling_api as benchling_api
+    import teemi.legacy.lims.benchling_api as benchling_api
 
 
 INVENTORY_COLUMNS = [
