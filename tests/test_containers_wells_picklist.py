@@ -87,8 +87,11 @@ def test_find_unique_well_containing():
 
 
 def test_list_well_data_fields():
-    with pytest.raises(KeyError):
-        Plate96().list_well_data_fields()
+    plate = Plate96()
+    assert plate.list_well_data_fields() == []
+    plate["A1"].data["concentration"] = 10
+    plate["B2"].data.update({"volume": 5, "concentration": 2})
+    assert plate.list_well_data_fields() == ["concentration", "volume"]
 
 
 def test_return_column():
@@ -617,14 +620,6 @@ def test_legacy_sorted_by_callable():
     assert sorted_picklist.data == {"parent": picklist}
 
 
-@pytest.mark.xfail(
-    raises=KeyError,
-    strict=True,
-    reason=(
-        "Bug: in PickList.sorted_by the nested `def sorting_method` shadows the "
-        "string argument, so transfer.__dict__ is indexed with the function itself"
-    ),
-)
 def test_legacy_sorted_by_attribute_name():
     plate = cwp.Plate96(name="P")
     picklist = cwp.PickList(
@@ -667,17 +662,11 @@ def test_legacy_rowname_to_number_rejects_invalid_name():
         cwp.rowname_to_number("a")
 
 
-@pytest.mark.xfail(
-    raises=AssertionError,
-    strict=True,
-    reason=(
-        "Bug: rowname_to_number catches IndexError, but str.index raises "
-        "ValueError('substring not found'), so the friendly message is never used"
-    ),
-)
 def test_legacy_rowname_to_number_invalid_name_message():
-    with pytest.raises(ValueError, match="is not a valid row name"):
-        cwp.rowname_to_number("a")
+    for name in ["a", "", "ABC", "AB1"]:
+        with pytest.raises(ValueError, match="is not a valid row name"):
+            cwp.rowname_to_number(name)
+    assert [cwp.rowname_to_number(n) for n in ["A", "Z", "AA", "AF"]] == [1, 26, 27, 32]
 
 
 def test_legacy_wellname_to_index_invalid_direction():

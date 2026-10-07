@@ -171,22 +171,15 @@ def test_robot_assembly_flowbot_instructions_to_csv(tmp_path, monkeypatch):
 
 def test_liquid_handler_to_flowbot_instructions():
     source, destination = Plate96(name="3"), Plate96(name="7")
-    # LiquidHandler() cannot currently be constructed (see the xfail test below),
-    # so build the instance without calling its __init__.
-    handler = ra.LiquidHandler.__new__(ra.LiquidHandler)
-    Transfer.__init__(handler, source["A1"], destination["H12"], 50.7)
+    handler = ra.LiquidHandler(source["A1"], destination["H12"], 50.7)
 
     assert handler.to_flowbot_instructions() == "3:A1, 7:H12, 50.7 "
 
 
-@pytest.mark.xfail(
-    raises=TypeError,
-    strict=True,
-    reason=(
-        "Bug: LiquidHandler.__init__ takes no arguments but calls Transfer.__init__() "
-        "without the required source_well, destination_well and volume"
-    ),
-)
 def test_liquid_handler_can_be_instantiated():
-    handler = ra.LiquidHandler()
+    plate = Plate96(name="P")
+    handler = ra.LiquidHandler(plate["A1"], plate["B1"], 20, data={"note": "x"})
     assert isinstance(handler, Transfer)
+    assert (handler.source_well.name, handler.destination_well.name) == ("A1", "B1")
+    assert handler.volume == 20
+    assert handler.data == {"note": "x"}
