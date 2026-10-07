@@ -72,15 +72,9 @@ def autoML_on_partitioned_data(
         # initialize a h20 dataframe
         df_test = h2o.H2OFrame(pd.concat([df], axis="columns"))
 
-        # changing columns to strings
-        for col in df_input_for_ml.columns:
-            if col != training_column:
-                col = str(col)
-
-        # making the dataframes categorical except the training column
-        for column in df_test.columns:
-            if col != training_column:
-                df_test[column] = df_test[column].asfactor()
+        # the features are part numbers, i.e. categorical
+        for column in feature_cols:
+            df_test[column] = df_test[column].asfactor()
         list_of_df_test_frames.append(df_test)
 
     ##### setting up ML
@@ -146,6 +140,6 @@ def autoML_on_partitioned_data(
     from datetime import datetime
 
     now = datetime.now()  # current date and time
-    time = now.strftime("%Y_%m_%d_%H:%M")
+    time = now.strftime("%Y_%m_%d_%H-%M")  # no ':' - invalid in Windows file names
 
     df.to_csv(path + time + "_ml_models_running_over_partioned_data.csv")

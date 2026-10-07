@@ -7,6 +7,7 @@
 # used by teemi is injected into ``sys.modules`` before the module is imported.
 
 import importlib
+import re
 import sys
 import types
 
@@ -164,8 +165,8 @@ def test_autoML_trains_on_growing_partitions(auto_ml, ml_df, capsys):
     assert [len(frame) for frame in frames] == [3, 6, 7]
     for frame in frames:
         assert_frame_equal(frame.data, ml_df.iloc[: len(frame)])
-        # the features are made categorical
-        assert set(feature_cols) <= set(frame.factor_columns)
+        # the features, and only the features, are made categorical
+        assert sorted(frame.factor_columns) == sorted(feature_cols)
 
     # One AutoML run per partition, each trained on its own frame
     assert len(FakeH2OAutoML.instances) == 3
@@ -221,7 +222,11 @@ def test_autoML_writes_results_csv(auto_ml, ml_df, tmp_path):
 
     written = list(tmp_path.iterdir())
     assert len(written) == 1
-    assert written[0].name.endswith("_ml_models_running_over_partioned_data.csv")
+    # e.g. 2026_10_07_15-42_ml_models_running_over_partioned_data.csv
+    assert re.fullmatch(
+        r"\d{4}_\d{2}_\d{2}_\d{2}-\d{2}_ml_models_running_over_partioned_data\.csv",
+        written[0].name,
+    )
 
     results = pd.read_csv(written[0], index_col=0)
     # one row per partition, indexed by the partition size
@@ -235,3 +240,22 @@ def test_autoML_writes_results_csv(auto_ml, ml_df, tmp_path):
         "GBM_model_6_rows",
         "GBM_model_7_rows",
     ]
+
+
+def test_autoML_factors_features_with_target_last(auto_ml, capsys):
+    # The notebooks' layout: name, part-number features, then the target.
+    df = pd.DataFrame(
+        {
+            "Line_name": [f"yp49_{i}" for i in range(6)],
+            "0": [1, 2, 1, 2, 1, 2],
+            "1": [3, 3, 4, 4, 5, 5],
+            "Amt_norm": [0.1, 0.4, 0.2, 0.8, 0.5, 0.9],
+        }
+    )
+    FakeH2OAutoML.stop_after_training = True
+
+    with pytest.raises(StopAfterTraining):
+        auto_ml.autoML_on_partitioned_data(["0", "1"], "Amt_norm", df, partitions=2)
+
+    for frame in FakeH2OFrame.created:
+        assert sorted(frame.factor_columns) == ["0", "1"]
