@@ -17,7 +17,12 @@ with open('requirements.txt', 'r') as fh:
         requirements.append(line.strip())
 
 extra_requirements = {
-    "dev": ["pytest==7.1.2", "pylint==2.13.9", "black==22.3.0", "pytest-cov==4.1.0"],
+    "dev": [
+        "pytest>=9.0.3",  # CVE-2025-71176: tmpdir handling
+        "pylint>=2.13.9",
+        "black>=26.3.1",  # CVE-2024-21503, CVE-2026-32274, CVE-2026-31900
+        "pytest-cov>=7.1.0",
+    ],
     "docs": ["sphinx", "pydata-sphinx-theme", "myst-parser"],
 }
 
