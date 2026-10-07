@@ -407,3 +407,16 @@ def test_pool_parts_groups_amplicons_with_same_template():
             'PartB_batch1': {'volume_to_mix': 104.0, 'location': 'box1_B1', 'concentration': 25},
         },
     }
+
+
+def test_time_to_inoculate_uses_target_OD(capsys):
+    hours = {}
+    for target in (0.5, 1, 2):
+        time_to_inoculate(
+            initialOD=0.0025, td=0.4, verbose=False, transformation_time=12,
+            target_OD=target, plot=False,
+        )
+        out = capsys.readouterr().out
+        hours[target] = int(out.split("Hours to target OD: \t")[1].split()[0])
+
+    assert hours == {0.5: 19, 1: 22, 2: 24}

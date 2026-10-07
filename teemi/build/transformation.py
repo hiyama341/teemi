@@ -146,7 +146,7 @@ def time_to_inoculate(
             return idx
 
         # In how many hours will the cells have reached the
-        hours_to_OD1 = times[find_closest(np.array(ods), 1)]
+        hours_to_OD1 = times[find_closest(np.array(ods), target_OD)]
         print("Hours to target OD: \t" + str(hours_to_OD1) + " hours")
 
         ### When do u need to innoculate?

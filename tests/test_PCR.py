@@ -538,3 +538,35 @@ def test_get_amplicons_by_row_and_column():
     assert row_c == []
     assert [len(group) for group in col_1] == [1, 1]
     assert col_1[0][0] is amps[0] and col_1[1][0] is amps[2]
+
+
+def test_calculate_processing_speed_unknown_polymerase():
+    amplicon = _make_amplicon(
+        "tacactcaccgtctatcattatctactatcgactgtatcatctgatagcac",
+        "tacactcaccgtctatcattatc",
+        "gtgctatcagatgatacagtcg",
+    )
+    amplicon.annotations["polymerase"] = "Taq"
+
+    with pytest.raises(ValueError, match="Unknown polymerase 'Taq'"):
+        calculate_processing_speed(amplicon)
+
+
+def test_Q5_NEB_PCR_program_on_fresh_amplicon(monkeypatch):
+    # No calculate_processing_speed beforehand: the program computes it itself.
+    monkeypatch.setattr(
+        PCR_module,
+        "_post_neb_tm_api",
+        lambda payload: {"success": True, "data": [{"ta": 62, "tm1": 60.0}]},
+    )
+    amplicon = _make_amplicon(
+        "tacactcaccgtctatcattatc" + "a" * 2000 + "cgactgtatcatctgatagcac",
+        "tacactcaccgtctatcattatc",
+        "gtgctatcagatgatacagtcg",
+    )
+    amplicon.annotations["polymerase"] = "Q5 Hot Start"
+
+    Q5_NEB_PCR_program(amplicon)
+
+    assert amplicon.annotations["proc_speed"] == 30
+    assert amplicon.annotations["elongation_time"] == 62  # ceil(30 s/kb * 2045 bp)
