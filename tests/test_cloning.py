@@ -282,13 +282,12 @@ def _random_dna(length, seed):
     return ''.join(rng.choice('ATGC') for _ in range(length))
 
 
-def test_CAS9_cutting_warns_when_gRNA_is_not_found(capsys):
+def test_CAS9_cutting_raises_when_gRNA_is_not_found():
     background = Dseqrecord('ACGT' * 20, name='background')
     gRNA = Dseqrecord('TTTTTTTTTTTTTTTTTTTT', name='missing_gRNA')
 
-    CAS9_cutting(gRNA, background)
-
-    assert "CAN'T FIND THE CUT SITE IN YOUR SEQUENCE" in capsys.readouterr().out
+    with pytest.raises(ValueError, match='TTTTTTTTTTTTTTTTTTTT was not found'):
+        CAS9_cutting(gRNA, background)
 
 
 def test_CAS9_cutting_warns_when_gRNA_cuts_twice(capsys):
@@ -428,6 +427,17 @@ def test_casembler_verbose_writes_genbank_files(tmp_path, monkeypatch):
     # verbose=True writes the up, assembly and down sequences as genbank files
     written = sorted(p.name for p in tmp_path.glob('*.gb'))
     assert written == ['DW_gRNA1_X-1.gb', 'UP_gRNA1_X-1.gb', 'testasm.gb']
+
+    with pytest.raises(NotImplementedError, match='Benchling'):
+        casembler(
+            bg_strain=bg_strain,
+            site_names=['X-1'],
+            gRNAs=[gRNA],
+            parts=[[repair_template]],
+            assembly_limits=[30],
+            assembly_names=['testasm'],
+            to_benchling=True,
+        )
     reread = SeqIO.read(tmp_path / 'testasm.gb', 'gb')
     assert str(reread.seq) == str(assembly.seq)
 
@@ -465,3 +475,11 @@ def test_seq_to_annotation_on_reverse_strand():
     assert int(feature.location.start) == 4
     assert int(feature.location.end) == 11
     assert feature.qualifiers['label'] == 'reverse_hit'
+
+
+def test_find_sequence_location_raises_when_absent_on_both_strands():
+    background = SeqRecord(Seq('ACGT' * 20), id='bg')
+    missing = SeqRecord(Seq('TTTTTTTTTT'), id='missing')
+
+    with pytest.raises(ValueError, match='couldnt find a match'):
+        find_sequence_location(missing, background)

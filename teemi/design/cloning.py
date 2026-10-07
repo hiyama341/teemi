@@ -58,7 +58,10 @@ def CAS9_cutting(gRNA_record, background_record):
 
         gRNA_sequence = (gRNA_sequence).reverse_complement()
         if background_sequence.find(gRNA_sequence) == -1:
-            print("not on -1, CAN'T FIND THE CUT SITE IN YOUR SEQUENCE")
+            raise ValueError(
+                f"gRNA {gRNA_record.seq.watson} was not found on either strand "
+                "of the background sequence, so there is no cut site"
+            )
 
     if gRNA_strand == 1:
         cut_pos_rel_start = 17
@@ -356,7 +359,8 @@ def casembler(
         write DNA e.g. False
 
     to_benchling: bool
-        upload DNA to benchling e.g. False
+        not supported - raises NotImplementedError if True. Use verbose=True
+        and upload the GenBank files instead.
 
     Returns
     -------
@@ -403,7 +407,10 @@ def casembler(
                 DNA.write("./" + DNA.name + ".gb")  # "../data/processed/"
 
         if to_benchling:
-            to_benchling(assembly, "to_benchling")
+            raise NotImplementedError(
+                "Uploading assemblies to Benchling is not supported; use "
+                "verbose=True to write GenBank files and upload those instead."
+            )
 
         assemblies.append(assembly)
 
@@ -514,14 +521,12 @@ def find_sequence_location(
 
     if start_index == -1:
         # search reverse_comp
-        start_index = len(
-            sequence_to_search_in
-        ) - sequence_to_search_in.reverse_complement().seq.find(sequence.seq)
+        rc_index = sequence_to_search_in.reverse_complement().seq.find(sequence.seq)
+        if rc_index == -1:
+            raise ValueError("ValueERROR - couldnt find a match")
+        start_index = len(sequence_to_search_in) - rc_index
         end_index = start_index - len(sequence)
         strand = -1
-
-        if start_index == -1:
-            raise ValueError("ValueERROR - couldnt find a match")
 
     return (start_index, end_index, strand)
 
