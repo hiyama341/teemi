@@ -75,3 +75,50 @@ def test_pairwise_alignment_of_templates_trims_ns_and_finds_primer():
     assert df["inf_part_number"].tolist() == ["1", "2"]
     # localxx scores 1 per identical base, so an exact match scores the read length
     assert df["align_score"].tolist() == [float(len(read1_core)), float(len(read2_core))]
+
+
+def _genotyping_fixture():
+    from Bio.Seq import Seq
+    from Bio.SeqRecord import SeqRecord
+
+    primer_seq = "GTTCCAGAGGCAAGCTTGAC"
+    body = "ATGACCGTTAAGGCTTCAGGATCCTTAGCCGGTATTCAAGTCGACGGAATTCCTGCAGTA"
+    template = SeqRecord(Seq(primer_seq + body), id="part1", name="part1", description="1")
+    primer = SeqRecord(Seq(primer_seq), id="seq_fw", name="seq_fw")
+    return template, primer, primer_seq + body[:40]
+
+
+def test_pairwise_alignment_of_templates_can_trim_at_primer():
+    from Bio.Seq import Seq
+    from Bio.SeqRecord import SeqRecord
+
+    template, primer, core = _genotyping_fixture()
+    upstream = "CAGGATCCTTAGCC"  # vector sequence in front of the primer site
+    template.seq = upstream + template.seq
+    read = SeqRecord(Seq(upstream + core), id="read", name="read")
+
+    untrimmed = pairwise_alignment_of_templates([read], [template], [primer])
+    trimmed = pairwise_alignment_of_templates([read], [template], [primer], trim_at_primer=True)
+
+    # default: the whole read is aligned (published notebook behaviour)
+    assert untrimmed["align_score"][0] == len(upstream + core)
+    # trimmed: only the read from the primer onwards
+    assert trimmed["align_score"][0] == len(core)
+
+
+def test_pairwise_alignment_of_templates_short_reads_are_not_called():
+    from Bio.Seq import Seq
+    from Bio.SeqRecord import SeqRecord
+
+    template, primer, core = _genotyping_fixture()
+    short1 = SeqRecord(Seq("NNACGTACGTACGTACGTACGTANN"), id="short1", name="short1")
+    long = SeqRecord(Seq(core), id="long", name="long")
+    short2 = SeqRecord(Seq("ACGTACGT"), id="short2", name="short2")
+
+    df = pairwise_alignment_of_templates([short1, long, short2], [template], [primer])
+
+    assert df["Sample-Name"].tolist() == ["short1", "long", "short2"]
+    assert df["align_score"].tolist() == [0.0, float(len(core)), 0.0]
+    assert df["inf_part_name"].isna().tolist() == [True, False, True]
+    assert df["inf_part_name"][1] == "part1"
+    assert df["inf_part_number"].isna().tolist() == [True, False, True]
