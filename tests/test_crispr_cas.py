@@ -288,8 +288,9 @@ def test_extract_sgrnas_cas3_forward_strand_guide():
     assert row["gene_loc"] == 1
     assert row["gene_strand"] == 1
     assert row["sgrna_strand"] == 1
-    # len(coding seq) - match.start() - 3 == 40 - 0 - 3
-    assert row["sgrna_loc"] == 37
+    # match.end() + protospacer_len + pam_len == 3 + 34 + 3; the same as the
+    # mirror-image minus-strand genome in the next test
+    assert row["sgrna_loc"] == 40
     assert row["sgrna_seed_sequence"] == "A" * 13
     # The seed occurs once in the genome, which is this guide itself.
     assert row["off_target_count"] == 0
@@ -405,3 +406,21 @@ def test_extract_sgrnas_predict_step_is_a_placeholder(capsys):
 
     assert not df.empty
     assert "We will try to implement this part later" in capsys.readouterr().out
+
+
+def test_find_sgrna_hits_cas3_guide_on_the_reverse_complement_scan():
+    # The CDS itself holds no TTC, but its reverse complement starts with one,
+    # so the guide is found while scanning the opposite strand.
+    genome = _single_cds_genome("T" * 34 + "GAA", "TEST_LOCUS_014", 1, "cas3_revcomp")
+
+    df = find_sgrna_hits_cas3(genome, genome.id, ["TEST_LOCUS_014"], Counter(), 13, revcomp)
+
+    assert len(df) == 1
+    row = df.iloc[0]
+    assert row["pam"] == "TTC"
+    assert row["sgrna"] == "A" * 34
+    assert row["gene_strand"] == 1
+    # found on the reverse complement of a plus-strand gene
+    assert row["sgrna_strand"] == -1
+    # len(coding seq) - match.start() - pam_len == 37 - 0 - 3
+    assert row["sgrna_loc"] == 34

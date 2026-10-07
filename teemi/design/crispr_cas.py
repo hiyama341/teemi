@@ -275,9 +275,14 @@ def find_sgrna_hits_cas9(
                 gene_strand = feature.location.strand
 
                 # Find potential sgRNAs in both the coding sequence and its reverse complement
+                # The flag records which sequence is being scanned (-1 = the
+                # coding sequence, +1 = its reverse complement), not which
+                # strand the gene is on: the position formulas below depend on
+                # the former, and coding_sequence already runs 5'->3' along the
+                # gene for both orientations.
                 for sequence in [
-                    (gene_strand, coding_sequence),
-                    (-gene_strand, coding_sequence_revcomp),
+                    (-1, coding_sequence),
+                    (1, coding_sequence_revcomp),
                 ]:
                     # Increment gene counter
                     gene_counter = gene_counter + 1
@@ -295,12 +300,6 @@ def find_sgrna_hits_cas9(
                         pam = revcomp(sgrna_pam)[
                             protospacer_len : protospacer_len + pam_len
                         ]
-
-                        if not sgrna:
-                            print(
-                                f"No sgRNA found for locus tag {locus_tag}. Skipping to next locus tag."
-                            )
-                            continue  # This skips the rest of the current iteration and moves to the next feature
 
                         if (
                             len(sgrna) != protospacer_len
@@ -328,12 +327,12 @@ def find_sgrna_hits_cas9(
                         if sequence[0] == 1:
                             genome_location = (int(location.start)) + 1
                             position_sgrna = len(sequence[1]) - match.start() - 3
-                            strand_sgrna = -sequence[0]
+                            strand_sgrna = sequence[0] * gene_strand
 
                         elif sequence[0] == -1:
                             genome_location = int(location.start) + 1
                             position_sgrna = match.end() + protospacer_len + 3
-                            strand_sgrna = -sequence[0]
+                            strand_sgrna = sequence[0] * gene_strand
 
                         sgrna_seed = sgrna[
                             (protospacer_len - off_target_seed) : protospacer_len
@@ -439,9 +438,14 @@ def find_sgrna_hits_cas12a(
                 gene_strand = feature.location.strand
 
                 # Find potential sgRNAs in both the coding sequence and its reverse complement
+                # The flag records which sequence is being scanned (-1 = the
+                # coding sequence, +1 = its reverse complement), not which
+                # strand the gene is on: the position formulas below depend on
+                # the former, and coding_sequence already runs 5'->3' along the
+                # gene for both orientations.
                 for sequence in [
-                    (gene_strand, coding_sequence),
-                    (-gene_strand, coding_sequence_revcomp),
+                    (-1, coding_sequence),
+                    (1, coding_sequence_revcomp),
                 ]:
                     # Counter for sgRNAs found in the current gene
                     sgrna_counter = 0
@@ -490,12 +494,12 @@ def find_sgrna_hits_cas12a(
                         if sequence[0] == 1:
                             genome_location = (int(location.start)) + 1
                             position_sgrna = len(sequence[1]) - match.start() - 3
-                            strand_sgrna = sequence[0]
+                            strand_sgrna = -sequence[0] * gene_strand
 
                         elif sequence[0] == -1:
                             genome_location = int(location.start) + 1
                             position_sgrna = match.end() + protospacer_len + 3
-                            strand_sgrna = sequence[0]
+                            strand_sgrna = -sequence[0] * gene_strand
 
                         # For Cas12a, extract the seed sequence from the beginning of the sgRNA
                         sgrna_seed = sgrna[:off_target_seed]
@@ -598,9 +602,14 @@ def find_sgrna_hits_cas3(
                 gene_strand = feature.location.strand
 
                 # Find potential sgRNAs in both the coding sequence and its reverse complement
+                # The flag records which sequence is being scanned (-1 = the
+                # coding sequence, +1 = its reverse complement), not which
+                # strand the gene is on: the position formulas below depend on
+                # the former, and coding_sequence already runs 5'->3' along the
+                # gene for both orientations.
                 for sequence in [
-                    (gene_strand, coding_sequence),
-                    (-gene_strand, coding_sequence_revcomp),
+                    (-1, coding_sequence),
+                    (1, coding_sequence_revcomp),
                 ]:
                     # Counter for sgRNAs found in the current gene
                     sgrna_counter = 0
@@ -639,10 +648,6 @@ def find_sgrna_hits_cas3(
                             # print(f"sgRNA generated were too small{locus_tag}. To incorporate this extent borders. Skipping to next locus tag.")
                             continue  # This skips the rest of the current iteration and moves to the next feature
 
-                        if len(pam) != pam_len:  # Check if sgRNA is exactly 23 nt long
-                            # print(f"Pam was found outside designated locus_tag: {locus_tag}. To incorporate this extent borders. Skipping to next locus tag.")
-                            continue  # This skips the rest of the current iteration and moves to the next feature
-
                         # Calculate GC content of the sgRNA
                         gc_content = (
                             len([base for base in sgrna if base in ["C", "G"]])
@@ -655,11 +660,11 @@ def find_sgrna_hits_cas3(
                         if sequence[0] == 1:
                             genome_location = (int(location.start)) + 1
                             position_sgrna = len(sequence[1]) - match.start() - 3
-                            strand_sgrna = sequence[0]
+                            strand_sgrna = -sequence[0] * gene_strand
                         elif sequence[0] == -1:
                             genome_location = int(location.start) + 1
                             position_sgrna = match.end() + protospacer_len + 3
-                            strand_sgrna = sequence[0]
+                            strand_sgrna = -sequence[0] * gene_strand
 
                         # For Cas12a, extract the seed sequence from the beginning of the sgRNA
                         sgrna_seed = sgrna[:off_target_seed]
