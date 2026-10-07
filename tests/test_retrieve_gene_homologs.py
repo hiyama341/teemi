@@ -174,18 +174,8 @@ def test_filter_blast_results_show_alignment_prints_summary(capsys):
 # --------------------------------------------------------------------------
 # codon_optimize_with_dnachisel
 # --------------------------------------------------------------------------
-# NOTE: the function hands ``seq.seq`` straight to dnachisel, which only accepts
-# plain strings. With modern Biopython (Seq is no longer a str subclass) a real
-# SeqRecord therefore crashes, so the tests below use a tiny record-like object
-# whose ``.seq`` is a string. See the report for the suggested source fix.
-class StrRecord:
-    """Record-like object exposing the attributes the function reads."""
-
-    def __init__(self, seq, id, name, description):
-        self.seq = seq
-        self.id = id
-        self.name = name
-        self.description = description
+def StrRecord(seq, id, name, description):
+    return SeqRecord(Seq(seq), id=id, name=name, description=description)
 
 
 # 63 bp (21 codons), GC ~40%
@@ -217,10 +207,11 @@ def test_codon_optimize_with_dnachisel_species(capsys):
     result = optimized[0]
     # metadata is carried over from the input record
     assert (result.id, result.name, result.description) == ("g1", "gene1", "a nice gene")
-    # the sequence keeps its length and only contains DNA letters
+    # only synonymous codons are swapped: same length, same protein
     sequence = str(result.seq)
     assert len(sequence) == len(GENE)
     assert set(sequence) <= set("ATGC")
+    assert str(result.seq.translate()) == str(Seq(GENE).translate())
     # the GC constraint that was enforced is actually satisfied
     assert _window_gc_within(sequence, 20, 0.3, 0.7)
     # dnachisel annotates the record with the constraint/objective it used
@@ -252,6 +243,7 @@ def test_codon_optimize_with_dnachisel_custom_codon_table():
     assert (result.id, result.name, result.description) == ("g2", "gene2", "another gene")
     sequence = str(result.seq)
     assert len(sequence) == len(GENE)
+    assert str(result.seq.translate()) == str(Seq(GENE).translate())
     assert _window_gc_within(sequence, 20, 0.35, 0.65)
     labels = [f.qualifiers["label"] for f in result.features]
     assert "@35-65% GC/20bp" in labels
@@ -268,7 +260,8 @@ def test_codon_optimize_with_dnachisel_several_sequences():
 
     assert [r.id for r in optimized] == ["g1", "g2"]
     assert [len(r.seq) for r in optimized] == [len(GENE), 30]
-    for result in optimized:
+    for result, original in zip(optimized, records):
+        assert str(result.seq.translate()) == str(original.seq.translate())
         assert _window_gc_within(str(result.seq), 20, 0.3, 0.7)
 
 

@@ -3,15 +3,12 @@
 # Test teselagen_helpers module
 
 import random
+import subprocess
+import sys
 
 import pandas as pd
 
-# teselagen_helpers only does ``import pydna`` but uses pydna.primer and
-# pydna.amplify, so those submodules have to be imported somewhere - we need
-# them here anyway to build the inputs.
-from pydna.amplify import pcr  # noqa: F401
 from pydna.dseqrecord import Dseqrecord
-from pydna.primer import Primer  # noqa: F401
 
 from teemi.design.teselagen_helpers import (
     amplicon_matrix_teselagen,
@@ -279,3 +276,12 @@ def test_amplicon_matrix_teselagen_several_combinations():
         "PCR_c1f%d" % frag_no for frag_no in range(NO_FRAGS)
     ]
     assert str(amplicon_matrix[1][3].seq) == str(combinations_matrix[1][3].seq)
+
+
+def test_module_imports_the_pydna_submodules_it_uses():
+    # Fresh interpreter, so imports made by other tests can't hide a missing one.
+    code = (
+        "import teemi.design.teselagen_helpers as t\n"
+        "t.pydna.primer.Primer, t.pydna.amplify.pcr, t.pydna.dseqrecord.Dseqrecord\n"
+    )
+    subprocess.run([sys.executable, "-c", code], check=True)

@@ -18,7 +18,12 @@
 import re
 from Bio import pairwise2
 import pandas as pd
-from dnachisel import DnaOptimizationProblem, EnforceGCContent, CodonOptimize
+from dnachisel import (
+    DnaOptimizationProblem,
+    EnforceGCContent,
+    EnforceTranslation,
+    CodonOptimize,
+)
 from typing import List
 from Bio.SeqRecord import SeqRecord
 
@@ -150,29 +155,19 @@ def codon_optimize_with_dnachisel(
     # DEFINE THE OPTIMIZATION PROBLEM
     for seq in sequences:
         if species:
-            problem = DnaOptimizationProblem(
-                sequence=seq.seq,
-                constraints=[
-                    EnforceGCContent(mini=lower_GC, maxi=upper_GC, window=window)
-                ],
-                objectives=[CodonOptimize(species=species)],
-            )
+            objective = CodonOptimize(species=species)
+        else:
+            objective = CodonOptimize(codon_usage_table=codon_usage_table)
 
-            # SOLVE THE CONSTRAINTS, OPTIMIZE WITH RESPECT TO THE OBJECTIVE
-            problem.resolve_constraints()
-            problem.optimize()
-
-            print(problem.constraints_text_summary())
-            print(problem.objectives_text_summary())
-
-        elif codon_usage_table:
-            problem = DnaOptimizationProblem(
-                sequence=seq.seq,
-                constraints=[
-                    EnforceGCContent(mini=lower_GC, maxi=upper_GC, window=window)
-                ],
-                objectives=[CodonOptimize(codon_usage_table=codon_usage_table)],
-            )
+        problem = DnaOptimizationProblem(
+            sequence=str(seq.seq),
+            constraints=[
+                # only synonymous codon changes: keep the protein sequence
+                EnforceTranslation(),
+                EnforceGCContent(mini=lower_GC, maxi=upper_GC, window=window),
+            ],
+            objectives=[objective],
+        )
 
         # SOLVE THE CONSTRAINTS, OPTIMIZE WITH RESPECT TO THE OBJECTIVE
         problem.resolve_constraints()
