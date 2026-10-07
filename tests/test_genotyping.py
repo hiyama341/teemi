@@ -106,7 +106,9 @@ def test_pairwise_alignment_of_templates_can_trim_at_primer():
     assert trimmed["align_score"][0] == len(core)
 
 
-def test_pairwise_alignment_of_templates_short_reads_are_not_called():
+def test_pairwise_alignment_of_templates_short_reads_are_not_called(capsys):
+    # Reads that are too short to call are reported and left out, rather than
+    # silently taking the previous read's template (which they used to).
     from Bio.Seq import Seq
     from Bio.SeqRecord import SeqRecord
 
@@ -117,8 +119,13 @@ def test_pairwise_alignment_of_templates_short_reads_are_not_called():
 
     df = pairwise_alignment_of_templates([short1, long, short2], [template], [primer])
 
-    assert df["Sample-Name"].tolist() == ["short1", "long", "short2"]
-    assert df["align_score"].tolist() == [0.0, float(len(core)), 0.0]
-    assert df["inf_part_name"].isna().tolist() == [True, False, True]
-    assert df["inf_part_name"][1] == "part1"
-    assert df["inf_part_number"].isna().tolist() == [True, False, True]
+    assert df["Sample-Name"].tolist() == ["long"]
+    assert df["inf_part_name"].tolist() == ["part1"]
+    assert df["inf_part_number"].tolist() == ["1"]
+    assert df["align_score"].tolist() == [float(len(core))]
+    # every column holds a real call, so the frame stays numeric-castable
+    assert df["inf_part_number"].astype(int).tolist() == [1]
+
+    out = capsys.readouterr().out
+    assert "2 of 3 reads" in out
+    assert "short1, short2" in out

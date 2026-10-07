@@ -53,8 +53,9 @@ def pairwise_alignment_of_templates(
 
     Notes
     -----
-    Reads of 25 bp or less (after removing Ns) are too short to call; they get
-    an align_score of 0 and no inferred part.
+    Reads of 25 bp or less (after removing Ns) are too short to call, as are
+    reads that match no template at all. They are reported on stdout and left
+    out of the returned DataFrame, so every row it holds is a real call.
 
     If you want inf_part_number column then change your the description
     of the Bio.SeqRecord.SeqRecord as follows:
@@ -66,6 +67,7 @@ def pairwise_alignment_of_templates(
     read_list = []
     template_list = []
     template_number_list = []
+    uncalled = []
 
     for i in range(len(reads)):
 
@@ -101,10 +103,21 @@ def pairwise_alignment_of_templates(
                     temp_number = templates[j].description
 
         # Saving the alignmets and their names
+        if temp_name is None:
+            # Nothing to infer from: a failed read, or no template matched
+            uncalled.append(read_name)
+            continue
+
         best_scores.append(score)
         read_list.append(read_name)
         template_list.append(temp_name)
         template_number_list.append(temp_number)
+
+    if uncalled:
+        print(
+            f"No template could be inferred for {len(uncalled)} of {len(reads)} "
+            f"reads, which are left out of the result: {', '.join(uncalled)}"
+        )
 
     # Making a pandas. dataframe
     df = pd.DataFrame()
