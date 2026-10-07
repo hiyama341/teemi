@@ -14,9 +14,10 @@ from unittest import mock
 import pandas as pd
 import pytest
 
-# from_benchling relies on these sub-modules being importable as attributes of
-# ``Bio`` / ``pydna`` (the module itself only does ``import Bio`` / ``import pydna``).
-import Bio.SeqRecord  # noqa: F401
+import subprocess
+import sys
+
+import Bio.SeqRecord
 import pydna.primer
 
 # Importing the module we are testing (without touching .env or the network)
@@ -81,16 +82,19 @@ def frozen_today(monkeypatch):
 
 
 @pytest.fixture
-def inventory_csv(tmp_path, monkeypatch):
-    """Make from_benchling read batches from a temporary inventory CSV."""
-    csv_path = _write_inventory_csv(tmp_path / "inventory.csv")
-    real_update = benchling_api.update_loc_vol_conc
-    monkeypatch.setattr(
-        benchling_api,
-        "update_loc_vol_conc",
-        lambda seqRecord: real_update(seqRecord, DBpath=str(csv_path)),
+def inventory_csv(tmp_path):
+    return str(_write_inventory_csv(tmp_path / "inventory.csv"))
+
+
+def test_module_imports_the_submodules_it_uses():
+    # Run in a fresh interpreter so other tests' imports can't mask a missing one.
+    code = (
+        "from unittest import mock\n"
+        "with mock.patch('dotenv.load_dotenv'), mock.patch('benchlingapi.Session'):\n"
+        "    import teemi.legacy.lims.benchling_api as m\n"
+        "m.Bio.Seq.Seq, m.Bio.SeqFeature.SeqFeature, m.Bio.SeqRecord.SeqRecord, m.pydna.primer.Primer\n"
     )
-    return csv_path
+    subprocess.run([sys.executable, "-c", code], check=True)
 
 
 def test_module_initialises_session_from_environment(monkeypatch):
@@ -176,7 +180,7 @@ def test_from_benchling(fake_session, frozen_today, inventory_csv):
         _fake_benchling_dump()
     )
 
-    record = benchling_api.from_benchling("pTEST")
+    record = benchling_api.from_benchling("pTEST", DBpath=inventory_csv)
 
     fake_session.DNASequence.find_by_name.assert_called_once_with("pTEST")
     assert type(record) is Bio.SeqRecord.SeqRecord
@@ -196,7 +200,7 @@ def test_from_benchling(fake_session, frozen_today, inventory_csv):
     assert annotations["date"] == "05-MAR-2024"
     assert annotations["molecule_type"] == "DNA"
     assert annotations["location"] == "unknown"
-    assert "topology" in annotations
+    assert annotations["topology"] == "linear"
     # Benchling-only keys are not carried over
     assert "folderId" not in annotations
     # batches come from the inventory CSV
@@ -211,7 +215,7 @@ def test_from_benchling_primer_schema(fake_session, frozen_today, inventory_csv)
     dump["customFields"] = {}
     fake_session.DNASequence.find_by_name.return_value.dump.return_value = dump
 
-    primer = benchling_api.from_benchling("P001_fw", schema="Primer")
+    primer = benchling_api.from_benchling("P001_fw", schema="Primer", DBpath=inventory_csv)
 
     assert isinstance(primer, pydna.primer.Primer)
     assert str(primer.seq) == "ATGCATGCATGCATGCATGC"
@@ -220,15 +224,21 @@ def test_from_benchling_primer_schema(fake_session, frozen_today, inventory_csv)
     assert [b["location"] for b in primer.annotations["batches"]] == ["BoxA_A1", "BoxB_H12"]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=TypeError,
-    reason=(
-        "Bug: from_benchling passes strand= to Bio.SeqFeature.SeqFeature, "
-        "which Biopython >= 1.82 no longer accepts"
-    ),
-)
-def test_from_benchling_converts_features(fake_session, frozen_today, inventory_csv):
+def test_from_benchling_without_inventory_skips_batches(fake_session, frozen_today, tmp_path, monkeypatch):
+    dump = _fake_benchling_dump()
+    dump["isCircular"] = True
+    fake_session.DNASequence.find_by_name.return_value.dump.return_value = dump
+    monkeypatch.chdir(tmp_path)  # nothing to read here
+
+    record = benchling_api.from_benchling("pTEST")
+
+    assert "batches" not in record.annotations
+    assert record.annotations["topology"] == "circular"
+    # topology/molecule_type are valid for GenBank output
+    assert "circular" in record.format("genbank").splitlines()[0]
+
+
+def test_from_benchling_converts_features(fake_session, frozen_today):
     features = [
         {"start": 2, "end": 8, "strand": 1, "type": "CDS", "name": "geneA", "color": "#ff0000"},
         # wraps around the origin -> compound location
@@ -246,4 +256,5 @@ def test_from_benchling_converts_features(fake_session, frozen_today, inventory_
     assert gene.qualifiers == {"name": "geneA", "color": "#ff0000", "label": "geneA"}
     assert wrap.type == "misc_feature"
     assert len(wrap.location.parts) == 2
+    assert wrap.location.strand == -1
     assert wrap.qualifiers["label"] == "wrap"

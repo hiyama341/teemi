@@ -207,7 +207,14 @@ def add_annotations(
     """Adds the neccessary annotations to a list of
     SeqRecord objects to be uploaded to the database"""
     for annotations in list_of_parts:
+        # Keep the keys Bio.SeqIO needs to write the record as GenBank.
+        kept = {
+            key: annotations.annotations[key]
+            for key in ("molecule_type", "topology")
+            if key in annotations.annotations
+        }
         annotations.annotations = {
+            **kept,
             "reference": reference,
             "comments": comments,
             "batches": [

@@ -298,3 +298,22 @@ def test_get_database_missing_file_prints_hint_and_returns_none(tmp_path, capsys
 
     assert result is None
     assert "Couldnt find that databse" in capsys.readouterr().out
+
+
+def test_add_annotations_keeps_genbank_essentials():
+    from Bio.Seq import Seq
+    from teemi.legacy.lims.csv_database import add_annotations as legacy_add_annotations
+
+    record = SeqRecord(Seq("ATGCATGCAT"), id="p1", name="p1")
+    record.annotations = {"molecule_type": "DNA", "topology": "circular", "date": "01-JAN-2020"}
+
+    (record,) = legacy_add_annotations([record], volume=50, location="p1_G09")
+
+    assert record.annotations["molecule_type"] == "DNA"
+    assert record.annotations["topology"] == "circular"
+    assert "date" not in record.annotations  # everything else is still replaced
+    assert record.annotations["batches"] == [
+        {"location": "p1_G09", "volume": 50.0, "concentration": 0.0}
+    ]
+    # Bio.SeqIO refuses to write GenBank without molecule_type
+    assert record.format("genbank").startswith("LOCUS")

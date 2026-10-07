@@ -16,9 +16,11 @@ import os
 from benchlingapi import Session
 import pandas as pd
 import datetime
-import Bio
+import Bio.Seq
+import Bio.SeqFeature
+import Bio.SeqRecord
 from Bio.SeqFeature import SeqFeature
-import pydna
+import pydna.primer
 from teemi.utils import (
     rename_dict_keys,
     split_based_on_keys,
@@ -96,7 +98,7 @@ def sequence_to_benchling(folder_name, oligo_name, oligo_bases, schema):
     dna.register()
 
 
-def from_benchling(bname: str, schema: str = ""):
+def from_benchling(bname: str, schema: str = "", DBpath: str = ""):
     """Extract information of object on benchling.
     Parameters
     ----------
@@ -104,6 +106,10 @@ def from_benchling(bname: str, schema: str = ""):
         The name of the object on Benchling.
     schema : str, optional
         The schema of the object, by default ""
+    DBpath : str, optional
+        Path to a Benchling inventory csv export. If given, the record is
+        annotated with its box/position/volume/concentration batches,
+        by default "" (no inventory lookup)
 
     Returns
     -------
@@ -134,7 +140,7 @@ def from_benchling(bname: str, schema: str = ""):
         translated_bench_dict_other["customFields"]
     )
     translated_bench_dict_sel["annotations"].update(
-        {"topology": translated_bench_dict_other["isCircular"]}
+        {"topology": "circular" if translated_bench_dict_other["isCircular"] else "linear"}
     )
 
     ##
@@ -179,7 +185,11 @@ def from_benchling(bname: str, schema: str = ""):
         for feature_dict in translated_bench_dict_sel["features"]
     ]
 
-    #### Create SeqFeatures
+    #### Create SeqFeatures (Biopython keeps the strand on the location)
+    for feature_dict in translated_bench_dict_sel["features"]:
+        strand = feature_dict.pop("strand", None)
+        if strand is not None:
+            feature_dict["location"].strand = strand
     translated_bench_dict_sel["features"] = [
         Bio.SeqFeature.SeqFeature(**feature_dict)
         for feature_dict in translated_bench_dict_sel["features"]
@@ -187,7 +197,8 @@ def from_benchling(bname: str, schema: str = ""):
 
     seqRecord = Bio.SeqRecord.SeqRecord(**translated_bench_dict_sel)
     seqRecord.name = bname
-    seqRecord = update_loc_vol_conc(seqRecord)
+    if DBpath:
+        seqRecord = update_loc_vol_conc(seqRecord, DBpath)
 
     if schema == "Primer":
         seqRecord = pydna.primer.Primer(seqRecord)
