@@ -63,27 +63,9 @@ def test_concatenate_genbank_records():
     assert combined_record.features[1].qualifiers['locus_tag'] == ['GENE_B']
 
 
-## TODO: I cannot make these work with github actions yet. It lacks some packages(intermine). Have to figure this out later. 
-# def test_fetch_promoter(): 
-#     cyc1 = fetch_promoter('CYC1')
-#     assert cyc1[:20] == 'GAGGCACCAGCGTCAGCATT'
-
-# def test_fetch_multiple_promoters(): 
-#     list_of_promoters = ['YAR035C-A', 'YGR067C']
-#     seqs = fetch_multiple_promoters(list_of_promoters)
-
-#     assert str(seqs[0].seq[:10]) == 'CCCTGGTGGC'
-#     assert str(seqs[1].seq[:10])== 'AGACAACCTA'
-#     assert seqs[0].id == 'YAR035C-A'
-#     assert seqs[1].id == 'YGR067C'
-
-
 # ---------------------------------------------------------------------------
 # Additional tests - all network access is mocked
 # ---------------------------------------------------------------------------
-import sys
-import types
-
 import teemi.design.fetch_sequences as fetch_sequences
 
 
@@ -184,87 +166,96 @@ def test_retrieve_sequences_from_PDB(monkeypatch):
     assert str(sequences[1][0].seq) == 'MDSSSEKLSP'
 
 
-class _FakeQuery:
-    def __init__(self, rows):
-        self._rows = rows
-        self.views = []
-        self.constraints = []
+class _FakeResponse:
+    def __init__(self, status_code, payload=None, headers=None):
+        self.status_code = status_code
+        self.ok = status_code < 400
+        self._payload = payload
+        self.headers = headers or {}
 
-    def add_view(self, *views):
-        self.views.extend(views)
+    def json(self):
+        return self._payload
 
-    def add_constraint(self, *args, **kwargs):
-        self.constraints.append((args, kwargs))
-
-    def rows(self):
-        return self._rows
-
-
-class _FakeService:
-    def __init__(self, url):
-        self.url = url
-        self.query = None
-
-    def new_query(self, root):
-        self.root = root
-        self.query = _FakeQuery(self.rows)
-        return self.query
+    def raise_for_status(self):
+        if not self.ok:
+            raise RuntimeError(self.status_code)
 
 
-def _install_fake_intermine(monkeypatch, rows):
-    """Replace the (python2 only) intermine package with a stub."""
-    created = {}
+def _fake_ensembl(monkeypatch, routes):
+    """Serve Ensembl REST paths from ``routes`` ({path: [responses]}); record calls."""
+    calls = []
 
-    class Service(_FakeService):
-        rows = None
+    def fake_get(url, headers=None, timeout=None):
+        path = url[len(fetch_sequences.ENSEMBL_REST_URL):]
+        calls.append(path)
+        assert headers == {"Content-Type": "application/json"}
+        assert timeout == 30
+        responses = routes.get(path, [_FakeResponse(400)])
+        return responses.pop(0) if len(responses) > 1 else responses[0]
 
-        def __init__(self, url):
-            _FakeService.__init__(self, url)
-            self.rows = rows
-            created['service'] = self
-
-    package = types.ModuleType('intermine')
-    webservice = types.ModuleType('intermine.webservice')
-    webservice.Service = Service
-    package.webservice = webservice
-    monkeypatch.setitem(sys.modules, 'intermine', package)
-    monkeypatch.setitem(sys.modules, 'intermine.webservice', webservice)
-    return created
+    monkeypatch.setattr(fetch_sequences.r, "get", fake_get)
+    monkeypatch.setattr(fetch_sequences.time, "sleep", lambda seconds: None)
+    return calls
 
 
-def test_fetch_promoter(monkeypatch):
-    rows = [
-        {'flankingRegions.sequence.residues': 'AAAACCCCGGGGTTTT'},
-        {'flankingRegions.sequence.residues': 'GAGGCACCAGCGTCAG'},
+def test_fetch_promoter_plus_strand_gene(monkeypatch):
+    calls = _fake_ensembl(monkeypatch, {
+        "/lookup/symbol/saccharomyces_cerevisiae/CYC1": [
+            _FakeResponse(200, {"seq_region_name": "X", "start": 5000, "end": 5330, "strand": 1}),
+        ],
+        "/sequence/region/saccharomyces_cerevisiae/X:4000..4999:1": [
+            _FakeResponse(200, {"seq": "GAGGCACCAGCGTCAGCATT"}),
+        ],
+    })
+
+    assert fetch_promoter("CYC1") == "GAGGCACCAGCGTCAGCATT"
+    assert calls == [
+        "/lookup/symbol/saccharomyces_cerevisiae/CYC1",
+        "/sequence/region/saccharomyces_cerevisiae/X:4000..4999:1",
     ]
-    created = _install_fake_intermine(monkeypatch, rows)
 
-    promoter = fetch_promoter('CYC1')
 
-    # the residues of the last returned row are used
-    assert promoter == 'GAGGCACCAGCGTCAG'
+def test_fetch_promoter_minus_strand_systematic_name(monkeypatch):
+    # systematic names are not symbols, so the lookup falls back to the stable ID
+    calls = _fake_ensembl(monkeypatch, {
+        "/lookup/id/YGR067C": [
+            _FakeResponse(200, {"seq_region_name": "VII", "start": 100, "end": 2000, "strand": -1}),
+        ],
+        "/sequence/region/saccharomyces_cerevisiae/VII:2001..3000:-1": [
+            _FakeResponse(200, {"seq": "AGACAACCTA"}),
+        ],
+    })
 
-    service = created['service']
-    assert service.url == 'https://yeastmine.yeastgenome.org/yeastmine/service'
-    assert service.root == 'Gene'
-    assert service.query.views == [
-        'secondaryIdentifier',
-        'symbol',
-        'length',
-        'flankingRegions.direction',
-        'flankingRegions.sequence.length',
-        'flankingRegions.sequence.residues',
+    assert fetch_promoter("YGR067C") == "AGACAACCTA"
+    assert calls[:2] == [
+        "/lookup/symbol/saccharomyces_cerevisiae/YGR067C",
+        "/lookup/id/YGR067C",
     ]
-    assert service.query.constraints == [
-        (('Gene', 'LOOKUP', 'CYC1', 'S. cerevisiae'), {'code': 'B'}),
-        (('flankingRegions.direction', '=', 'upstream'), {'code': 'C'}),
-        (('flankingRegions.distance', '=', '1.0kb'), {'code': 'A'}),
-        (('flankingRegions.includeGene', '=', 'false'), {'code': 'D'}),
+
+
+def test_fetch_promoter_clamps_at_chromosome_start_and_retries(monkeypatch):
+    calls = _fake_ensembl(monkeypatch, {
+        "/lookup/symbol/saccharomyces_cerevisiae/TEL1": [
+            _FakeResponse(429, headers={"Retry-After": "0"}),
+            _FakeResponse(200, {"seq_region_name": "I", "start": 300, "end": 900, "strand": 1}),
+        ],
+        "/sequence/region/saccharomyces_cerevisiae/I:1..299:1": [
+            _FakeResponse(503),
+            _FakeResponse(200, {"seq": "ACGT"}),
+        ],
+    })
+
+    assert fetch_promoter("TEL1") == "ACGT"
+    assert calls == [
+        "/lookup/symbol/saccharomyces_cerevisiae/TEL1",
+        "/lookup/symbol/saccharomyces_cerevisiae/TEL1",
+        "/sequence/region/saccharomyces_cerevisiae/I:1..299:1",
+        "/sequence/region/saccharomyces_cerevisiae/I:1..299:1",
     ]
 
 
 def test_fetch_promoter_without_hits(monkeypatch):
-    _install_fake_intermine(monkeypatch, [])
+    _fake_ensembl(monkeypatch, {})
 
     assert fetch_promoter('NOT_A_GENE') == ''
 
@@ -285,5 +276,5 @@ def test_fetch_multiple_promoters(monkeypatch):
     assert records[0].name == 'YAR035C-A Promoter'
     assert records[1].name == 'YGR067C Promoter'
     assert records[0].description == (
-        'Defined as being 1kb upstream of the TSS and fetched through Intermines API'
+        'Defined as being 1kb upstream of the TSS and fetched through the Ensembl REST API'
     )

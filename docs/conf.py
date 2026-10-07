@@ -37,11 +37,9 @@ autodoc_default_options = {
 autodoc_mock_imports = [
     "benchlingapi",
     "Bio",
-    "crispr_cas",
     "dnachisel",
     "dotenv",
     "h2o",
-    "intermine",
     "matplotlib",
     "matplotlib.patches",
     "matplotlib.pyplot",
