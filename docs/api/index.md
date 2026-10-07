@@ -1,8 +1,8 @@
 # API reference
 
 This reference focuses on stable package entry points that are safe to document during a lightweight docs build.
-Some notebook-oriented modules depend on optional scientific packages or external services and may be expanded in
-future documentation passes.
+The active lab-workflow surface is centered on `teemi.build`, while `teemi.lims` remains available as a legacy
+compatibility namespace for older notebook workflows and integrations.
 
 ```{eval-rst}
 .. autosummary::
