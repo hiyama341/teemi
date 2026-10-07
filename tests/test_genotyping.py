@@ -43,3 +43,35 @@ def test_pairwise_alignment_of_templates():
 
 
      
+def test_pairwise_alignment_of_templates_trims_ns_and_finds_primer():
+    from Bio.Seq import Seq
+    from Bio.SeqRecord import SeqRecord
+
+    primer_seq = "GTTCCAGAGGCAAGCTTGAC"
+    part1_body = "ATGACCGTTAAGGCTTCAGGATCCTTAGCCGGTATTCAAGTCGACGGAATTCCTGCAGTA"
+    part2_seq = "CATCGGTAGCTTACGGAATCGATCCGTTAGAGCTACGGTTACCAGTGCATGAATCCGGTAAGCTTCGAATTCGGACT"
+
+    # part2 is listed first, so part1 has to score strictly higher to be inferred
+    templates = [
+        SeqRecord(Seq(part2_seq), id="part2", name="part2", description="2"),
+        SeqRecord(Seq(primer_seq + part1_body), id="part1", name="part1", description="1"),
+    ]
+    primers = [
+        SeqRecord(Seq(primer_seq), id="seq_fw", name="seq_fw"),
+        SeqRecord(Seq("AAAAAAAAAAAAAAAAAAAA"), id="unused", name="unused"),
+    ]
+    # read 1 starts with the sequencing primer and is an exact copy of part1 (after N removal)
+    read1_core = primer_seq + part1_body[:40]
+    read1 = SeqRecord(Seq("NN" + read1_core + "N"), id="read1", name="read1")
+    # read 2 contains no primer and is an exact copy of a stretch of part2
+    read2_core = part2_seq[10:60]
+    read2 = SeqRecord(Seq(read2_core[:20] + "N" + read2_core[20:]), id="read2", name="read2")
+
+    df = pairwise_alignment_of_templates([read1, read2], templates, primers)
+
+    assert list(df.columns) == ["Sample-Name", "inf_part_name", "align_score", "inf_part_number"]
+    assert df["Sample-Name"].tolist() == ["read1", "read2"]
+    assert df["inf_part_name"].tolist() == ["part1", "part2"]
+    assert df["inf_part_number"].tolist() == ["1", "2"]
+    # localxx scores 1 per identical base, so an exact match scores the read length
+    assert df["align_score"].tolist() == [float(len(read1_core)), float(len(read2_core))]

@@ -69,3 +69,124 @@ def test_picklist_from_plates():
 
     assert picklist.to_plain_string()[:38] == 'Transfer 1.00E+00L from 1 A1 into 5 A1'
     assert picklist.total_transferred_volume() == 640
+
+
+# ---------------------------------------------------------------------------
+# Additional coverage tests (imported from the non-deprecated legacy module)
+# ---------------------------------------------------------------------------
+from teemi.legacy.build import robot_assembly as ra
+from teemi.legacy.build.containers_wells_picklists import Plate96, Transfer
+
+_small_pcr_scheme = pd.DataFrame(
+    {
+        "template": ["T1", "T1"],
+        "forward_primer": ["F1", "F2"],
+        "reverse_primer": ["R1", "R2"],
+    }
+)
+
+_expected_flowbot_lines = [
+    # PCR 1 -> destination well 5:A1
+    "1:A1, 5:A1, 1 ",
+    "2:A1, 5:A1, 1 ",
+    "3:A1, 5:A1, 1 ",
+    "4:A1, 5:A1, 10 ",
+    "4:A2, 5:A1, 7 ",
+    # PCR 2 -> destination well 5:A2 (template T1 reused from 3:A1)
+    "1:A2, 5:A2, 1 ",
+    "2:A2, 5:A2, 1 ",
+    "3:A1, 5:A2, 1 ",
+    "4:A1, 5:A2, 10 ",
+    "4:A2, 5:A2, 7 ",
+]
+
+
+def _small_robot_assembly():
+    return ra.RobotAssembly(_small_pcr_scheme, ["F1", "F2"], ["R1", "R2"], ["T1"])
+
+
+def test_robot_assembly_small_scheme_picklist():
+    assembly = _small_robot_assembly()
+
+    assert assembly.picklist.to_flowbot_instructions_string().split("\n") == (
+        _expected_flowbot_lines
+    )
+    assert assembly.picklist.total_transferred_volume() == 2 * (1 + 1 + 1 + 10 + 7)
+    # master mix and water are sized for len(scheme) + 1 reactions
+    assert assembly.source_platePCRmix["A1"].volume == 30
+    assert assembly.source_platePCRmix["A2"].volume == 21
+
+
+def test_robot_assembly_missing_inputs_prints_reminder(capsys):
+    assembly = ra.RobotAssembly(None, ["F1"], ["R1"], ["T1"])
+
+    assert "Remember to put in all the neccesarry components" in capsys.readouterr().out
+    assert not hasattr(assembly, "picklist")
+    assert not hasattr(assembly, "source_plateF_primers")
+
+
+def test_robot_assembly_plates_to_excel_file(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    assembly = _small_robot_assembly()
+
+    assembly.PlatesToExcelFile()
+
+    sheets = pd.read_excel(tmp_path / "Plate_instructions.xlsx", sheet_name=None, index_col=0)
+    assert list(sheets) == [
+        "Forward_primer_wells",
+        "Reverse_primer_wells",
+        "Template_wells",
+        "PCR_MIX_H20",
+    ]
+    assert len(sheets["Forward_primer_wells"]) == 96
+    assert len(sheets["PCR_MIX_H20"]) == 8
+    assert "'F2': 1" in sheets["Forward_primer_wells"].loc["A2", "content"]
+    assert "'R1': 1" in sheets["Reverse_primer_wells"].loc["A1", "content"]
+    assert "'T1': 1" in sheets["Template_wells"].loc["A1", "content"]
+    assert "'PCR_2x_mix': 10" in sheets["PCR_MIX_H20"].loc["A1", "content"]
+    assert "'H2O_MQ': 10" in sheets["PCR_MIX_H20"].loc["A2", "content"]
+
+
+def test_robot_assembly_print_well_df_to_string(capsys):
+    assembly = _small_robot_assembly()
+
+    assert assembly.print_well_df_to_string() is None
+
+    out = capsys.readouterr().out
+    assert out.index("###Forward primers:") < out.index("###Reverse primers:")
+    assert out.index("###Reverse primers:") < out.index("###Templates:")
+    for component in ["'F1': 1", "'F2': 1", "'R2': 1", "'T1': 1", "'PCR_2x_mix': 10", "'H2O_MQ': 10"]:
+        assert component in out
+
+
+def test_robot_assembly_flowbot_instructions_to_csv(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    assembly = _small_robot_assembly()
+
+    assembly.FlowbotInstructionsToCSV()
+
+    content = (tmp_path / "Flowbot_instructions.csv").read_text()
+    assert content == "source, target, volume\n" + "\n".join(_expected_flowbot_lines) + "\n"
+
+
+def test_liquid_handler_to_flowbot_instructions():
+    source, destination = Plate96(name="3"), Plate96(name="7")
+    # LiquidHandler() cannot currently be constructed (see the xfail test below),
+    # so build the instance without calling its __init__.
+    handler = ra.LiquidHandler.__new__(ra.LiquidHandler)
+    Transfer.__init__(handler, source["A1"], destination["H12"], 50.7)
+
+    assert handler.to_flowbot_instructions() == "3:A1, 7:H12, 50.7 "
+
+
+@pytest.mark.xfail(
+    raises=TypeError,
+    strict=True,
+    reason=(
+        "Bug: LiquidHandler.__init__ takes no arguments but calls Transfer.__init__() "
+        "without the required source_well, destination_well and volume"
+    ),
+)
+def test_liquid_handler_can_be_instantiated():
+    handler = ra.LiquidHandler()
+    assert isinstance(handler, Transfer)

@@ -76,3 +76,214 @@ def test_concatenate_genbank_records():
 #     assert str(seqs[1].seq[:10])== 'AGACAACCTA'
 #     assert seqs[0].id == 'YAR035C-A'
 #     assert seqs[1].id == 'YGR067C'
+
+
+# ---------------------------------------------------------------------------
+# Additional tests - all network access is mocked
+# ---------------------------------------------------------------------------
+import sys
+import types
+
+import teemi.design.fetch_sequences as fetch_sequences
+
+
+class _FakeEntrezHandle:
+    def __init__(self, text):
+        self._text = text
+
+    def read(self):
+        return self._text
+
+
+def test_retrieve_sequences_from_ncbi_writes_fasta(tmp_path, monkeypatch):
+    fasta_records = {
+        'ACC_1': '>ACC_1 first protein\nMDSSSEKLSP\n',
+        'ACC_2': '>ACC_2 second protein\nMQSTTSVKLS\n',
+    }
+    calls = []
+
+    def fake_efetch(db, id, rettype, retmode):
+        calls.append({'db': db, 'id': id, 'rettype': rettype, 'retmode': retmode})
+        return _FakeEntrezHandle(fasta_records[id])
+
+    monkeypatch.setattr(fetch_sequences.Entrez, 'efetch', fake_efetch)
+    out_file = tmp_path / 'ncbi_hits.fasta'
+
+    assert retrieve_sequences_from_ncbi(['ACC_1', 'ACC_2'], str(out_file)) is None
+
+    # one efetch call per accession number, all of them from the protein db
+    assert [call['id'] for call in calls] == ['ACC_1', 'ACC_2']
+    assert {call['db'] for call in calls} == {'protein'}
+    assert {call['rettype'] for call in calls} == {'fasta'}
+    assert {call['retmode'] for call in calls} == {'text'}
+    assert fetch_sequences.Entrez.email == 'youremail@gmail.com'
+
+    # the responses are concatenated into one fasta file
+    assert out_file.read_text() == fasta_records['ACC_1'] + fasta_records['ACC_2']
+    written = read_fasta_files(str(out_file))
+    assert [record.id for record in written] == ['ACC_1', 'ACC_2']
+    assert str(written[0].seq) == 'MDSSSEKLSP'
+    assert str(written[1].seq) == 'MQSTTSVKLS'
+
+
+def test_retrieve_sequences_from_ncbi_db_argument(tmp_path, monkeypatch):
+    used_db = []
+
+    def fake_efetch(db, id, rettype, retmode):
+        used_db.append(db)
+        return _FakeEntrezHandle('>%s\nACGT\n' % id)
+
+    monkeypatch.setattr(fetch_sequences.Entrez, 'efetch', fake_efetch)
+    out_file = tmp_path / 'nuc.fasta'
+
+    retrieve_sequences_from_ncbi(['X1'], str(out_file), db='nucleotide')
+
+    assert used_db == ['nucleotide']
+    assert out_file.read_text() == '>X1\nACGT\n'
+
+
+def test_retrieve_sequences_from_ncbi_handles_failure(tmp_path, monkeypatch, capsys):
+    def fake_efetch(**kwargs):
+        raise OSError('no connection')
+
+    monkeypatch.setattr(fetch_sequences.Entrez, 'efetch', fake_efetch)
+    out_file = tmp_path / 'broken.fasta'
+
+    assert retrieve_sequences_from_ncbi(['BAD_ACC'], str(out_file)) is None
+    assert 'An exception occurred' in capsys.readouterr().out
+    assert out_file.read_text() == ''
+
+
+def test_retrieve_sequences_from_PDB(monkeypatch):
+    fasta = {
+        'Q1PQK4': '>sp|Q1PQK4|TEST_PROT test protein\nMQSTTSVKLS\n',
+        'Q05001': '>sp|Q05001|OTHER_PROT other protein\nMDSSSEKLSP\n',
+    }
+    requested_urls = []
+
+    class _FakeResponse:
+        def __init__(self, text):
+            self.text = text
+
+    def fake_post(url):
+        requested_urls.append(url)
+        accession = url.rsplit('/', 1)[-1].replace('.fasta', '')
+        return _FakeResponse(fasta[accession])
+
+    monkeypatch.setattr(fetch_sequences.r, 'post', fake_post)
+
+    sequences = retrieve_sequences_from_PDB(['Q1PQK4', 'Q05001'])
+
+    assert requested_urls == [
+        'http://www.uniprot.org/uniprot/Q1PQK4.fasta',
+        'http://www.uniprot.org/uniprot/Q05001.fasta',
+    ]
+    assert len(sequences) == 2
+    assert str(sequences[0][0].seq) == 'MQSTTSVKLS'
+    assert sequences[0][0].id == 'sp|Q1PQK4|TEST_PROT'
+    assert str(sequences[1][0].seq) == 'MDSSSEKLSP'
+
+
+class _FakeQuery:
+    def __init__(self, rows):
+        self._rows = rows
+        self.views = []
+        self.constraints = []
+
+    def add_view(self, *views):
+        self.views.extend(views)
+
+    def add_constraint(self, *args, **kwargs):
+        self.constraints.append((args, kwargs))
+
+    def rows(self):
+        return self._rows
+
+
+class _FakeService:
+    def __init__(self, url):
+        self.url = url
+        self.query = None
+
+    def new_query(self, root):
+        self.root = root
+        self.query = _FakeQuery(self.rows)
+        return self.query
+
+
+def _install_fake_intermine(monkeypatch, rows):
+    """Replace the (python2 only) intermine package with a stub."""
+    created = {}
+
+    class Service(_FakeService):
+        rows = None
+
+        def __init__(self, url):
+            _FakeService.__init__(self, url)
+            self.rows = rows
+            created['service'] = self
+
+    package = types.ModuleType('intermine')
+    webservice = types.ModuleType('intermine.webservice')
+    webservice.Service = Service
+    package.webservice = webservice
+    monkeypatch.setitem(sys.modules, 'intermine', package)
+    monkeypatch.setitem(sys.modules, 'intermine.webservice', webservice)
+    return created
+
+
+def test_fetch_promoter(monkeypatch):
+    rows = [
+        {'flankingRegions.sequence.residues': 'AAAACCCCGGGGTTTT'},
+        {'flankingRegions.sequence.residues': 'GAGGCACCAGCGTCAG'},
+    ]
+    created = _install_fake_intermine(monkeypatch, rows)
+
+    promoter = fetch_promoter('CYC1')
+
+    # the residues of the last returned row are used
+    assert promoter == 'GAGGCACCAGCGTCAG'
+
+    service = created['service']
+    assert service.url == 'https://yeastmine.yeastgenome.org/yeastmine/service'
+    assert service.root == 'Gene'
+    assert service.query.views == [
+        'secondaryIdentifier',
+        'symbol',
+        'length',
+        'flankingRegions.direction',
+        'flankingRegions.sequence.length',
+        'flankingRegions.sequence.residues',
+    ]
+    assert service.query.constraints == [
+        (('Gene', 'LOOKUP', 'CYC1', 'S. cerevisiae'), {'code': 'B'}),
+        (('flankingRegions.direction', '=', 'upstream'), {'code': 'C'}),
+        (('flankingRegions.distance', '=', '1.0kb'), {'code': 'A'}),
+        (('flankingRegions.includeGene', '=', 'false'), {'code': 'D'}),
+    ]
+
+
+def test_fetch_promoter_without_hits(monkeypatch):
+    _install_fake_intermine(monkeypatch, [])
+
+    assert fetch_promoter('NOT_A_GENE') == ''
+
+
+def test_fetch_multiple_promoters(monkeypatch):
+    promoters = {'YAR035C-A': 'CCCTGGTGGC', 'YGR067C': 'AGACAACCTA'}
+    monkeypatch.setattr(
+        fetch_sequences, 'fetch_promoter', lambda name: promoters[name]
+    )
+
+    records = fetch_multiple_promoters(['YAR035C-A', 'YGR067C'])
+
+    assert len(records) == 2
+    assert str(records[0].seq) == 'CCCTGGTGGC'
+    assert str(records[1].seq) == 'AGACAACCTA'
+    assert records[0].id == 'YAR035C-A'
+    assert records[1].id == 'YGR067C'
+    assert records[0].name == 'YAR035C-A Promoter'
+    assert records[1].name == 'YGR067C Promoter'
+    assert records[0].description == (
+        'Defined as being 1kb upstream of the TSS and fetched through Intermines API'
+    )

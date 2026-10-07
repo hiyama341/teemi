@@ -325,3 +325,85 @@ def test_calculate_volume_and_total_concentration():
     assert ngs == expected_ngs
     assert total_conc == expected_total_conc
 
+
+
+def test_time_to_inoculate_plots_growth_curves(monkeypatch, capsys):
+    import matplotlib.pyplot as plt
+
+    plt.switch_backend("Agg")
+    plt.close("all")
+    shown = []
+    monkeypatch.setattr(plt, "show", lambda *args, **kwargs: shown.append(plt.gcf()))
+
+    time_to_inoculate(
+        initialOD=0.01, td=0.5, verbose=False, transformation_time=24, target_OD=1, plot=True
+    )
+
+    assert len(shown) == 1
+    ax = shown[0].axes[0]
+    lines = ax.get_lines()
+    assert ax.get_ylim() == (0.0, 2.0)
+    assert ax.get_xlabel() == "time, h^-1"
+    assert ax.get_ylabel() == "OD"
+    assert [line.get_label() for line in lines] == [
+        "target",
+        "iOD=0.01, td=0.4",
+        "iOD=0.01, td=0.5",
+        "iOD=0.01, td=0.6",
+    ]
+    assert [text.get_text() for text in ax.get_legend().get_texts()] == [
+        line.get_label() for line in lines
+    ]
+    assert list(lines[0].get_xdata()) == list(range(30))
+    assert list(lines[0].get_ydata()) == [1] * 30
+    assert list(lines[1].get_ydata()) == [ODtime(0.01, t, td=0.4) for t in range(30)]
+    assert list(lines[2].get_ydata()) == [ODtime(0.01, t, td=0.5) for t in range(30)]
+    assert list(lines[3].get_ydata()) == [ODtime(0.01, t, td=0.6) for t in range(30)]
+    plt.close("all")
+
+    out = capsys.readouterr().out
+    # 0.01 * 2**(t * 0.5) is closest to OD 1 at t = 13 h (0.905 vs 1.28 at 14 h)
+    assert "Hours to target OD: \t13 hours" in out
+    # 24 h - 13 h
+    assert "Time of inoculation: \t11:00:00" in out
+    # verbose=False skips the extra explanations
+    assert "GOAL" not in out
+    assert "How much volume?" not in out
+
+
+def test_pool_parts_groups_amplicons_with_same_template():
+    template_seq = 'ATGATATATGGCTCGACTGCAGGGGGATTTTTCCGGATCGCGGTCGATGACTGATACTACTACGACTACTAG'
+    fw = Dseqrecord('ATGATATATGGCTCGAC')
+    rv = Dseqrecord('TACTACGACTACTAG').reverse_complement()
+
+    amplicons = []
+    for template_name, amp_name, location, conc in [
+        ('PartA', 'PartA_batch1', 'box1_A1', 50),
+        ('PartA', 'PartA_batch2', 'box1_A2', 100),
+        ('PartB', 'PartB_batch1', 'box1_B1', 25),
+        ('NotPooled', 'Other', 'box1_C1', 10),
+    ]:
+        amplicon = pcr(fw, rv, Dseqrecord(template_seq))
+        amplicon.template.name = template_name
+        amplicon.name = amp_name
+        amplicon.annotations['batches'] = [{'location': location, 'concentration': conc}]
+        amplicons.append(amplicon)
+
+    pooled = pool_parts(
+        amplicons,
+        part_names=['PartA', 'PartB'],
+        part_amounts=[0.001, 0.002],
+        pool_names=['PartB', 'PartA'],
+        pool_lengths=[2000, 1000],
+    )
+
+    # volume = pool_length * 650 * amount / concentration
+    assert pooled == {
+        'PartA': {
+            'PartA_batch1': {'volume_to_mix': 13.0, 'location': 'box1_A1', 'concentration': 50},
+            'PartA_batch2': {'volume_to_mix': 6.5, 'location': 'box1_A2', 'concentration': 100},
+        },
+        'PartB': {
+            'PartB_batch1': {'volume_to_mix': 104.0, 'location': 'box1_B1', 'concentration': 25},
+        },
+    }
