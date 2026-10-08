@@ -14,13 +14,12 @@
 
 """ This part of the design module is used fetching sequences"""
 
+import time
 from Bio import SeqIO
 from Bio import Entrez
 import requests as r
 from io import StringIO
 
-# intermine
-# from __future__ import print_function
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.SeqFeature import SeqFeature
@@ -90,17 +89,15 @@ def retrieve_sequences_from_ncbi(
     try:
         email = "youremail@gmail.com"
 
-        out_handle = open(out_file, "w")
+        with open(out_file, "w") as out_handle:
+            for i in range(0, len(list_of_acc_numbers)):
+                Entrez.email = email
+                handle = Entrez.efetch(
+                    db=db, id=list_of_acc_numbers[i], rettype="fasta", retmode="text"
+                )
+                out_handle.write(handle.read())
 
-        for i in range(0, len(list_of_acc_numbers)):
-            Entrez.email = email
-            handle = Entrez.efetch(
-                db=db, id=list_of_acc_numbers[i], rettype="fasta", retmode="text"
-            )
-            out_handle.write(handle.read())
-        out_handle.close()
-
-    except:
+    except Exception:
         print(
             "An exception occurred, please double-check your accession numbers or connection"
         )
@@ -172,43 +169,61 @@ def retrieve_sequences_from_PDB(query: list):
     return list_of_protein_seqs
 
 
-def fetch_promoter(promoter_name: str):
-    from intermine.webservice import Service
+ENSEMBL_REST_URL = "https://rest.ensembl.org"
 
-    """Retrieves a yeast promoter sequence from intermine.
+
+def _ensembl_get(path: str, retries: int = 5):
+    """GET a JSON resource from the Ensembl REST API, backing off when rate limited."""
+    for attempt in range(retries):
+        response = r.get(
+            ENSEMBL_REST_URL + path,
+            headers={"Content-Type": "application/json"},
+            timeout=30,
+        )
+        if response.status_code != 429 and response.status_code < 500:
+            break
+        time.sleep(float(response.headers.get("Retry-After", 2**attempt)))
+    return response
+
+
+def fetch_promoter(promoter_name: str):
+    """Retrieves a yeast promoter sequence, defined as the 1 kb upstream of the gene.
+
+    The sequence used to come from YeastMine, which SGD retired in July 2024.
+    It is now fetched from the Ensembl REST API (S. cerevisiae S288C), which
+    returns the same 1 kb upstream flanking region.
+
     Parameters
     ----------
     promoter_name: str
+        standard (e.g. ``"CYC1"``) or systematic (e.g. ``"YJR048W"``) gene name
 
     Returns
     -------
     promoter sequence : str
+        empty if the gene is not found
     """
-    seq = ""
-    service = Service("https://yeastmine.yeastgenome.org/yeastmine/service")
-    query = service.new_query("Gene")
-    query.add_view(
-        "secondaryIdentifier",
-        "symbol",
-        "length",
-        "flankingRegions.direction",
-        "flankingRegions.sequence.length",
-        "flankingRegions.sequence.residues",
-    )
+    gene = _ensembl_get(f"/lookup/symbol/saccharomyces_cerevisiae/{promoter_name}")
+    if not gene.ok:
+        # systematic names are Ensembl stable IDs
+        gene = _ensembl_get(f"/lookup/id/{promoter_name}")
+    if not gene.ok:
+        return ""
+    gene = gene.json()
 
-    query.add_constraint("Gene", "LOOKUP", promoter_name, "S. cerevisiae", code="B")
-    query.add_constraint("flankingRegions.direction", "=", "upstream", code="C")
-    query.add_constraint("flankingRegions.distance", "=", "1.0kb", code="A")
-    query.add_constraint("flankingRegions.includeGene", "=", "false", code="D")
+    if gene["strand"] == 1:
+        start, end = max(gene["start"] - 1000, 1), gene["start"] - 1
+    else:
+        start, end = gene["end"] + 1, gene["end"] + 1000
+    region = f"{gene['seq_region_name']}:{start}..{end}:{gene['strand']}"
 
-    for row in query.rows():
-        seq = row["flankingRegions.sequence.residues"]
-
-    return seq
+    sequence = _ensembl_get(f"/sequence/region/saccharomyces_cerevisiae/{region}")
+    sequence.raise_for_status()
+    return sequence.json()["seq"]
 
 
 def fetch_multiple_promoters(List_of_promoter_names: list):
-    """Retrieves a yeast promoter sequence from intermine.
+    """Retrieves yeast promoter sequences (1 kb upstream), see fetch_promoter.
     Parameters
     ----------
     List_of_promoter_names: list
@@ -227,7 +242,7 @@ def fetch_multiple_promoters(List_of_promoter_names: list):
         promoters_seq = SeqRecord(Seq(fetch_promoter(List_of_promoter_names[i])))
         promoters_seq.name = str(List_of_promoter_names[i]) + " Promoter"
         promoters_seq.id = str(List_of_promoter_names[i])
-        promoters_seq.description = "Defined as being 1kb upstream of the TSS and fetched through Intermines API"
+        promoters_seq.description = "Defined as being 1kb upstream of the TSS and fetched through the Ensembl REST API"
 
         # Append to list
         LIST_OF_BIOrecord_objects.append(promoters_seq)

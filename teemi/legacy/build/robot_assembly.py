@@ -30,15 +30,8 @@ class LiquidHandler(Transfer):
     
     Parameters
     ----------
-    None
-
-    Returns
-    -------
-    None
+    Same as Transfer: source_well, destination_well, volume and optional data.
     """
-    
-    def __init__(self) -> None:
-        super().__init__()
 
     def to_flowbot_instructions(self):
         """

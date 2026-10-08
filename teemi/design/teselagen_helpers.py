@@ -13,7 +13,9 @@
 # copies or substantial portions of the Software.
 
 import numpy as np
-import pydna
+import pydna.amplify
+import pydna.dseqrecord
+import pydna.primer
 from teemi.design.cloning import seq_to_annotation
 
 

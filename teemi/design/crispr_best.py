@@ -164,12 +164,9 @@ def process_base_editing(df: pd.DataFrame, gene_sequences: dict,
         return ', '.join(mutations)
     
     def extract_first_mutation_position(mutations):
-        if mutations:
-            # Extract the position of the first mutation
-            first_mutation = mutations.split(',')[0]
-            position = int(''.join(filter(str.isdigit, first_mutation)))
-            return position
-        return float('inf')
+        # Rows without mutations have already been dropped below
+        first_mutation = mutations.split(',')[0]
+        return int(''.join(filter(str.isdigit, first_mutation)))
     
     # Use .loc to avoid SettingWithCopyWarning
     df = df.copy()

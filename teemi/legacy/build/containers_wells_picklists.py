@@ -258,7 +258,9 @@ class Plate:
 
     def list_well_data_fields(self):
         """Return all fields used in well data in the plate."""
-        return sorted(list(set(field for well in self for field in well.data.keys())))
+        return sorted(
+            list(set(field for well in self.wells.values() for field in well.data.keys()))
+        )
 
     def return_column(self, column_number):
         """Return the list of all wells of the plate in the given column."""
@@ -530,9 +532,10 @@ class PickList:
         transfers, such as "source_well", or a function f(transfer) -> value.
         """
         if not hasattr(sorting_method, "__call__"):
+            attribute = sorting_method
 
             def sorting_method(transfer):
-                return transfer.__dict__[sorting_method]
+                return transfer.__dict__[attribute]
 
         return PickList(
             sorted(self.transfers_list, key=sorting_method),
@@ -756,10 +759,9 @@ def rowname_to_number(name):
     "Convert A->1 Z->26 AA->27 etc."
     if len(name) == 2:
         return 26 * rowname_to_number(name[0]) + rowname_to_number(name[1])
-    try:
-        return "ABCDEFGHIJKLMNOPQRSTUVWXYZ".index(name) + 1
-    except IndexError:
+    if len(name) != 1 or name not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
         raise ValueError(name + " is not a valid row name.")
+    return "ABCDEFGHIJKLMNOPQRSTUVWXYZ".index(name) + 1
 
 
 def number_to_rowname(number):

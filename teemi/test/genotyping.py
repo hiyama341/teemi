@@ -17,7 +17,7 @@ from Bio import pairwise2
 
 
 def pairwise_alignment_of_templates(
-    reads: list, templates: list, primers: list
+    reads: list, templates: list, primers: list, trim_at_primer: bool = False
 ) -> pd.DataFrame:
     """Infers relationship of templates to reads based on highest
     score from a pairwise alignment.
@@ -30,6 +30,9 @@ def pairwise_alignment_of_templates(
         Templates for inferring relationship with - could be plasmid fx
     primers: list of Bio.SeqRecord.SeqRecord
         list of primers to be for finding were the read should start
+    trim_at_primer: bool
+        if True, reads are trimmed to start at the primer before aligning.
+        Defaults to False: whole reads are aligned, as in the published notebooks.
 
     Returns
     -------
@@ -50,6 +53,10 @@ def pairwise_alignment_of_templates(
 
     Notes
     -----
+    Reads of 25 bp or less (after removing Ns) are too short to call, as are
+    reads that match no template at all. They are reported on stdout and left
+    out of the returned DataFrame, so every row it holds is a real call.
+
     If you want inf_part_number column then change your the description
     of the Bio.SeqRecord.SeqRecord as follows:
 
@@ -60,23 +67,26 @@ def pairwise_alignment_of_templates(
     read_list = []
     template_list = []
     template_number_list = []
+    uncalled = []
 
     for i in range(len(reads)):
 
         sample = reads[i].seq.replace("N", "")
 
-        # If we see the primers in the sample we the alignment will start from there
-        for k in range(len(primers)):
-            start = sample.find(primers[k].seq)
+        # If we see the primers in the sample the alignment can start from there
+        if trim_at_primer:
+            for primer in primers:
+                start = sample.find(primer.seq)
+                if start != -1:
+                    sample = sample[start:]
 
-            if start != -1:
-                sample[start:]
-            else:
-                continue
+        score = 0.0
+        temp_name = None
+        temp_number = None
+        read_name = reads[i].name
 
         # Aling with templates
         if len(sample) > 25:
-            score = 0.0
             for j in range(len(templates)):
                 template = templates[j].seq
 
@@ -91,13 +101,23 @@ def pairwise_alignment_of_templates(
                     score = alignment_score
                     temp_name = templates[j].name
                     temp_number = templates[j].description
-                    read_name = reads[i].name
 
         # Saving the alignmets and their names
+        if temp_name is None:
+            # Nothing to infer from: a failed read, or no template matched
+            uncalled.append(read_name)
+            continue
+
         best_scores.append(score)
         read_list.append(read_name)
         template_list.append(temp_name)
         template_number_list.append(temp_number)
+
+    if uncalled:
+        print(
+            f"No template could be inferred for {len(uncalled)} of {len(reads)} "
+            f"reads, which are left out of the result: {', '.join(uncalled)}"
+        )
 
     # Making a pandas. dataframe
     df = pd.DataFrame()

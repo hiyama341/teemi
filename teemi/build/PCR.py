@@ -225,6 +225,11 @@ def calculate_processing_speed(amplicon):
         proc_speed = 30
     elif amplicon.annotations["polymerase"] == "Phusion":
         proc_speed = 30
+    else:
+        raise ValueError(
+            f"Unknown polymerase {amplicon.annotations['polymerase']!r}; "
+            "expected 'OneTaq Hot Start', 'Q5 Hot Start' or 'Phusion'"
+        )
 
     amplicon.annotations["proc_speed"] = proc_speed
 
@@ -450,9 +455,9 @@ def Q5_NEB_PCR_program(amplicon):
     str
         schematic representation of a Q5 program
     """
-    # Determine elongation time and process speed.
-    amplicon = calculate_elongation_time(amplicon)
+    # Determine process speed and elongation time (which needs the speed).
     amplicon = calculate_processing_speed(amplicon)
+    amplicon = calculate_elongation_time(amplicon)
 
     # ta
     amplicon.annotations["ta Q5 Hot Start"] = primer_ta_neb(

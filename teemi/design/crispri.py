@@ -22,8 +22,14 @@ import re
 from collections import Counter
 from Bio.Seq import Seq
 from typing import Callable, Dict, Optional, List, Tuple
-from Bio.SeqFeature import SeqFeature
-from crispr_cas import find_off_target_hits, revcomp, parse_genbank_record, SgRNAargs
+from Bio.SeqFeature import SeqFeature, FeatureLocation
+from teemi.design.crispr_cas import (
+    find_off_target_hits,
+    find_sgrna_hits_cas9,
+    revcomp,
+    parse_genbank_record,
+    SgRNAargs,
+)
 
 
 def filter_crispri_guides(args: SgRNAargs, hitframe: pd.DataFrame) -> pd.DataFrame:
@@ -45,6 +51,11 @@ def filter_crispri_guides(args: SgRNAargs, hitframe: pd.DataFrame) -> pd.DataFra
         """Exclude rows from frame where frame[column] contains any of the provided patterns"""
         if not patterns:
             return frame
+        if column not in frame.columns:
+            raise ValueError(
+                f"cannot filter on {column!r}: the sgRNA hit finders do not "
+                f"produce a {column!r} column"
+            )
         mask = frame[column].apply(lambda x: not any(pattern in x for pattern in patterns))
         return frame[mask]
 
@@ -59,15 +70,16 @@ def filter_crispri_guides(args: SgRNAargs, hitframe: pd.DataFrame) -> pd.DataFra
     if args.target_non_template_strand:
         filtered_frame = filtered_frame[filtered_frame['gene_strand'] != filtered_frame['sgrna_strand']]
 
-    # Apply other filters
-    if args.pam_remove:
-        filtered_frame = exclude_rows_based_on_patterns(filtered_frame, "pam", args.pam_remove)
-    
-    if args.sgrna_remove:
-        filtered_frame = exclude_rows_based_on_patterns(filtered_frame, "sgrna", args.sgrna_remove)
-
-    if args.downstream_remove:
-        filtered_frame = exclude_rows_based_on_patterns(filtered_frame, "downstream", args.downstream_remove)
+    # Apply other filters; each is a no-op when nothing was asked for
+    filtered_frame = exclude_rows_based_on_patterns(
+        filtered_frame, "pam", args.pam_remove
+    )
+    filtered_frame = exclude_rows_based_on_patterns(
+        filtered_frame, "sgrna", args.sgrna_remove
+    )
+    filtered_frame = exclude_rows_based_on_patterns(
+        filtered_frame, "downstream", args.downstream_remove
+    )
 
     filtered_frame = filtered_frame.loc[filtered_frame.gc >= args.gc_lower]
     filtered_frame = filtered_frame.loc[filtered_frame.gc <= args.gc_upper]
@@ -77,138 +89,112 @@ def filter_crispri_guides(args: SgRNAargs, hitframe: pd.DataFrame) -> pd.DataFra
 
 
 
-def find_sgrna_hits_cas9_crispri(record: Dseqrecord, strain_name: str, locus_tags: List[str], off_target_counter: Counter, off_target_seed: int, revcomp: callable, extension_to_promoter_region) -> pd.DataFrame:
+def find_sgrna_hits_cas9_crispri(
+    record: Dseqrecord,
+    strain_name: str,
+    locus_tags: List[str],
+    off_target_counter: Counter,
+    off_target_seed: int,
+    revcomp: callable,
+    extension_to_promoter_region: int = 100,
+) -> pd.DataFrame:
     """
-    Parse a Dseqrecord file to find sgRNA hits.
+    Find Cas9 sgRNA hits in each CDS and in the promoter region upstream of it.
+
+    The guides are found with :func:`teemi.design.crispr_cas.find_sgrna_hits_cas9`,
+    once for the annotated CDS and once for a synthetic feature covering the
+    upstream region, so both get their positions from the same code. Upstream
+    guides are reported relative to the start of the gene, i.e. with a negative
+    ``sgrna_loc``, and a ``region`` column says which of the two a guide is in.
 
     Parameters
     ----------
-    filepath : str
-        The path to the genbank file to parse.
+    record : Dseqrecord
+        The record to parse.
+    strain_name : str
+        Name reported in the ``strain_name`` column.
     locus_tags : List[str]
-        List of locus tags to find in the genbank file.
+        Locus tags to look for, or ``["all"]`` for every CDS.
     off_target_counter : Counter
         Counter object containing the frequency of each off-target hit.
     off_target_seed : int
         The length of the off-target seed sequence to match.
-    downstream : int
-        The number of downstream base pairs to include in the downstream sequence.
     revcomp : callable
         Function to get the reverse complement of a sequence.
+    extension_to_promoter_region : int
+        How many base pairs upstream of the gene to search (default 100).
 
     Returns
     -------
     sgrna_df : pd.DataFrame
-        A DataFrame of sgRNA hits information.
-
-   
+        A DataFrame of sgRNA hits information, with an added ``region`` column
+        holding either ``"CDS"`` or ``"upstream"``.
     """
-    # Initialize list to store sgRNA hits
-    sgrna_hits = list()
+    upstream_len = extension_to_promoter_region
 
-    # Cas9-specific parameters
-    pam_pattern = r"(?=CC)"
-    protospacer_len = 20
-    pam_len = 3
+    # Guides inside the coding sequence
+    sgrna_cds = find_sgrna_hits_cas9(
+        record, strain_name, locus_tags, off_target_counter, off_target_seed, revcomp
+    )
+    sgrna_cds["region"] = "CDS"
 
-    # Parse the record to find sgRNAs
+    if upstream_len <= 0:
+        return sgrna_cds
+
+    # Guides in the promoter region, found through a synthetic upstream feature
+    sgrna_upstream_frames = []
+    sequence_length = len(record.seq)
 
     for feature in record.features:
-        if feature.type == "CDS" and feature.qualifiers.get("locus_tag", [""])[0] in locus_tags:
-            locus_tag = feature.qualifiers["locus_tag"][0]
-            location = feature.location
-            gene_strand = feature.location.strand
+        if feature.type != "CDS":
+            continue
+        locus_tag = feature.qualifiers.get("locus_tag", ["NA"])[0]
+        if locus_tag not in locus_tags and "all" not in locus_tags:
+            continue
 
-            if gene_strand == 1:  # Positive strand
-                start = max(feature.location.start - extension_to_promoter_region, 0)  # Ensure start doesn't go below 0
-                end = min(feature.location.end, len(record.seq))  # Ensure end doesn't go beyond the sequence length
-                coding_sequence = str(record.seq[start:end])
-                coding_sequence_revcomp = revcomp(coding_sequence)
-                watson = 1
-                crick = -1
+        gene_strand = feature.location.strand
+        if gene_strand == 1:
+            upstream_start = max(0, feature.location.start - upstream_len)
+            upstream_end = feature.location.start
+        else:
+            upstream_start = feature.location.end
+            upstream_end = min(sequence_length, feature.location.end + upstream_len)
+        if upstream_end <= upstream_start:
+            continue
 
-            else:  # Negative strand
-                start = max(feature.location.start, 0)  # Here, 'start' is effectively downstream, but the logic remains the same
-                end = min(feature.location.end + extension_to_promoter_region, len(record.seq))  # And 'end' is upstream in terms of genomic coordinates
-                coding_sequence_revcomp = str(record.seq[start:end]) 
-                coding_sequence = revcomp(coding_sequence_revcomp)
-                watson = -1
-                crick = 1
-
-            # Find potential sgRNAs in both the coding sequence and its reverse complement
-            for sequence in [(watson, coding_sequence), (crick, coding_sequence_revcomp)]:
-
-                for match in re.finditer(pam_pattern, sequence[1]):
-                    strand_sgrna = sequence[0]
-                    sgrna_pam = str(sequence[1][match.start():(match.start() + pam_len + protospacer_len)])
-        
-                    # Get reverse complement of the sgRNA and PAM sequence
-                    sgrna = revcomp(sgrna_pam)[0:protospacer_len]
-                    pam = revcomp(sgrna_pam)[protospacer_len:protospacer_len+pam_len]
-
-                    if not sgrna:
-                        print(f"No sgRNA found for locus tag {locus_tag}. Skipping to next locus tag.")
-                        continue  # This skips the rest of the current iteration and moves to the next feature
-                    if len(sgrna) != protospacer_len or len(pam) != pam_len:  # If either sgRNA or PAM length is incorrect
-                        print(f"sgRNA or PAM generated were outside the designated border in {locus_tag}. Skipping to next locus tag.")
-                        continue  # Skip the rest of the current iteration
-                    if len(pam) != pam_len:  # Check if sgRNA is exactly 23 nt long
-                        print(f"Pam was found outside designated locus_tag: {locus_tag}. To incorporate this extent borders. Skipping to next locus tag.")
-                        continue  # This skips the rest of the current iteration and moves to the next feature
-
-                    # Calculate GC content of the sgRNA
-                    gc_content = len([base for base in sgrna if base in ["C", "G"]]) / len(sgrna) if len(sgrna) > 0 else 0
-
-                    # Calculate genomic location of the sgRNA depending on the strand
-                    genome_location = (int(location.start)) +1
-
-                    if sequence[0] == 1:
-                        position_sgrna = len(sequence[1])-extension_to_promoter_region -match.start()-3
-
-                    if sequence[0] == -1:
-                        position_sgrna = match.end() + protospacer_len + 3 -extension_to_promoter_region
-
-                    sgrna_seed = sgrna[(protospacer_len - off_target_seed):protospacer_len]
-
-                    # Get number of off-target hits for the seed sequence
-                    off_target_count = max(
-                        off_target_counter[sgrna_seed] - 1,
-                        0,
-                    )
-
-                    # Store sgRNA hit
-                    sgrna_hits.append(
-                        (strain_name, #
-                            locus_tag, #
-                            genome_location, # 
-                            gene_strand, #
-                            strand_sgrna,#
-                            position_sgrna,#
-                            gc_content,
-                            pam,
-                            sgrna,
-                            sgrna_seed,
-                            off_target_count,
-                        )
-                    )
-
-    # Convert sgRNA hits into a DataFrame
-    sgrna_df = pd.DataFrame(
-        sgrna_hits,
-        columns=['strain_name',
-            "locus_tag",
-            "gene_loc",
-            "gene_strand",
-            "sgrna_strand",
-            "sgrna_loc",
-            "gc",
-            "pam",
-            "sgrna",
-            "sgrna_seed_sequence",
-            "off_target_count",
+        upstream_tag = locus_tag + "_upstream"
+        upstream_record = Dseqrecord(record.seq)
+        upstream_record.features = [
+            SeqFeature(
+                FeatureLocation(upstream_start, upstream_end, strand=gene_strand),
+                type="CDS",
+                qualifiers={"locus_tag": [upstream_tag]},
+            )
         ]
-    )
-    return sgrna_df
+
+        upstream_df = find_sgrna_hits_cas9(
+            upstream_record,
+            strain_name,
+            [upstream_tag],
+            off_target_counter,
+            off_target_seed,
+            revcomp,
+        )
+        if upstream_df.empty:
+            continue
+
+        # Report upstream guides relative to the start of the gene
+        upstream_df["sgrna_loc"] = upstream_df["sgrna_loc"] - (
+            upstream_end - upstream_start
+        )
+        upstream_df["region"] = "upstream"
+        upstream_df["locus_tag"] = locus_tag
+        sgrna_upstream_frames.append(upstream_df)
+
+    if not sgrna_upstream_frames:
+        return sgrna_cds
+
+    return pd.concat([sgrna_cds] + sgrna_upstream_frames, ignore_index=True)
 
 
 def extract_sgRNAs_for_crispri(args: SgRNAargs) -> Tuple[pd.DataFrame, Counter, pd.DataFrame]:
@@ -235,26 +221,38 @@ def extract_sgRNAs_for_crispri(args: SgRNAargs) -> Tuple[pd.DataFrame, Counter, 
     # Extract gene information
     sequences = parse_genbank_record(args.dseqrecord)
 
+    if "cas9" not in args.cas_type:
+        raise ValueError(
+            f"cas_type {args.cas_type!r} is not supported for CRISPRi; "
+            "only 'cas9' guides can be designed here"
+        )
+    if "find" not in args.step:
+        raise ValueError(
+            "step must include 'find': the guides have to be found before "
+            f"they can be filtered (got {args.step!r})"
+        )
 
-    # If 'find' is in the steps, execute off-target and sgRNA finding
-    if "find" in args.step:
-        # Find all potential off-target hits
-        off_target_counter = find_off_target_hits(sequences, args.off_target_seed, cas_type=args.cas_type)
+    # Find all potential off-target hits
+    off_target_counter = find_off_target_hits(
+        sequences, args.off_target_seed, cas_type=args.cas_type
+    )
 
-        if 'cas9' in args.cas_type:
-            # Find all potential sgRNA hits
-            sgrna_df = find_sgrna_hits_cas9_crispri(args.dseqrecord,args.strain_name, 
-                                                    args.locus_tag, 
-                                                    off_target_counter, 
-                                                    args.off_target_seed, 
-                                                    revcomp, 
-                                                    extension_to_promoter_region=args.extension_to_promoter_region)
+    # Find all potential sgRNA hits
+    sgrna_df = find_sgrna_hits_cas9_crispri(
+        args.dseqrecord,
+        args.strain_name,
+        args.locus_tag,
+        off_target_counter,
+        args.off_target_seed,
+        revcomp,
+        extension_to_promoter_region=args.extension_to_promoter_region,
+    )
 
-        # Sort sgrna_df by 'off-targets' in ascending order
-        sgrna_df.sort_values(by='sgrna_loc', ascending=True, inplace=True)
-    
+    # Sort sgrna_df by position relative to the start of the gene
+    sgrna_df.sort_values(by="sgrna_loc", ascending=True, inplace=True)
+
     # Filter guides if 'filter' is in the steps
     if "filter" in args.step:
         sgrna_df = filter_crispri_guides(args, sgrna_df)
 
-    return  sgrna_df
+    return sgrna_df

@@ -63,16 +63,218 @@ def test_concatenate_genbank_records():
     assert combined_record.features[1].qualifiers['locus_tag'] == ['GENE_B']
 
 
-## TODO: I cannot make these work with github actions yet. It lacks some packages(intermine). Have to figure this out later. 
-# def test_fetch_promoter(): 
-#     cyc1 = fetch_promoter('CYC1')
-#     assert cyc1[:20] == 'GAGGCACCAGCGTCAGCATT'
+# ---------------------------------------------------------------------------
+# Additional tests - all network access is mocked
+# ---------------------------------------------------------------------------
+import teemi.design.fetch_sequences as fetch_sequences
 
-# def test_fetch_multiple_promoters(): 
-#     list_of_promoters = ['YAR035C-A', 'YGR067C']
-#     seqs = fetch_multiple_promoters(list_of_promoters)
 
-#     assert str(seqs[0].seq[:10]) == 'CCCTGGTGGC'
-#     assert str(seqs[1].seq[:10])== 'AGACAACCTA'
-#     assert seqs[0].id == 'YAR035C-A'
-#     assert seqs[1].id == 'YGR067C'
+class _FakeEntrezHandle:
+    def __init__(self, text):
+        self._text = text
+
+    def read(self):
+        return self._text
+
+
+def test_retrieve_sequences_from_ncbi_writes_fasta(tmp_path, monkeypatch):
+    fasta_records = {
+        'ACC_1': '>ACC_1 first protein\nMDSSSEKLSP\n',
+        'ACC_2': '>ACC_2 second protein\nMQSTTSVKLS\n',
+    }
+    calls = []
+
+    def fake_efetch(db, id, rettype, retmode):
+        calls.append({'db': db, 'id': id, 'rettype': rettype, 'retmode': retmode})
+        return _FakeEntrezHandle(fasta_records[id])
+
+    monkeypatch.setattr(fetch_sequences.Entrez, 'efetch', fake_efetch)
+    out_file = tmp_path / 'ncbi_hits.fasta'
+
+    assert retrieve_sequences_from_ncbi(['ACC_1', 'ACC_2'], str(out_file)) is None
+
+    # one efetch call per accession number, all of them from the protein db
+    assert [call['id'] for call in calls] == ['ACC_1', 'ACC_2']
+    assert {call['db'] for call in calls} == {'protein'}
+    assert {call['rettype'] for call in calls} == {'fasta'}
+    assert {call['retmode'] for call in calls} == {'text'}
+    assert fetch_sequences.Entrez.email == 'youremail@gmail.com'
+
+    # the responses are concatenated into one fasta file
+    assert out_file.read_text() == fasta_records['ACC_1'] + fasta_records['ACC_2']
+    written = read_fasta_files(str(out_file))
+    assert [record.id for record in written] == ['ACC_1', 'ACC_2']
+    assert str(written[0].seq) == 'MDSSSEKLSP'
+    assert str(written[1].seq) == 'MQSTTSVKLS'
+
+
+def test_retrieve_sequences_from_ncbi_db_argument(tmp_path, monkeypatch):
+    used_db = []
+
+    def fake_efetch(db, id, rettype, retmode):
+        used_db.append(db)
+        return _FakeEntrezHandle('>%s\nACGT\n' % id)
+
+    monkeypatch.setattr(fetch_sequences.Entrez, 'efetch', fake_efetch)
+    out_file = tmp_path / 'nuc.fasta'
+
+    retrieve_sequences_from_ncbi(['X1'], str(out_file), db='nucleotide')
+
+    assert used_db == ['nucleotide']
+    assert out_file.read_text() == '>X1\nACGT\n'
+
+
+def test_retrieve_sequences_from_ncbi_handles_failure(tmp_path, monkeypatch, capsys):
+    def fake_efetch(**kwargs):
+        raise OSError('no connection')
+
+    monkeypatch.setattr(fetch_sequences.Entrez, 'efetch', fake_efetch)
+    out_file = tmp_path / 'broken.fasta'
+
+    assert retrieve_sequences_from_ncbi(['BAD_ACC'], str(out_file)) is None
+    assert 'An exception occurred' in capsys.readouterr().out
+    assert out_file.read_text() == ''
+
+
+def test_retrieve_sequences_from_PDB(monkeypatch):
+    fasta = {
+        'Q1PQK4': '>sp|Q1PQK4|TEST_PROT test protein\nMQSTTSVKLS\n',
+        'Q05001': '>sp|Q05001|OTHER_PROT other protein\nMDSSSEKLSP\n',
+    }
+    requested_urls = []
+
+    class _FakeResponse:
+        def __init__(self, text):
+            self.text = text
+
+    def fake_post(url):
+        requested_urls.append(url)
+        accession = url.rsplit('/', 1)[-1].replace('.fasta', '')
+        return _FakeResponse(fasta[accession])
+
+    monkeypatch.setattr(fetch_sequences.r, 'post', fake_post)
+
+    sequences = retrieve_sequences_from_PDB(['Q1PQK4', 'Q05001'])
+
+    assert requested_urls == [
+        'http://www.uniprot.org/uniprot/Q1PQK4.fasta',
+        'http://www.uniprot.org/uniprot/Q05001.fasta',
+    ]
+    assert len(sequences) == 2
+    assert str(sequences[0][0].seq) == 'MQSTTSVKLS'
+    assert sequences[0][0].id == 'sp|Q1PQK4|TEST_PROT'
+    assert str(sequences[1][0].seq) == 'MDSSSEKLSP'
+
+
+class _FakeResponse:
+    def __init__(self, status_code, payload=None, headers=None):
+        self.status_code = status_code
+        self.ok = status_code < 400
+        self._payload = payload
+        self.headers = headers or {}
+
+    def json(self):
+        return self._payload
+
+    def raise_for_status(self):
+        if not self.ok:
+            raise RuntimeError(self.status_code)
+
+
+def _fake_ensembl(monkeypatch, routes):
+    """Serve Ensembl REST paths from ``routes`` ({path: [responses]}); record calls."""
+    calls = []
+
+    def fake_get(url, headers=None, timeout=None):
+        path = url[len(fetch_sequences.ENSEMBL_REST_URL):]
+        calls.append(path)
+        assert headers == {"Content-Type": "application/json"}
+        assert timeout == 30
+        responses = routes.get(path, [_FakeResponse(400)])
+        return responses.pop(0) if len(responses) > 1 else responses[0]
+
+    monkeypatch.setattr(fetch_sequences.r, "get", fake_get)
+    monkeypatch.setattr(fetch_sequences.time, "sleep", lambda seconds: None)
+    return calls
+
+
+def test_fetch_promoter_plus_strand_gene(monkeypatch):
+    calls = _fake_ensembl(monkeypatch, {
+        "/lookup/symbol/saccharomyces_cerevisiae/CYC1": [
+            _FakeResponse(200, {"seq_region_name": "X", "start": 5000, "end": 5330, "strand": 1}),
+        ],
+        "/sequence/region/saccharomyces_cerevisiae/X:4000..4999:1": [
+            _FakeResponse(200, {"seq": "GAGGCACCAGCGTCAGCATT"}),
+        ],
+    })
+
+    assert fetch_promoter("CYC1") == "GAGGCACCAGCGTCAGCATT"
+    assert calls == [
+        "/lookup/symbol/saccharomyces_cerevisiae/CYC1",
+        "/sequence/region/saccharomyces_cerevisiae/X:4000..4999:1",
+    ]
+
+
+def test_fetch_promoter_minus_strand_systematic_name(monkeypatch):
+    # systematic names are not symbols, so the lookup falls back to the stable ID
+    calls = _fake_ensembl(monkeypatch, {
+        "/lookup/id/YGR067C": [
+            _FakeResponse(200, {"seq_region_name": "VII", "start": 100, "end": 2000, "strand": -1}),
+        ],
+        "/sequence/region/saccharomyces_cerevisiae/VII:2001..3000:-1": [
+            _FakeResponse(200, {"seq": "AGACAACCTA"}),
+        ],
+    })
+
+    assert fetch_promoter("YGR067C") == "AGACAACCTA"
+    assert calls[:2] == [
+        "/lookup/symbol/saccharomyces_cerevisiae/YGR067C",
+        "/lookup/id/YGR067C",
+    ]
+
+
+def test_fetch_promoter_clamps_at_chromosome_start_and_retries(monkeypatch):
+    calls = _fake_ensembl(monkeypatch, {
+        "/lookup/symbol/saccharomyces_cerevisiae/TEL1": [
+            _FakeResponse(429, headers={"Retry-After": "0"}),
+            _FakeResponse(200, {"seq_region_name": "I", "start": 300, "end": 900, "strand": 1}),
+        ],
+        "/sequence/region/saccharomyces_cerevisiae/I:1..299:1": [
+            _FakeResponse(503),
+            _FakeResponse(200, {"seq": "ACGT"}),
+        ],
+    })
+
+    assert fetch_promoter("TEL1") == "ACGT"
+    assert calls == [
+        "/lookup/symbol/saccharomyces_cerevisiae/TEL1",
+        "/lookup/symbol/saccharomyces_cerevisiae/TEL1",
+        "/sequence/region/saccharomyces_cerevisiae/I:1..299:1",
+        "/sequence/region/saccharomyces_cerevisiae/I:1..299:1",
+    ]
+
+
+def test_fetch_promoter_without_hits(monkeypatch):
+    _fake_ensembl(monkeypatch, {})
+
+    assert fetch_promoter('NOT_A_GENE') == ''
+
+
+def test_fetch_multiple_promoters(monkeypatch):
+    promoters = {'YAR035C-A': 'CCCTGGTGGC', 'YGR067C': 'AGACAACCTA'}
+    monkeypatch.setattr(
+        fetch_sequences, 'fetch_promoter', lambda name: promoters[name]
+    )
+
+    records = fetch_multiple_promoters(['YAR035C-A', 'YGR067C'])
+
+    assert len(records) == 2
+    assert str(records[0].seq) == 'CCCTGGTGGC'
+    assert str(records[1].seq) == 'AGACAACCTA'
+    assert records[0].id == 'YAR035C-A'
+    assert records[1].id == 'YGR067C'
+    assert records[0].name == 'YAR035C-A Promoter'
+    assert records[1].name == 'YGR067C Promoter'
+    assert records[0].description == (
+        'Defined as being 1kb upstream of the TSS and fetched through the Ensembl REST API'
+    )

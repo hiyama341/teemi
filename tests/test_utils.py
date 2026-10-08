@@ -157,3 +157,16 @@ def test_remove_duplicates_with_name_attribute():
     assert len(output) == len(expected_output)
     assert all([output[i].name == expected_output[i].name for i in range(len(output))])
     assert all([output[i].age == expected_output[i].age for i in range(len(output))])
+
+
+def test_mean_empty_list_raises():
+    import pytest
+
+    with pytest.raises(ValueError, match="List cannot be empty."):
+        mean([])
+
+
+def test_nest_dict_without_first_order_keys_nests_everything():
+    input_dict = {"key1": "value1", "key2": 2}
+    output_dict = nest_dict(input_dict, "qualifiers")
+    assert output_dict == {"qualifiers": {"key1": "value1", "key2": 2}}
