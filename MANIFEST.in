@@ -2,3 +2,4 @@ include versioneer.py
 include teemi/_version.py
 include HISTORY.rst
 
+include requirements.txt
