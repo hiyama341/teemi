@@ -6,6 +6,19 @@ Unreleased
 
 - Repaired and modernized the documentation with a Sphinx + PyData Sphinx Theme setup.
 - Added a cleaner front page, quickstart example, workflow gallery refresh, and improved Colab notebook links.
+- Fixed the source distribution, which could not be built or installed because
+  ``setup.py`` reads ``requirements.txt`` and ``MANIFEST.in`` did not ship it.
+- Registered the ``dev``, ``docs`` and new ``learn`` extras. ``extras_require``
+  was never passed to ``setup()``, so ``pip install teemi[dev]`` silently
+  installed nothing; the 0.5.0 entry claiming this was fixed has been removed.
+- Removed the ``teemi`` console script. It pointed at ``teemi.cli:main``, a
+  module that has never existed, so the command only ever raised
+  ``ModuleNotFoundError``.
+- Declared ``requests``, ``seaborn`` and ``scipy``, which the package imports
+  but never declared, and dropped the docs-only ``nbsphinx`` pin and the
+  test-only ``pytest-cov`` pin from the runtime requirements.
+- Corrected dependency floors that could not be satisfied together: ``pydna``
+  requires ``numpy>1.26``, and ``pandas`` requires ``openpyxl>=3.1.0``.
 
 1.0.5 (2026-03-15)
 ~~~~~~~~~~~~~~~~~~
@@ -48,7 +61,6 @@ Unreleased
 ~~~~~~~~~~~~~~~~~~
 
 - Expanded the README with more examples.
-- Fixed installation of development extras such as ``pip install teemi[dev]``.
 
 0.4.0 (2023-01-08)
 ~~~~~~~~~~~~~~~~~~
