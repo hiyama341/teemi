@@ -9,7 +9,7 @@ numpy>=1.22
 biopython>=1.87   
 python-dotenv>=1.2.2
 openpyxl>=3.0.9
-wheel>=0.38.1
+wheel>=0.48.0
 nbsphinx==0.9.2
 pytest-cov>=7.1.0
 matplotlib>=3.5.1
