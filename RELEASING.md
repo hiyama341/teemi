@@ -22,7 +22,7 @@ Important details for this repo:
 Use:
 
 ```bash
-python setup.py version
+uv run python -c 'import teemi; print(teemi.__version__)'
 ```
 
 Because this repo uses `versioneer`, the version is derived from Git tags.
@@ -35,13 +35,13 @@ If `HEAD` is ahead of a tag, the version will include local version metadata.
 Run tests:
 
 ```bash
-pytest
+uv run --locked --extra dev pytest tests
 ```
 
 Build the distributions:
 
 ```bash
-python setup.py sdist bdist_wheel
+uv build
 ```
 
 Create the release tag:
@@ -69,18 +69,17 @@ The publish step runs only when the pushed ref is a tag.
 
 ## UV-based developer workflow
 
-The package can still be released with the existing build commands, but `uv` can be used for local environment management.
+Use the committed lockfile for local development and CI. uv manages `.venv` and installs Teemi in editable mode.
 
 Example:
 
 ```bash
-uv venv
-source .venv/bin/activate
-uv pip install -e .[dev]
-uv run pytest
+uv sync --locked --extra dev
+uv run --locked --extra dev pytest tests
+uv build
 ```
 
-If `uv` becomes the standard developer workflow later, the release build steps can also be updated.
+Dependencies live in `pyproject.toml`. After changing them, run `uv lock` and commit both `pyproject.toml` and `uv.lock`.
 
 ## Notes
 

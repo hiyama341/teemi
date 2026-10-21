@@ -38,25 +38,41 @@ Or download the `tarball`_:
 
     $ curl -OJL https://github.com/hiyama341/teemi/tarball/master
 
-Once you have a copy of the source, you can install it with:
+Once you have a copy of the source, install `uv <https://docs.astral.sh/uv/getting-started/installation/>`__
+and run these commands from the repository root:
 
 .. code-block:: console
 
-    $ python setup.py install
+    $ uv sync --locked
+    $ uv run python
 
-For those who want to contribute or develop further, you can install the development version with:
+For development, include the development tools and run the tests:
 
 .. code-block:: console
 
-    $ pip install -e .[dev]
+    $ uv sync --locked --extra dev
+    $ uv run --locked --extra dev pytest tests
+
+uv manages ``.venv`` and installs Teemi in editable mode. The committed
+``uv.lock`` selects dependency versions. Add ``--extra docs`` for documentation
+tools or ``--extra learn`` for the H2O notebooks. H2O also requires Java.
+
+Package dependencies are declared in ``pyproject.toml``. Use ``uv add <package>``
+to add a runtime dependency and ``uv lock`` after manually editing constraints.
+Commit changes to both ``pyproject.toml`` and ``uv.lock``. Use ``uv build`` to
+build the source distribution and wheel.
+
+An editable installation with pip is also supported:
+
+.. code-block:: console
+
+    $ pip install -e '.[dev]'
 
 Or directly from PyPI:
 
 .. code-block:: console
 
-    $ pip install teemi[dev]
-
-You might need to run these commands with administrative privileges if you're not using a virtual environment (using ``sudo`` for example).
+    $ pip install 'teemi[dev]'
 
 .. _Github repo: https://github.com/hiyama341/teemi
 .. _tarball: https://github.com/hiyama341/teemi/tarball/master
