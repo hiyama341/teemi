@@ -12,564 +12,262 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 
-""" This part of the design module is used for making combinatorial libraries from DNA fragments."""
+"""Design combinatorial libraries of DNA parts.
 
-# standard libraries
+The library is the cartesian product of the parts offered for each position of a
+construct. Every combination becomes a list of PCR products that overlap their
+neighbours, ready to be fused by Gibson assembly or in-vivo homologous
+recombination.
+"""
+
 import itertools
-import numpy as np
+import math
+from typing import Callable, Sequence
+
 import pandas as pd
-
-# Pydna for the molecular bio
-from pydna.design import primer_design
-from pydna.design import assembly_fragments
-from pydna.assembly import Assembly
-from pydna.tm import tm_default as _tm_default
+from pydna.amplicon import Amplicon
+from pydna.design import assembly_fragments, primer_design
 from pydna.dseqrecord import Dseqrecord
+from pydna.primer import Primer
+from pydna.tm import tm_default
 
-# Typing
-from typing import List, Callable
+# Fragments up to this length are carried by the tails of the flanking primers
+# instead of being amplified themselves, which is what makes a pad a pad.
+MAX_PAD_LENGTH = 40
+
+PRIMER_PRICE_PER_BASE = 1.8  # DKK
 
 
 class DesignAssembly:
-    """Make a combinatorial library from DNA fragments.
+    """A combinatorial library of overlapping PCR products.
 
     Parameters
     ----------
-    list_of_seqs : List[List[Dseqrecord]]
-        A list of a constructs of choice.
-    list_of_pads : List[Dseqrecord]
-        A nucleotide sequence to be incorporated into the primers (Max is 40 bp)
-    positions_of_pads : List[int]
-        the position in the list of seqs where the pad is incorporated (zero indexed)
+    list_of_seqs : Sequence[Sequence[Dseqrecord]]
+        One list of interchangeable parts per position in the construct, in the
+        order they should appear. ``[[p1, p2], [c1]]`` therefore describes two
+        variants. Parts are labelled by their ``name`` in the reported tables.
+    list_of_pads : Sequence[Dseqrecord]
+        Short sequences, at most ``MAX_PAD_LENGTH`` bp, to splice into every
+        variant. A pad rides along in the primer tails, so it adds sequence to
+        the construct without adding a PCR to the plan.
+    positions_of_pads : Sequence[int]
+        Index in ``list_of_seqs`` each pad is inserted before, so ``[0]`` puts a
+        pad in front of the first part and ``[len(list_of_seqs)]`` after the last.
+    target_tm, limit : float, int
+        Target melting temperature and minimum length of the primer footprints.
+    overlap : int
+        Length of the homology neighbouring amplicons share.
+    tm_func : Callable[[str], float]
+        Melting temperature function, also used for the reported temperatures.
 
-    Returns
-    -------
-    DesignAssembly object
-        A powerful class and a lot of information can be retrieved.
-        Such as: showing all the amplicons needed to construct a combinatorial library
-        with the simple method --> pcr_list_to_dataframe or primer_list_to_dataframe.
-
+    Attributes
+    ----------
+    list_of_assemblies : list[list[Amplicon]]
+        The amplicons of each variant, in construct order.
+    primers : list[Primer]
+        The distinct primers of the whole library, numbered ``P001`` upwards.
+    amplicons : list[Amplicon]
+        The distinct PCR products of the whole library.
+    combinatorial_list_of_names : list[tuple[str, ...]]
+        The part names of each variant.
+    systematic_names : list[tuple[int, ...]]
+        The 1-based part index per position of each variant, e.g. ``(1, 2, 1)``.
     """
 
     def __init__(
         self,
-        list_of_seqs: List[List[Dseqrecord]],
-        list_of_pads: List[List[Dseqrecord]],
-        positions_of_pads: List[int],
-        target_tm=55.0,
-        limit=13,
-        overlap=35,
-        tm_func: Callable = _tm_default,
+        list_of_seqs: Sequence[Sequence[Dseqrecord]],
+        list_of_pads: Sequence[Dseqrecord] = (),
+        positions_of_pads: Sequence[int] = (),
+        target_tm: float = 55.0,
+        limit: int = 13,
+        overlap: int = 35,
+        tm_func: Callable[[str], float] = tm_default,
     ):
-        ###  1.INITIALIZING ##
-        self.list_of_seqs = list_of_seqs
-        self.list_of_pads = list_of_pads
-        self.positions_of_pads = positions_of_pads
-
-        # Generate list of names from Dseqrecord objects
-        self.list_of_names = [
-            [seq.name for seq in seq_list] for seq_list in list_of_seqs
-        ]
-
-        ### 2. Amplicons, primers, and their temperatures
-        (
-            self.list_of_amplicons,
-            self.list_of_amplicon_primers,
-            self.list_of_amplicon_primer_temps,
-        ) = simple_amplicon_maker(
-            self.list_of_seqs,
-            self.list_of_names,
-            target_tm=target_tm,
-            limit=limit,
-            primer_tm_func=tm_func,
-        )
-
-        # Systematic names
-        self.systematic_names = get_systematic_names(self.list_of_seqs)
-
-        ### 3. COMBINATORIAL LISTS
-        self.combinatorial_list_of_amplicons = get_combinatorial_list(
-            self.list_of_amplicons
-        )
-        self.combinatorial_list_of_names = get_combinatorial_list(self.list_of_names)
-        self.combinatorial_list_of_primer_tm = get_combinatorial_list(
-            self.list_of_amplicon_primer_temps
-        )
-
-        # Making the combinations into a list so we can insert PADS later (They are tuples at this stage, and insert doesnt work for tuples)
-        for i in range(0, len(self.combinatorial_list_of_amplicons)):
-            self.combinatorial_list_of_amplicons[i] = list(
-                self.combinatorial_list_of_amplicons[i]
+        if not list_of_seqs or not all(list_of_seqs):
+            raise ValueError(
+                "list_of_seqs must hold one non-empty list of parts per position"
             )
-
-        #### 4. Adding PADS ###
-        for i in range(0, len(self.combinatorial_list_of_amplicons)):
-            for pads, pos in sorted(
-                zip(self.list_of_pads, self.positions_of_pads),
-                key=lambda x: x[1],
-                reverse=True,
-            ):
-                self.combinatorial_list_of_amplicons[i].insert(pos, pads)
-
-        ### 5. Assembling and making overlapping primers
-        self.list_of_assemblies = assembly_maker(
-            self.combinatorial_list_of_amplicons, overlap=overlap
-        )
-
-        ### 6. GETTING all primers, annotating, adding features
-        self.primers = get_primers(
-            self.list_of_assemblies,
-            self.combinatorial_list_of_names,
-            self.combinatorial_list_of_primer_tm,
-        )
-
-        ### 7. Getting Unique primers and re-annotating list_assemblies to get right names
-        self.unique_primers = unique_primers(self.primers, self.list_of_assemblies)
-
-        ### 8. Unique amplicons
-        self.unique_amplicons = unique_amplicons(self.list_of_assemblies)
-
-    def show_contigs(self):
-        """Returns a string of the contigs generated by the assembly"""
-        for i in range(0, len(self.list_of_assemblies)):
-            print("\nContig" + str(self.systematic_names[i]))
-            for j in range(0, len(self.list_of_assemblies[i])):
-                print("Template: ", self.list_of_assemblies[i][j].name[0:15])
-        return
-
-    def show_variants_lib_df(self):
-        """Returns a dataframe of all the variants"""
-        combinatorial_lib_variants_df = pd.DataFrame(self.combinatorial_list_of_names)
-        systematic_names = self.systematic_names
-        combinatorial_lib_variants_df["Systematic_name"] = systematic_names
-        combinatorial_lib_variants_df["Variant"] = np.arange(
-            len(combinatorial_lib_variants_df)
-        )
-
-        return combinatorial_lib_variants_df
-
-    def primer_list(self):
-        """Return the list of primers"""
-        primer_list = []
-        for primers in self.unique_primers:
-            primer_list.append(primers)
-
-        return primer_list
-
-    def primer_list_to_dataframe(self):
-        """Return a pandas dataframe with list of primers."""
-        df = pd.DataFrame(self.unique_primers)
-        df.columns = [
-            "id",
-            "anneals to",
-            "sequence",
-            "annealing temperature",
-            "length",
-            "price(DKK)",
-            "description",
-            "footprint",
-            "len_footprint",
-        ]
-        return df
-
-    def pcr_list_to_dataframe(self):
-        """Prints PCR_list into a pandas dataframe"""
-        dataframe_list = []
-        for i in range(0, len(self.unique_amplicons)):
-            lst = [
-                "PCR{number}".format(number=i + 1),
-                self.unique_amplicons[i].name,
-                self.unique_amplicons[i].forward_primer.id,
-                self.unique_amplicons[i].reverse_primer.id,
-                self.unique_amplicons[i].forward_primer.features,
-                self.unique_amplicons[i].reverse_primer.features,
-            ]
-            dataframe_list.append(lst)
-
-        df = pd.DataFrame(dataframe_list)
-        df.columns = [
-            "pcr_number",
-            "template",
-            "forward_primer",
-            "reverse_primer",
-            "f_tm",
-            "r_tm",
-        ]
-
-        return df
-
-
-def get_combinatorial_list(input_list):
-    """
-    Generates all possible combinations from a list of lists.
-
-    Parameters
-    ----------
-    input_list : list of lists
-        The input list of lists for which all possible combinations are to be generated.
-
-    Returns
-    -------
-    combinations : list of tuples
-        A list of tuples representing all possible combinations of the elements in the input list of lists.
-
-    Example
-    -------
-    >>> input_list = [[1, 2], ['a', 'b']]
-    >>> combinations = get_combinatorial_list(input_list)
-    >>> print(combinations)
-    [(1, 'a'), (1, 'b'), (2, 'a'), (2, 'b')]
-    """
-    combinations = list(itertools.product(*input_list))
-
-    return combinations
-
-
-def get_systematic_names(parts_list: list) -> list:
-    """Returns a list of list with systematic names i.e [1,1,1], [1,2,1]... etc
-
-    Parameters
-    ----------
-    parts_list: list of list
-        can have any type within the list[list[any_type]]
-
-    Returns
-    -------
-    systematic_names
-        list of tuples with the systematic names eg. [(1,1,1),(1,2,1)]
-
-    """
-    # The number of parts of each fragment
-    num_parts = [len(l) for l in parts_list]
-
-    ### For naming the strains systematically ### basically making a list from the number of parts with indexes
-    systematic_lists = []
-    temp_list = []
-    for parts in num_parts:
-        for j in range(parts):
-            temp_list.append(j + 1)
-        systematic_lists.append(temp_list)
-        temp_list = []
-
-    # Then we use itertools to make the right combinations
-    systematic_names = list(itertools.product(*systematic_lists))
-
-    return systematic_names
-
-
-def simple_amplicon_maker(
-    list_of_seqs: list,
-    list_of_names: list,
-    target_tm=56.0,
-    limit=13,
-    primer_tm_func=_tm_default,
-):
-    """Creates amplicons, updates their names
-
-    Parameters
-    ----------
-    list_of_seqs : list[list[pydna.dseqrecord.Dseqrecord]]
-        List of the pydna.dseqrecord import Dseqrecord elements u want to made into amplicons
-
-    list_of_names : list[list[str]]
-        provide names for the sequences since pydna changes their names to amplicon
-
-    Returns
-    -------
-    list_of_amplicons : list[pydna.amplicon.Amplicon]
-        list with the pydna.amplicon.Amplicon objects that have been made
-
-    list_of_amplicon_primers : list[list[(pydna.seq.Seq, pydna.seq.Seq)]]
-        a list of all the generated primers in tuples where index0 = forward primer
-        and index1=reverse primer. Both are pydna.seq.Seq objects
-
-    list_of_amplicon_primer_temps : list[list[(float, float)]]
-        a list of melting temperatures in tuples where index0 = forward primer melting temp
-        and index1=reverse primer melting temp.
-
-    """
-    # Start by making an empty list
-    list_of_amplicons = [[] for i in range(len(list_of_seqs))]
-    list_of_amplicon_primers = [[] for i in range(len(list_of_seqs))]
-    list_of_amplicon_primer_temps = [[] for i in range(len(list_of_seqs))]
-
-    # Then we calculate the primers with the primer_calc
-    for i in range(0, len(list_of_seqs)):
-        for j in range(0, len(list_of_seqs[i])):
-            # Append Amplicons
-            amplicons = primer_design(
-                list_of_seqs[i][j],
-                tm_func=primer_tm_func,
-                target_tm=target_tm,
-                limit=limit,
-            )
-
-            # Updating names
-            amplicons.name = list_of_names[i][j]
-            list_of_amplicons[i].append(amplicons)
-
-            # Save the primers
-            primers = (amplicons.forward_primer.seq, amplicons.reverse_primer.seq)
-            list_of_amplicon_primers[i].append(primers)
-
-            # Save melting temps
-            melting_temps = (
-                primer_tm_func(str(amplicons.forward_primer.seq)),
-                primer_tm_func(str(amplicons.reverse_primer.seq)),
-            )
-            list_of_amplicon_primer_temps[i].append(melting_temps)
-
-    return list_of_amplicons, list_of_amplicon_primers, list_of_amplicon_primer_temps
-
-
-def get_primers(
-    assemblies: list,
-    names: list,
-    primer_temps: list,
-):
-    """Returns a list of ALL primers from the combinatorial library,
-    updates names and what they anneal to.
-
-    Parameters
-    ----------
-    assemblies : list[list[pydna.amplicon.Amplicon]]
-    names : list[(str)]
-    primer_temps : list[(float, float),..)...]
-
-    Returns
-    -------
-    primers : list[list[[pydna.primer.Primer, pydna.primer.Primer]]
-        All primers that have been made for all assemblies
-    """
-
-    all_primers = []
-
-    for i, assembly in enumerate(assemblies):
-        assembly_primers = []
-        for j, amplicon in enumerate(assembly):
-            # Names
-            amplicon.name = names[i][j]
-            # Primers
-            if j == 0:  # START OF THE ASSEMBLY
-                amplicon.forward_primer.description = f"Anneals to {amplicon.name}"
-                amplicon.reverse_primer.description = (
-                    f"Anneals to {amplicon.name}, overlaps to {assembly[j + 1].name}"
-                )
-            elif j == len(assembly) - 1:  # THE END OF THE ASSEMBLY
-                amplicon.forward_primer.description = (
-                    f"Anneals to {amplicon.name}, overlaps to {assembly[j - 1].name}"
-                )
-                amplicon.reverse_primer.description = f"Anneals to {amplicon.name}"
-            else:  # THE rest:
-                amplicon.forward_primer.description = (
-                    f"Anneals to {amplicon.name}, overlaps to {assembly[j - 1].name}"
-                )
-                amplicon.reverse_primer.description = (
-                    f"Anneals to {amplicon.name}, overlaps to {assembly[j + 1].name}"
-                )
-
-            # template it anneals to
-            amplicon.forward_primer.name = amplicon.name
-            amplicon.reverse_primer.name = amplicon.name
-
-            # Primer tm
-            amplicon.forward_primer.features = round(float(primer_temps[i][j][0]), 2)
-            amplicon.reverse_primer.features = round(float(primer_temps[i][j][1]), 2)
-
-            assembly_primers.append([amplicon.forward_primer, amplicon.reverse_primer])
-
-        all_primers.append(assembly_primers)
-
-    return all_primers
-
-
-def assembly_maker(combinatorial_list_of_amplicons: list, overlap=35):
-    """Assembles Amplicons with pad and makes new overlapping primers.
-
-    Parameters
-    ----------
-    combinatorial_list_of_amplicons : list[[pydna.amplicon.Amplicon]]
-        the list of pydna.amplicon.Amplicon that you want generate
-        overlapping primers for.
-    overlap : int (default set to 35)
-        How many basepair overlaps
-
-    Returns
-    -------
-    List_of_assemblies : list[[pydna.amplicon.Amplicon]]
-        amplicons that overlaps eachother with the specified overlap value.
-
-    """
-
-    list_of_assemblies = []
-    for i in range(0, len(combinatorial_list_of_amplicons)):
-        list_of_assemblies.append(
-            assembly_fragments(combinatorial_list_of_amplicons[i], overlap, maxlink=40)
-        )
-
-    return list_of_assemblies
-
-
-def unique_primers(primers: list, list_of_assemblies):
-    """Finds unique primers from a list of assemblies
-    Parameters
-    ----------
-    primers : list[list[list[pydna.primer.Primer]]]
-        a list of all the primers made for the combinatorial library
-
-    list_of_assemblies: list[[pydna.amplicon.Amplicon]]
-        used here to update the names of the primers
-
-    Returns
-    -------
-    unique_primers : list[list(ID,Anneals_to,Sequence,Annealing_temp,Length,Price(DKK))]
-        Relevant metrics for the unique primers of the combinatorial library.
-
-    """
-
-    unique_primers = []
-    unique_sequences = []
-    primer_info = []
-    counter = 0
-
-    ### CHANGING THE NAMES OF THE PRIMERS
-    for primer_group in primers:
-        for primer_pair in primer_group:
-            for primer in primer_pair:
-                if primer.seq not in unique_sequences:
-                    unique_sequences.append(primer.seq)
-                    unique_primers.append(primer)
-                    primer.id = f"P{counter+1:03}"
-                    counter += 1
-                    primer_info.append(
-                        [
-                            primer.id,
-                            primer.name,
-                            primer.seq,
-                            primer.features,  # anealing temp
-                            len(primer.seq),  # length
-                            len(primer.seq) * 1.8,  # price
-                            primer.description,  # description
-                            primer.footprint,
-                            len(primer.footprint),
-                        ]
+        for parts in list_of_seqs:
+            for part in parts:
+                if not isinstance(part, Dseqrecord):
+                    raise TypeError(
+                        f"parts must be Dseqrecord objects, got {type(part).__name__}; "
+                        "wrap Biopython records with Dseqrecord(record) first"
                     )
+        if len(list_of_pads) != len(positions_of_pads):
+            raise ValueError(
+                "list_of_pads and positions_of_pads must be the same length"
+            )
+        for pad, position in zip(list_of_pads, positions_of_pads):
+            if len(pad) > MAX_PAD_LENGTH:
+                raise ValueError(
+                    f"pad {pad.name!r} is {len(pad)} bp; pads over {MAX_PAD_LENGTH} bp "
+                    "do not fit in the primer tails and have to be parts of their own"
+                )
+            if not 0 <= position <= len(list_of_seqs):
+                raise ValueError(
+                    f"pad position {position} is outside the construct, which has "
+                    f"{len(list_of_seqs)} positions"
+                )
 
-    ### Updating primer names and removing duplicates
-    for assembly in list_of_assemblies:
+        self._tm_func = tm_func
+        self.combinatorial_list_of_names = list(
+            itertools.product(
+                *([part.name for part in parts] for parts in list_of_seqs)
+            )
+        )
+        self.systematic_names = list(
+            itertools.product(*(range(1, len(parts) + 1) for parts in list_of_seqs))
+        )
+
+        amplicons = [
+            [
+                primer_design(part, target_tm=target_tm, limit=limit, tm_func=tm_func)
+                for part in parts
+            ]
+            for parts in list_of_seqs
+        ]
+        # Insert the pads back to front so the earlier positions stay valid.
+        pads = sorted(
+            zip(positions_of_pads, list_of_pads), key=lambda pad: pad[0], reverse=True
+        )
+
+        self.list_of_assemblies = []
+        for combination in itertools.product(*amplicons):
+            fragments = list(combination)
+            for position, pad in pads:
+                fragments.insert(position, pad)
+            assembly = assembly_fragments(
+                fragments, overlap=overlap, maxlink=MAX_PAD_LENGTH
+            )
+            _describe(assembly)
+            self.list_of_assemblies.append(assembly)
+
+        self.primers = _share_primers(self.list_of_assemblies)
+        self.amplicons = list(
+            {
+                str(amplicon.seq): amplicon
+                for assembly in self.list_of_assemblies
+                for amplicon in assembly
+            }.values()
+        )
+
+    def show_variants_lib_df(self) -> pd.DataFrame:
+        """One row per variant: its parts, its systematic name and its number."""
+        variants = pd.DataFrame(self.combinatorial_list_of_names)
+        variants["Systematic_name"] = self.systematic_names
+        variants["Variant"] = range(len(variants))
+        return variants
+
+    def primer_list_to_dataframe(self) -> pd.DataFrame:
+        """One row per primer to order."""
+        return pd.DataFrame(
+            [
+                {
+                    "id": primer.id,
+                    "anneals to": primer.name,
+                    "sequence": str(primer.seq),
+                    "annealing temperature": self._footprint_tm(primer),
+                    "length": len(primer),
+                    "price(DKK)": len(primer) * PRIMER_PRICE_PER_BASE,
+                    "description": primer.description,
+                    "footprint": str(primer.footprint),
+                    "len_footprint": len(primer.footprint),
+                }
+                for primer in self.primers
+            ]
+        )
+
+    def pcr_list_to_dataframe(self) -> pd.DataFrame:
+        """One row per PCR to run."""
+        return pd.DataFrame(
+            [
+                {
+                    "pcr_number": f"PCR{number}",
+                    "template": amplicon.name,
+                    "forward_primer": amplicon.forward_primer.id,
+                    "reverse_primer": amplicon.reverse_primer.id,
+                    "f_tm": self._footprint_tm(amplicon.forward_primer),
+                    "r_tm": self._footprint_tm(amplicon.reverse_primer),
+                }
+                for number, amplicon in enumerate(self.amplicons, start=1)
+            ]
+        )
+
+    def _footprint_tm(self, primer: Primer) -> float:
+        """Melting temperature of the footprint; the assembly tail does not anneal."""
+        return round(self._tm_func(str(primer.footprint)), 2)
+
+
+def _describe(assembly: list[Amplicon]) -> None:
+    """Name the amplicons of one variant, and its primers, after the parts they amplify."""
+    for amplicon in assembly:
+        amplicon.name = amplicon.template.name
+    for position, amplicon in enumerate(assembly):
+        upstream = assembly[position - 1].name if position else None
+        downstream = (
+            assembly[position + 1].name if position + 1 < len(assembly) else None
+        )
+        for primer, neighbour in (
+            (amplicon.forward_primer, upstream),
+            (amplicon.reverse_primer, downstream),
+        ):
+            primer.name = amplicon.name
+            primer.description = f"Anneals to {amplicon.name}"
+            if neighbour is not None:
+                primer.description += f", overlaps to {neighbour}"
+
+
+def _share_primers(assemblies: list[list[Amplicon]]) -> list[Primer]:
+    """Number the distinct primers P001 upwards and point every amplicon at them.
+
+    Variants that share a junction share a primer, which should only be ordered once.
+    """
+    by_sequence: dict[str, Primer] = {}
+    for assembly in assemblies:
         for amplicon in assembly:
-            for primer in unique_primers:
-                if amplicon.forward_primer.seq == primer.seq:
-                    amplicon.forward_primer = primer
-                elif amplicon.reverse_primer.seq == primer.seq:
-                    amplicon.reverse_primer = primer
+            amplicon.forward_primer = by_sequence.setdefault(
+                str(amplicon.forward_primer.seq), amplicon.forward_primer
+            )
+            amplicon.reverse_primer = by_sequence.setdefault(
+                str(amplicon.reverse_primer.seq), amplicon.reverse_primer
+            )
+    primers = list(by_sequence.values())
+    for number, primer in enumerate(primers, start=1):
+        primer.id = f"P{number:03}"
+    return primers
 
-    return primer_info
 
+def count_unique_parts(
+    predictions_df: pd.DataFrame, max_combinations: int
+) -> dict[str, list | str]:
+    """Take the top-ranked predictions needed to span ``max_combinations`` constructs.
 
-def unique_amplicons(list_of_assemblies: list):
-    """Finds Unique amplicons from a list of assemblies
-    Parameters
-    ----------
-    list_of_assemblies: list[[pydna.amplicon.Amplicon]]
-        list of the combinatorial libarary with overlapping ends
+    Each row of ``predictions_df`` is one predicted construct and each column one
+    position in it. Reading from the top, parts are collected until they combine
+    into at least ``max_combinations`` constructs, which keeps the library that has
+    to be built as small as the target allows.
 
-    Returns
-    -------
-        unique_amplicons: list[pydna.amplicon.Amplicon]
-            returns a list of unique amplicons where relavant metrics
-            are added to the objects.
+    Returns the parts collected per column, plus ``sum_of_parts`` (the number of
+    combinations they span) and ``prediction_number`` (the number of rows read),
+    both as strings.
     """
-    ### Unique amplicons
-    unique_amplicons = []
-    for i in range(0, len(list_of_assemblies)):
-        for j in range(0, len(list_of_assemblies[i])):
-            if list_of_assemblies[i][j] not in unique_amplicons:
-                unique_amplicons.append(list_of_assemblies[i][j])
-
-    return unique_amplicons
-
-
-def get_assembly_figure(assembly_list, limit=15):
-    """
-    Generates a figure for the specified assembly in the assembly list.
-
-    Parameters
-    ----------
-    assembly_list : list
-        The list of assemblies.
-    limit : int, optional
-        The limit for the assembly, by default 15.
-
-    Returns
-    -------
-    contig
-        The figure for the specified assembly.
-    """
-    assembly_obj = Assembly(assembly_list, limit=limit)
-    contig = assembly_obj.assemble_linear()[0].figure()
-
-    return contig
-
-
-def count_unique_parts(predictions_df, max_combinations):
-    """
-    Iterates through the DataFrame of predictions and saves newly encountered parts.
-
-    Parameters
-    ----------
-    predictions_df : pd.DataFrame
-        DataFrame containing predictions.
-
-    max_combinations : int
-        The maximum number of combinations to consider.
-
-    Returns
-    -------
-    encountered_parts : dict
-        A dictionary containing the unique parts encountered in 'G8H','pG8H', 'pCPR', 'CPR' columns,
-        total number of unique combinations encountered in 'Sum of parts' and total predictions
-        encountered in 'Predictions'.
-    """
-    # Initialization
-    encountered_parts = {
-        "G8H": [],
-        "pG8H": [],
-        "pCPR": [],
-        "CPR": [],
-        "sum_of_parts": "",
-        "prediction_number": "",
-    }
-    sum_of_parts = 0
-    prediction_index = 0
-    g8h_count = 0
-    cpr_count = 0
-    pg8h_count = 0
-    pcpr_count = 0
-
-    # Loop through the predictions and save new parts.
-    while sum_of_parts < max_combinations:
-        sum_of_parts = g8h_count * cpr_count * pg8h_count * pcpr_count
-
-        encountered_parts["sum_of_parts"] = str(sum_of_parts)
-        encountered_parts["prediction_number"] = str(prediction_index)
-
-        g8h = predictions_df.G8H[prediction_index]
-        pg8h = predictions_df.pG8H[prediction_index]
-        cpr = predictions_df.CPR[prediction_index]
-        pcpr = predictions_df.pCPR[prediction_index]
-        if g8h not in encountered_parts["G8H"]:
-            encountered_parts["G8H"].append(g8h)
-            g8h_count += 1
-        if pg8h not in encountered_parts["pG8H"]:
-            encountered_parts["pG8H"].append(pg8h)
-            pg8h_count += 1
-        if cpr not in encountered_parts["CPR"]:
-            encountered_parts["CPR"].append(cpr)
-            cpr_count += 1
-        if pcpr not in encountered_parts["pCPR"]:
-            encountered_parts["pCPR"].append(pcpr)
-            pcpr_count += 1
-        prediction_index += 1
-
-    return encountered_parts
+    parts: dict[str, list] = {column: [] for column in predictions_df.columns}
+    combinations = 0
+    for rows_read, (_, prediction) in enumerate(predictions_df.iterrows(), start=1):
+        for column, collected in parts.items():
+            if prediction[column] not in collected:
+                collected.append(prediction[column])
+        combinations = math.prod(len(collected) for collected in parts.values())
+        if combinations >= max_combinations:
+            return {
+                **parts,
+                "sum_of_parts": str(combinations),
+                "prediction_number": str(rows_read),
+            }
+    raise ValueError(
+        f"the {len(predictions_df)} predictions span only {combinations} combinations, "
+        f"short of the {max_combinations} requested"
+    )

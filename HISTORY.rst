@@ -4,6 +4,15 @@ History
 Unreleased
 ~~~~~~~~~~
 
+- Rewrote ``teemi.design.combinatorial_design`` around ``DesignAssembly`` and ``count_unique_parts``, dropping the
+  pipeline-stage functions (``simple_amplicon_maker``, ``assembly_maker``, ``get_primers``, ``unique_primers``,
+  ``unique_amplicons``), the thin library wrappers (``get_combinatorial_list``, ``get_systematic_names``,
+  ``get_assembly_figure``, the re-exported ``Assembly``) and the duplicate ``DesignAssembly`` views
+  (``show_contigs``, ``primer_list``). ``list_of_pads``/``positions_of_pads`` are now optional and validated.
+- Fixed reverse primer descriptions, which named pydna's placeholder product (``1611bp_PCR_prod``) instead of the
+  neighbouring part, and ``count_unique_parts``, which read one prediction more than needed and so returned parts
+  spanning more combinations than it reported.
+- Added ``notebooks/combinatorial_quickstart.ipynb``.
 - Repaired and modernized the documentation with a Sphinx + PyData Sphinx Theme setup.
 - Added a cleaner front page, quickstart example, workflow gallery refresh, and improved Colab notebook links.
 

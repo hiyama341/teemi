@@ -32,8 +32,8 @@ CPR_sites = [Dseqrecord(seq) for seq in read_genbank_files(path + "CPR_tCYC1.gb"
 
 library = DesignAssembly(
     [pCPR_sites, CPR_sites],
-    pad=[Dseqrecord("TCGGTC")],
-    position_of_pads=[1],
+    list_of_pads=[Dseqrecord("TCGGTC")],
+    positions_of_pads=[1],
     overlap=35,
     target_tm=55,
 )

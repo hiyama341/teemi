@@ -210,7 +210,7 @@ Note that you can use your own primer calculator. Teemi has a function that can 
 
 .. code-block:: python
 
-    CPR_combinatorial_library = DesignAssembly(list_of_seqs, pad = kozak , position_of_pads =[1], overlap=35, target_tm = 55 )
+    CPR_combinatorial_library = DesignAssembly(list_of_seqs, list_of_pads=kozak, positions_of_pads=[1], overlap=35, target_tm=55)
 
 Now, we can retrieve the library.
 
