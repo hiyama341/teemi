@@ -30,6 +30,14 @@ SPEC_FILES = sorted(
 )
 
 
+#: The notebook lives under gitignored scratch, so a fresh clone does not have
+#: it and the suite must not depend on its being there.
+needs_notebook = pytest.mark.skipif(
+    not NOTEBOOK.is_file(),
+    reason=f"{NOTEBOOK.relative_to(REPO)} is gitignored scratch and is not here",
+)
+
+
 def notebook_source() -> str:
     cells = json.loads(NOTEBOOK.read_text())["cells"]
     return "\n".join(
@@ -67,6 +75,7 @@ def test_the_public_surface_is_small_and_complete():
         assert hasattr(cb, name), name
 
 
+@needs_notebook
 def test_the_notebook_uses_only_the_public_surface():
     used = set(re.findall(r"\bcb\.([A-Za-z_][A-Za-z0-9_]*)", notebook_source()))
     assert used, "the notebook should exercise the package"
