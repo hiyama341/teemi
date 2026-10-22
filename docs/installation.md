@@ -19,11 +19,11 @@ pip install -e .
 For local development, install the development extras as well:
 
 ```bash
-pip install -e .[dev]
+pip install -e '.[dev]'
 ```
 
 If you are setting up documentation work on the repository, install the docs extras too:
 
 ```bash
-pip install -e .[docs]
+pip install -e '.[docs]'
 ```

@@ -1,16 +1,25 @@
-# This file is needed for READtheDOCS and GitHub actions- all requirements are installed in the setup.py
-pydna>=5.5.0 
-pandas>=1.3.0
+# Runtime dependencies. setup.py reads this file into install_requires.
+# (The documentation build uses docs/requirements.txt, not this file.)
+#
+# Floors are the oldest versions the test suite is actually run against, and
+# they have to be satisfiable together: pydna already requires numpy>1.26
+# (>=2.3.0 on Python 3.12+), and pandas refuses openpyxl<3.1.0 at runtime.
+pydna>=5.5.16
+pandas>=2.3.3
+numpy>=2.2.6
+biopython>=1.87
+dnachisel>=3.2.16
 benchlingapi>=2.1.12
+openpyxl>=3.1.0
+python-dotenv>=1.2.2
+requests>=2.32.0
+matplotlib>=3.10.9
+seaborn>=0.13.2
+scipy>=1.13
+
 # benchlingapi 2.1.12 (its latest release) imports distutils, which was
 # removed in Python 3.12; setuptools still ships a drop-in copy.
-setuptools>=83; python_version >= "3.12"  # CVE-free floor
-numpy>=1.22
-biopython>=1.87   
-python-dotenv>=1.2.2
-openpyxl>=3.0.9
+setuptools>=83; python_version >= "3.12"
+
+# Needed by setup.py's bdist_wheel invocation in CI.
 wheel>=0.38.1
-nbsphinx==0.9.2
-pytest-cov>=7.1.0
-matplotlib>=3.5.1
-dnachisel>=3.2.16

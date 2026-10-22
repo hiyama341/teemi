@@ -12,9 +12,11 @@ with open("HISTORY.rst") as history_file:
 
 # Requirements
 requirements = []
-with open('requirements.txt', 'r') as fh:
+with open("requirements.txt", "r") as fh:
     for line in fh:
-        requirements.append(line.strip())
+        line = line.strip()
+        if line and not line.startswith("#"):
+            requirements.append(line)
 
 extra_requirements = {
     "dev": [
@@ -24,6 +26,9 @@ extra_requirements = {
         "pytest-cov>=7.1.0",
     ],
     "docs": ["sphinx", "pydata-sphinx-theme", "myst-parser"],
+    # teemi.learn.auto_ml drives H2O, which pulls in a JVM-backed server;
+    # it is only needed for the LEARN notebooks.
+    "learn": ["h2o>=3.38"],
 }
 
 # Main setup scripts
@@ -34,22 +39,19 @@ setup(
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
+        "Intended Audience :: Science/Research",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3 :: Only",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
         "Programming Language :: Python :: 3.14",
+        "Topic :: Scientific/Engineering :: Bio-Informatics",
     ],
     description="A Python package for constructing microbial strains",
-    entry_points={
-        "console_scripts": [
-            "teemi=teemi.cli:main",
-        ],
-    },
-
-    tests_require=extra_requirements["dev"],
     license="MIT license",
     long_description=readme + "\n\n" + history,
     long_description_content_type="text/x-rst",  
@@ -57,9 +59,14 @@ setup(
     keywords="teemi",
     name="teemi",
     packages=find_packages(include=["teemi", "teemi.*"]),
-    test_suite="tests",
     url="https://github.com/hiyama341/teemi",
-    install_requires = requirements,
+    project_urls={
+        "Documentation": "https://teemi.readthedocs.io",
+        "Source": "https://github.com/hiyama341/teemi",
+        "Paper": "https://doi.org/10.1371/journal.pcbi.1011929",
+    },
+    install_requires=requirements,
+    extras_require=extra_requirements,
     ### Change version and put tag to release on PYPI
     # First time making a package, then comment this section and write: version= "0.0.1"
     version=versioneer.get_version(),

@@ -690,13 +690,13 @@ For those who want to contribute or develop further, you can install the develop
 
 ::
 
-    $ pip install -e .[dev]
+    $ pip install -e '.[dev]'
 
 Or directly from PyPI:
 
 ::
 
-    $ pip install teemi[dev]
+    $ pip install 'teemi[dev]'
 
 
 You might need to run these commands with administrative

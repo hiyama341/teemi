@@ -1,12 +1,36 @@
 version: 2
 updates:
-  - package-ecosystem: "pip" 
+  - package-ecosystem: "pip"
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
       time: "13:00"
       timezone: "Europe/Copenhagen"
-     # Add assignees
+    # teemi is a library, so its requirements are lower bounds rather than
+    # pins. The default strategy raises every floor to the newest release,
+    # which files a pull request each week that constrains downstream users
+    # without changing anything teemi installs or tests. Only widen a floor
+    # when the current one genuinely excludes the new version; security
+    # updates are filed regardless of this setting.
+    versioning-strategy: increase-if-necessary
+    open-pull-requests-limit: 5
+    groups:
+      python-dependencies:
+        patterns:
+          - "*"
+    # Add assignees
     assignees:
       - "hiyama341"
       - "sorpet"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    assignees:
+      - "hiyama341"
