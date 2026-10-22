@@ -247,6 +247,19 @@ class PrimerDesign(_Frozen):
 
     target_tm: float = Field(default=57.0, ge=30.0, le=80.0)
     footprint_len_min: int = Field(default=18, ge=10, le=60)
+
+    polymerase: str = "q5-0"
+    """NEB's product code, which selects the Tm and Ta model.
+
+    FLOW sends it under ``assembly.polymerase`` and says choosing the model is
+    the backend's job, so this is where that choice lands: it is the ``prodcode``
+    the NEB batch is asked for, and NEB returns the annealing temperature its
+    own rule gives for that polymerase.  ``q5-0`` and ``phusion-0`` differ by
+    2 C in Ta, so it is not cosmetic.
+
+    Offline it changes nothing, because pydna implements only the Phusion rule
+    -- see :func:`~teemi.design.combinatorial.tm.local_ta`."""
+
     junction: Junction = Junction()
 
 

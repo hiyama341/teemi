@@ -196,9 +196,20 @@ def local_ta(forward_footprint: str, reverse_footprint: str) -> Tm:
     """The local annealing temperature of a **footprint** pair.
 
     :func:`pydna.tm.ta_dbd` is ``min(tm_dbd(fp), tm_dbd(rp)) + 3`` and ignores
-    its ``seq`` argument.  It is the DNA-binding-domain model, which is the one
-    that matches :data:`NEB_PRODCODE`: Q5 carries a DBD, which raises the usable
-    annealing temperature by about 4 C over the Taq-style ``ta_default``.
+    its ``seq`` argument.  It is the DNA-binding-domain model, which raises the
+    usable annealing temperature over the Taq-style ``ta_default``.
+
+    THE ``+ 3`` IS PHUSION'S RULE, NOT Q5's.  pydna's own
+    :func:`pydna.tm.Q5` says so -- "For Q5 Ta they take the lower of the two
+    Tms and add 1C (up to 72C).  For Phusion they take the lower of the two and
+    add 3C" -- and that function raises ``NotImplementedError``, so pydna
+    provides the Phusion rule and documents the Q5 one without implementing it.
+
+    So this reads about 2 C high for Q5 and correctly for Phusion, whatever
+    ``primer_design.polymerase`` says.  It is the offline path only: with NEB
+    reachable the annealing temperature comes back from the batch computed for
+    the product code actually asked for, which is where the polymerase is
+    honoured.  Anything depending on the Q5 number should run against NEB.
     """
     return Tm(float(ta_dbd(forward_footprint, reverse_footprint, "")), ENGINE_LOCAL_TA)
 

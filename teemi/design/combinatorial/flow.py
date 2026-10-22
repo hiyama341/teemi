@@ -458,6 +458,9 @@ def from_flow(
         primer_design["target_tm"] = settings.target_tm_c
     if settings.min_footprint_nt is not None:
         primer_design["footprint_len_min"] = settings.min_footprint_nt
+    if settings.polymerase:
+        # "It selects the Tm model; choosing that model is the backend's job."
+        primer_design["polymerase"] = settings.polymerase
     if junction:
         primer_design["junction"] = junction
 

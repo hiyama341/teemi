@@ -524,7 +524,9 @@ def plan(
 
     layout = plan_layout(validated, records)
 
-    engine = FootprintTm(offline=offline)
+    engine = FootprintTm(
+        offline=offline, prodcode=validated.primer_design.polymerase
+    )
     try:
         footprints, diagnostics = design_footprints(records, validated, engine, layout)
         junctions = junctions_for_spec(validated, records, footprints, layout)
@@ -546,7 +548,9 @@ def plan(
     pairs = [pair for variant_pairs in oligos.values() for pair in variant_pairs]
     checks = check_pcrs(pairs, validated.constraints)
     temperatures, batch_failures = neb_pair_temperatures(
-        [pair.oligos for pair in pairs], offline=offline
+        [pair.oligos for pair in pairs],
+        offline=offline,
+        prodcode=validated.primer_design.polymerase,
     )
 
     primers, oligo_of = _primer_records(pairs, junctions, temperatures, validated)

@@ -347,7 +347,7 @@ def test_fill_can_target_one_variant_rather_than_a_whole_position(library, genes
     single part, which would collapse the library to one member.  The key is
     the ``position/variant`` form :class:`UndecidedPosition` names.
     """
-    spec, notes = from_flow(document(CDS_LIBRARY), library=library, fill=genes)
+    spec, notes = from_flow(sourceless_genes(), library=library, fill=genes)
 
     gene_slot = next(p for p in spec.positions if p.id == "gene")
     assert len(gene_slot.parts) == 4
@@ -361,12 +361,32 @@ def test_fill_can_target_one_variant_rather_than_a_whole_position(library, genes
     assert sum("stood in" in n for n in notes) == 4
 
 
+def sourceless_genes() -> dict:
+    """The CDS-library document with its four sequences taken back out.
+
+    Built here rather than kept as a second fixture: it is the same document in
+    the state FLOW saves it in before any gene has been chosen, and deriving it
+    cannot drift from the real one.
+    """
+    raw = document(CDS_LIBRARY)
+    for slot in raw["construct"]:
+        if slot["id"] == "gene":
+            for variant in slot["variants"]:
+                variant.pop("source", None)
+    return raw
+
+
 def test_a_variant_with_no_sequence_and_no_fill_is_named(library):
     """Named by position AND variant, so it says which of the four is missing."""
     partial = {f"gene/gene-{n}": library["FP_MRFP1"] for n in (1, 2, 3)}
     with pytest.raises(UndecidedPosition) as caught:
-        from_flow(document(CDS_LIBRARY), library=library, fill=partial)
+        from_flow(sourceless_genes(), library=library, fill=partial)
     assert caught.value.position_id == "gene/gene-4"
+
+    # And with nothing supplied at all, the first one is named.
+    with pytest.raises(UndecidedPosition) as caught:
+        from_flow(sourceless_genes(), library=library)
+    assert caught.value.position_id == "gene/gene-1"
 
 
 def test_a_fill_key_that_matches_nothing_is_refused(library, genes):
@@ -394,13 +414,14 @@ def test_no_tail_on_the_backbone_shares_one_primer_across_the_library(
     those two primers as bare footprints with no gene-specific tail, so one
     molecule serves every member and adding a fifth gene does not change them.
     """
-    result, _ = plan_flow(
+    # The document supplies its own four sequences, so nothing is stood in.
+    result, notes = plan_flow(
         document(CDS_LIBRARY),
         library=library,
         policy={"constraints": {"primer_len_max": 90}},
-        fill=genes,
         offline=True,
     )
+    assert notes == ()
     assert len(result.variants) == 4
     assert all(v.verification.verdict == "verified" for v in result.variants)
 
@@ -422,3 +443,71 @@ def test_no_tail_on_the_backbone_shares_one_primer_across_the_library(
     assert all(j.unavoidable == () for j in forced), (
         "one candidate proves nothing, so a pinned junction may not downgrade"
     )
+
+
+def test_the_polymerase_the_document_names_reaches_the_neb_request(
+    library, monkeypatch
+):
+    """FLOW sends it; the schema says choosing the Tm model is the backend's job.
+
+    It is not cosmetic: pydna's own note is that Q5 takes the lower of the two
+    Tms and adds 1 C while Phusion adds 3, so a document asking for Phusion and
+    getting Q5's annealing temperature would be 2 C out.  Both NEB paths are
+    checked -- the per-sequence walk that designs the footprints and the batch
+    that returns the authoritative pair -- because the product code has to
+    reach both or the two would disagree.
+    """
+    import requests
+
+    import teemi.design.combinatorial.tm as tm_module
+
+    spec, _ = from_flow(document(CDS_LIBRARY), library=library)
+    assert spec.primer_design.polymerase == "phusion-0"
+
+    walked, batched = [], []
+
+    def fake_tm_neb(seq, conc=0.5, prodcode="q5-0"):
+        walked.append(prodcode)
+        return 60.0
+
+    class FakeReply:
+        status_code = 200
+
+        def __init__(self, rows):
+            self._rows = rows
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"data": self._rows}
+
+    def fake_post(url, json=None, **kwargs):
+        batched.append(json.get("prodcode"))
+        return FakeReply(
+            [{"tm1": 60.0, "tm2": 60.0, "ta": 63.0} for _ in json["seqpairs"]]
+        )
+
+    tm_module.clear_tm_caches()
+    monkeypatch.setattr(tm_module, "tm_neb", fake_tm_neb)
+    monkeypatch.setattr(requests, "post", fake_post)
+    try:
+        result, _ = plan_flow(
+            document(CDS_LIBRARY),
+            library=library,
+            policy={"constraints": {"primer_len_max": 90}},
+            offline=False,
+        )
+    finally:
+        tm_module.clear_tm_caches()
+
+    assert walked and set(walked) == {"phusion-0"}, set(walked)
+    assert batched and set(batched) == {"phusion-0"}, set(batched)
+    assert result.spec.primer_design.polymerase == "phusion-0"
+
+
+def test_a_document_that_names_no_polymerase_gets_the_default(library):
+    spec, _ = from_flow(
+        document(INTEGRATION), library=library, fill={"pos4": library["FP_MRFP1"]}
+    )
+    assert spec.primer_design.polymerase == "q5-0"
