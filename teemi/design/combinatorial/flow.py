@@ -328,8 +328,13 @@ def from_flow(
     ``library`` maps ``part_id`` to DNA.  ``policy`` carries what FLOW says it
     never sends -- ``constraints``, ``objective``, and the ``split_search``
     detail behind ``tune_overhangs`` -- and every one of those has a default, so
-    ``policy`` is optional.  ``fill`` stands DNA in for a position that has made
-    no choice yet, keyed by position id.
+    ``policy`` is optional.
+
+    ``fill`` stands DNA in where a document has made no choice yet.  A key is
+    either a position id, which replaces that whole position with one part, or
+    ``"<position>/<variant>"``, which supplies one alternative at a
+    combinatorial position -- the form :class:`UndecidedPosition` names, and the
+    only one that can give four different genes to one slot.
 
     Returns the spec and any notes about the document: a ``drop_`` flag on a
     part type no codon applies to, a ``fill`` that was used, an ``oligos`` list
@@ -344,6 +349,7 @@ def from_flow(
     fill = dict(fill or {})
     policy = dict(policy or {})
     notes: list = []
+    unused = set(fill)
 
     positions = []
     for slot in doc.positions:
@@ -366,6 +372,7 @@ def from_flow(
             )
 
         if slot.id in fill:
+            unused.discard(slot.id)
             notes.append(
                 f"{slot.id}: a sequence was stood in for it by the caller, not "
                 "chosen in the document"
@@ -380,8 +387,26 @@ def from_flow(
         elif slot.variants is not None:
             parts = []
             for variant in slot.variants:
+                key = f"{slot.id}/{variant.id}"
+                if key in fill:
+                    unused.discard(key)
+                    notes.append(
+                        f"{key}: a sequence was stood in for it by the caller, "
+                        "not chosen in the document"
+                    )
+                    parts.append(
+                        {
+                            # Not the bare variant id: that is only unique
+                            # within its position, and part ids are unique
+                            # across the whole spec.
+                            "id": f"{slot.id}.{variant.id}",
+                            "name": variant.name,
+                            "source": {"type": "inline", "sequence": fill[key]},
+                        }
+                    )
+                    continue
                 if variant.source is None:
-                    raise UndecidedPosition(f"{slot.id}/{variant.id}")
+                    raise UndecidedPosition(key)
                 part_id, dna = _sequence(variant.source, slot.id, library)
                 parts.append(
                     {
@@ -402,6 +427,13 @@ def from_flow(
                 }
             ]
         positions.append({"id": slot.id, "name": slot.name, "parts": parts, **flags})
+
+    if unused:
+        raise KeyError(
+            f"fill names {', '.join(sorted(unused))}, which is not a position "
+            "or a position/variant in this document; a typo here would "
+            "silently leave the real slot undecided"
+        )
 
     if doc.oligos:
         notes.append(

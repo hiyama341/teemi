@@ -319,3 +319,106 @@ def test_plan_flow_designs_a_real_document(library):
 
     json.dumps(result.to_dict())
     assert result.designs and len(result.designs[0].construct) == variant.length_bp
+
+
+# --------------------------------------------------------------------------- #
+# A combinatorial position whose variants carry no sequences
+# --------------------------------------------------------------------------- #
+
+
+CDS_LIBRARY = FIXTURES / "flow_example_cds_library.json"
+
+#: Four real coding sequences, standing in for four genes of the user's own.
+GENE_PARTS = ("FP_GP_EGFP", "FP_MCITRINE", "FP_MRFP1", "MRK_GP_KANMX")
+
+
+@pytest.fixture()
+def genes(library) -> dict:
+    return {
+        f"gene/gene-{n}": library[part]
+        for n, part in enumerate(GENE_PARTS, start=1)
+    }
+
+
+def test_fill_can_target_one_variant_rather_than_a_whole_position(library, genes):
+    """A library of four genes needs four sequences at one position.
+
+    Keyed by position alone, ``fill`` can only replace the whole slot with a
+    single part, which would collapse the library to one member.  The key is
+    the ``position/variant`` form :class:`UndecidedPosition` names.
+    """
+    spec, notes = from_flow(document(CDS_LIBRARY), library=library, fill=genes)
+
+    gene_slot = next(p for p in spec.positions if p.id == "gene")
+    assert len(gene_slot.parts) == 4
+    assert [p.id for p in gene_slot.parts] == [
+        f"gene.gene-{n}" for n in (1, 2, 3, 4)
+    ]
+    assert {p.source.sequence for p in gene_slot.parts} == {
+        library[part] for part in GENE_PARTS
+    }
+    assert spec.n_variants == 4 == document(CDS_LIBRARY)["design_count"]
+    assert sum("stood in" in n for n in notes) == 4
+
+
+def test_a_variant_with_no_sequence_and_no_fill_is_named(library):
+    """Named by position AND variant, so it says which of the four is missing."""
+    partial = {f"gene/gene-{n}": library["FP_MRFP1"] for n in (1, 2, 3)}
+    with pytest.raises(UndecidedPosition) as caught:
+        from_flow(document(CDS_LIBRARY), library=library, fill=partial)
+    assert caught.value.position_id == "gene/gene-4"
+
+
+def test_a_fill_key_that_matches_nothing_is_refused(library, genes):
+    """A typo would otherwise leave the real slot undecided and say nothing."""
+    with pytest.raises(KeyError, match="not a position"):
+        from_flow(
+            document(CDS_LIBRARY),
+            library=library,
+            fill={**genes, "gene/gene-5": library["FP_MRFP1"]},
+        )
+    with pytest.raises(KeyError, match="not a position"):
+        from_flow(
+            document(CDS_LIBRARY),
+            library=library,
+            fill={**genes, "promotor": library["FP_MRFP1"]},
+        )
+
+
+def test_no_tail_on_the_backbone_shares_one_primer_across_the_library(
+    library, genes
+):
+    """The point of this document, and the thing worth asserting about it.
+
+    ``no_tail_rev`` on the promoter and ``no_tail_fwd`` on the terminator leave
+    those two primers as bare footprints with no gene-specific tail, so one
+    molecule serves every member and adding a fifth gene does not change them.
+    """
+    result, _ = plan_flow(
+        document(CDS_LIBRARY),
+        library=library,
+        policy={"constraints": {"primer_len_max": 90}},
+        fill=genes,
+        offline=True,
+    )
+    assert len(result.variants) == 4
+    assert all(v.verification.verdict == "verified" for v in result.variants)
+
+    shared = [p for p in result.primers if len(p.uses) == 4]
+    assert len(shared) == 2, [p.id for p in result.primers]
+    assert {p.part_id for p in shared} == {"PRO_ANID_TEF1", "TER_ANID_TEF1"}
+    for primer in shared:
+        assert primer.sequence == primer.footprint, "a bare footprint, no tail"
+
+    # Fewer oligos than primer slots, and the price counts each molecule once.
+    slots = sum(len(p.uses) for p in result.primers)
+    assert slots > len(result.primers)
+
+    # Every CDS seam is pinned by a flag, so pydna is not asked for those.
+    by_who = {j.designed_by for j in result.junctions}
+    assert by_who == {"forced", "pydna"}
+    forced = [j for j in result.junctions if j.designed_by == "forced"]
+    assert all(len(j.profile) == 1 for j in forced)
+    assert all(j.unavoidable == () for j in forced), (
+        "one candidate proves nothing, so a pinned junction may not downgrade"
+    )

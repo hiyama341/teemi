@@ -1,0 +1,64 @@
+{
+  "flow_schema_version": "1.0",
+  "name": "DIVERSIFY A1-B1 CDS library",
+  "task": "heterologous-expression",
+  "method": "he-genomic-integration",
+  "topology": "linear",
+  "organism": {
+    "key": "a-nidulans",
+    "genome": {
+      "accession": "GCF_000011425.1",
+      "assembly_name": "ASM1142v1",
+      "strain": "FGSC A4"
+    }
+  },
+  "construct": [
+    {
+      "id": "flank-up",
+      "type": "platform_flank",
+      "name": "DIVERSIFY A1 targeting sequence",
+      "source": { "type": "library", "part_id": "FLANK_A1" }
+    },
+    {
+      "id": "promoter",
+      "type": "promoter",
+      "name": "Ptef1 (A. nidulans tef1 / AN4218)",
+      "source": { "type": "library", "part_id": "PRO_ANID_TEF1" },
+      "no_tail_rev": true,
+      "notes": "No tail on the reverse primer, so all homology at the promoter|CDS seam is carried by each CDS forward primer. One promoter primer pair serves the whole library."
+    },
+    {
+      "id": "gene",
+      "type": "cds",
+      "notes": "Sequences not supplied here. Give each variant a source before sending: {\"type\": \"inline\", \"sequence\": \"...\", \"format\": \"fasta\"}. There is no CDS library, so this slot is always the user's own.",
+      "variants": [
+        { "id": "gene-1", "name": "gene 1" },
+        { "id": "gene-2", "name": "gene 2" },
+        { "id": "gene-3", "name": "gene 3" },
+        { "id": "gene-4", "name": "gene 4" }
+      ]
+    },
+    {
+      "id": "terminator",
+      "type": "terminator",
+      "name": "Ttef1 (A. nidulans tef1 / AN4218)",
+      "source": { "type": "library", "part_id": "TER_ANID_TEF1" },
+      "no_tail_fwd": true,
+      "notes": "No tail on the forward primer, so all homology at the CDS|terminator seam is carried by each CDS reverse primer. One terminator primer pair serves the whole library."
+    },
+    {
+      "id": "flank-down",
+      "type": "platform_flank",
+      "name": "DIVERSIFY B1 targeting sequence",
+      "source": { "type": "library", "part_id": "FLANK_B1" }
+    }
+  ],
+  "assembly": {
+    "homology_bp": 40,
+    "target_tm_c": 65,
+    "primer_conc_um": 0.5,
+    "min_footprint_nt": 15
+  },
+  "design_count": 4,
+  "library_version": "parts.json@e9f8904"
+}
