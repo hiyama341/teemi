@@ -54,6 +54,8 @@ from pydna.dseqrecord import Dseqrecord
 from teemi.design.combinatorial.design import (
     STRUCTURE_BOUNDS,
     Diagnostic,
+    apply_slot_flags,
+    plan_layout,
     FootprintError,
     Footprints,
     JunctionDesign,
@@ -111,6 +113,7 @@ PRIMER_COLUMNS = (
     "footprint_tm_engine",
     "hairpin_dg",
     "homodimer_dg",
+    "primer3_clamped",
     "flagged_by",
     "flag_severity",
     "price",
@@ -132,6 +135,7 @@ PCR_COLUMNS = (
     "heterodimer_dg",
     "three_prime_dimer_dg",
     "homodimer_dg_worst",
+    "primer3_clamped",
     "flagged_by",
     "flag_severity",
 )
@@ -160,6 +164,7 @@ COLUMN_LABELS = {
     "heterodimer_tm": "heterodimer_fwd_rev_Tm (C)",
     "three_prime_dimer_dg": "three_prime_dimer_deltaG (kcal/mol)",
     "homodimer_dg_worst": "worst_primer_homodimer_deltaG (kcal/mol)",
+    "primer3_clamped": "not_analysable_over_60nt",
 }
 
 
@@ -228,6 +233,12 @@ def _flag_severity(
     )
 
 
+def _worst(severities: Iterable[str]) -> str:
+    """``error`` beats ``warning`` beats nothing."""
+    seen = set(severities)
+    return "error" if "error" in seen else ("warning" if "warning" in seen else "")
+
+
 def _dg_flagged(violations: Sequence[Violation]) -> bool:
     return any(v.constraint.endswith("_dg_min") for v in violations)
 
@@ -261,6 +272,9 @@ class PrimerRecord:
     violations: Tuple[Violation, ...]
     price: float
     uses: Tuple[str, ...] = ()
+    #: Every part this molecule amplifies, unjoined.  :attr:`part_id` is the
+    #: readable join of these; anything that has to name a real part uses this.
+    part_ids: Tuple[str, ...] = ()
     #: Breached bounds no candidate in the sweep that produced this molecule
     #: avoided.  For an untailed terminal primer there was no sweep and no
     #: tail, so every structure bound it breaches is in here.
@@ -314,9 +328,11 @@ class PcrRecord:
     violations: Tuple[Violation, ...]
     primer_violations: Tuple[Violation, ...] = ()
     homodimer_dg_worst: Optional[float] = None
-    #: The two primers' unavoidable bounds, pooled, for scoring
-    #: :attr:`primer_violations`.
-    unavoidable: Tuple[str, ...] = ()
+    #: The worse of the two primers' own verdicts, each scored against its own
+    #: unavoidable set.  Pooling the two sets and scoring the pooled breaches
+    #: against the union let a bound that is unavoidable for one primer
+    #: downgrade the other primer's avoidable breach of the same bound.
+    primer_severity: str = ""
 
     def to_dict(self) -> dict:
         return {
@@ -332,11 +348,7 @@ class PcrRecord:
             # The pair bounds are errors: the sweep optimises each junction on
             # its own and never searched this forward-against-reverse pairing,
             # so "nothing avoids it" has not been established for them.
-            "flag_severity": (
-                "error"
-                if self.violations
-                else _flag_severity(self.primer_violations, self.unavoidable)
-            ),
+            "flag_severity": "error" if self.violations else self.primer_severity,
             # Both sets, because ``flagged_by`` names bounds from both and a
             # consumer reading it then needs the observed value and the limit.
             # ``subject`` says which it was: a primer, or the pair.
@@ -423,7 +435,19 @@ class DesignResult:
                 f"{len(self.footprints)} parts",
                 f"  {len(self.junctions)} junctions, "
                 f"{sum(1 for j in self.junctions if j.feasible)} feasible, "
-                f"homology {self.spec.primer_design.junction.homology_length} bp",
+                f"homology {self.spec.primer_design.junction.homology_length} bp"
+                + (
+                    " ("
+                    + ", ".join(
+                        f"{n} by {who}"
+                        for who, n in sorted(
+                            Counter(j.designed_by for j in self.junctions).items()
+                        )
+                    )
+                    + ")"
+                    if self.junctions
+                    else ""
+                ),
                 f"  {len(self.primers)} primers (longest {longest} nt), "
                 f"{len(self.pcrs)} PCRs, "
                 f"{self.price:.0f} {self.spec.objective.currency}",
@@ -496,10 +520,14 @@ def plan(
     except SourceError as exc:
         return _stopped(validated, "unresolved_source", str(exc), part_id=exc.part_id)
 
+    records, flag_notes = apply_slot_flags(records, validated)
+
+    layout = plan_layout(validated, records)
+
     engine = FootprintTm(offline=offline)
     try:
-        footprints, diagnostics = design_footprints(records, validated, engine)
-        junctions = junctions_for_spec(validated, records, footprints)
+        footprints, diagnostics = design_footprints(records, validated, engine, layout)
+        junctions = junctions_for_spec(validated, records, footprints, layout)
     except FootprintError as exc:
         return _stopped(validated, "no_footprint", str(exc), part_id=exc.part_id)
     except JunctionError as exc:
@@ -510,7 +538,7 @@ def plan(
             junction_id=exc.junction_id,
         )
 
-    library = variants(validated)
+    library = variants(validated, layout)
     oligos = {
         variant.id: variant_oligos(validated, variant, footprints, junctions)
         for variant in library
@@ -540,12 +568,14 @@ def plan(
                 junction_id=junction.id,
                 severity=(
                     "warning"
-                    if violation.constraint in junction.unavoidable
+                    if (violation.constraint, violation.subject)
+                    in junction.unavoidable
                     else "error"
                 ),
-                tried=(
-                    len(junction.profile)
-                    if violation.constraint in junction.unavoidable
+                exhausted=(
+                    f"no split avoids it ({len(junction.profile)} tried)"
+                    if (violation.constraint, violation.subject)
+                    in junction.unavoidable
                     else None
                 ),
             )
@@ -566,13 +596,20 @@ def plan(
             # search had exactly one option.
             Diagnostic.from_violation(
                 violation,
-                part_id=primer.part_id,
+                # Only when it is one real part: the composite ``part_id`` of a
+                # shared molecule matches no Part.id anywhere.
+                part_id=primer.part_ids[0] if len(primer.part_ids) == 1 else None,
+                primer_id=primer.id,
                 severity=(
                     "warning"
                     if violation.constraint in STRUCTURE_BOUNDS
                     else "error"
                 ),
-                tried=1 if violation.constraint in STRUCTURE_BOUNDS else None,
+                exhausted=(
+                    "the footprint is fixed and this primer has no tail"
+                    if violation.constraint in STRUCTURE_BOUNDS
+                    else None
+                ),
             )
             for primer in primers
             if not primer.tailed
@@ -587,7 +624,9 @@ def plan(
     return DesignResult(
         spec=validated,
         diagnostics=(
-            tuple(diagnostics)
+            tuple(flag_notes)
+            + layout.diagnostics
+            + tuple(diagnostics)
             + tuple(breaches)
             + verification_diagnostics
             + tuple(unreachable)
@@ -647,16 +686,22 @@ def _primer_records(
     # to be enumerated last.
     tailed: Dict[str, frozenset] = {}
     for junction in junctions.values():
-        for sequence in (
-            junction.chosen.forward_primer,
-            junction.chosen.reverse_primer,
+        for subject, sequence in (
+            ("forward_primer", junction.chosen.forward_primer),
+            ("reverse_primer", junction.chosen.reverse_primer),
         ):
-            avoided = frozenset(junction.unavoidable)
+            # Only the pairs recorded against the role this sequence played.  A
+            # junction's set covers both its primers, and scoring one molecule
+            # against the other's evidence is the mistake this filter removes.
+            avoided = frozenset(
+                name for name, who in junction.unavoidable if who == subject
+            )
             previous = tailed.get(sequence)
             tailed[sequence] = avoided if previous is None else previous & avoided
     records: Dict[str, PrimerRecord] = {}
     uses: Dict[str, List[str]] = {}
     parts: Dict[str, List[str]] = {}
+    directions: Dict[str, List[str]] = {}
     for pair in pairs:
         temps = temperatures[pair.oligos]
         for direction, primer, footprint, footprint_tm, oligo_tm in (
@@ -681,9 +726,12 @@ def _primer_records(
                     uses[sequence].append(primer.id)
                 if pair.part_id not in parts[sequence]:
                     parts[sequence].append(pair.part_id)
+                if direction not in directions[sequence]:
+                    directions[sequence].append(direction)
                 continue
             uses[sequence] = [primer.id]
             parts[sequence] = [pair.part_id]
+            directions[sequence] = [direction]
             structures = oligo_structures(sequence, CONDITIONS)
             records[sequence] = PrimerRecord(
                 id=primer.id,
@@ -712,6 +760,13 @@ def _primer_records(
             # column agrees with the row's own id and ``used_as`` and can be
             # joined against the PCR table.
             part_id="+".join(sorted(parts[sequence])),
+            part_ids=tuple(sorted(parts[sequence])),
+            # One molecule can be a part's forward primer and another part's
+            # reverse primer -- one part's end being the reverse complement of
+            # another's start is all it takes.  Keeping the first encounter's
+            # direction had the order sheet call it forward while the PCR table
+            # listed it under ``reverse_primer_id``.
+            direction="+".join(sorted(directions[sequence])),
             # A tailed molecule inherits its sweep's verdict; an untailed one
             # had no sweep and no tail, so nothing it breaches was avoidable.
             unavoidable=(
@@ -776,14 +831,11 @@ def _pcr_records(
             structures=check.structures,
             violations=check.violations,
             primer_violations=breaches,
-            unavoidable=tuple(
-                sorted(
-                    {
-                        name
-                        for primer_id in (forward_id, reverse_id)
-                        for name in primers[primer_id].unavoidable
-                    }
+            primer_severity=_worst(
+                _flag_severity(
+                    primers[primer_id].violations, primers[primer_id].unavoidable
                 )
+                for primer_id in (forward_id, reverse_id)
             ),
             homodimer_dg_worst=min(
                 primers[forward_id].structures.homodimer_dg,
@@ -803,13 +855,24 @@ def _relabel_primer_binds(
     that molecule serves.  Someone reading the GenBank has to be able to find
     that label on the order sheet, so the feature carries the oligo's name and
     the junction context is left to be read off the map.
+
+    Only features this design's own PCRs created are touched.  A part sourced
+    from a GenBank file brings its own annotations through the assembly, and one
+    of its ``primer_bind`` features could carry a label that happens to equal a
+    constructed primer name; renaming that would claim an oligo binds a site it
+    does not and lose the user's annotation.  ``pcr`` marks its own features
+    with a ``PCR_conditions`` qualifier, which is the discriminator, and a
+    feature with no label of its own is left without one rather than given an
+    empty list.
     """
     if construct is None:
         return None
     for feature in construct.features:
-        if feature.type != "primer_bind":
+        if feature.type != "primer_bind" or "PCR_conditions" not in feature.qualifiers:
             continue
-        labels = feature.qualifiers.get("label") or []
+        labels = feature.qualifiers.get("label")
+        if not labels:
+            continue
         feature.qualifiers["label"] = [oligo_of.get(label, label) for label in labels]
     return construct
 
@@ -835,9 +898,27 @@ def _variant_plans(
     diagnostics: List[Diagnostic] = []
     for variant in library:
         by_slot = dict(zip(slot_ids, variant.parts))
-        verification, construct = verify_variant(
-            variant, oligos[variant.id], records, spec
-        )
+        try:
+            verification, construct = verify_variant(
+                variant, oligos[variant.id], records, spec
+            )
+        except Exception as exc:  # noqa: BLE001 -- pydna raises freely here
+            # Every other failure in plan() becomes a diagnostic, and an
+            # assembly that pydna cannot carry out is a fact about the design,
+            # not a bug in the caller.  pydna signals incompatible ends with a
+            # bare TypeError out of ``Dseq.__add__``, so the type is no guide
+            # and the class has to be broad to keep the contract that plan()
+            # returns a result.
+            verification, construct = (
+                Verification(
+                    verdict="assembly_failed",
+                    message=f"pydna could not assemble this variant: {exc}",
+                    n_products=0,
+                    expected_bp=0,
+                    observed_bp=None,
+                ),
+                None,
+            )
         if not verification.ok:
             diagnostics.append(
                 Diagnostic(
@@ -854,7 +935,11 @@ def _variant_plans(
                     (position_id, by_slot[position_id].id)
                     for position_id in position_ids
                 ),
-                fragment_ids=tuple(part.id for part in variant.parts),
+                # What is amplified, which is not every part of the construct: an
+                # in_tail slot reaches the product through the primer tails.
+                fragment_ids=tuple(
+                    part.id for part in (variant.fragments or variant.parts)
+                ),
                 length_bp=verification.expected_bp,
                 verification=verification,
                 construct=(
@@ -881,6 +966,36 @@ def _project(rows: List[dict], columns: Sequence[str], full: bool) -> pd.DataFra
     return frame.rename(columns=COLUMN_LABELS)
 
 
+#: Columns the overview always has, which a position heading must not take.
+_OVERVIEW_RESERVED = ("variant_id", "length_bp", "assembly")
+
+
+def _overview_headings(spec: DesignSpec) -> Dict[str, str]:
+    """A distinct column heading per position.
+
+    ``Position.name`` is free text: nothing makes it unique or keeps it clear of
+    the fixed columns.  Two positions sharing a name would collapse into one
+    column and lose a position's choices, and a position named ``assembly``
+    would be overwritten by the fixed key that follows it in the row literal.
+    A name is used only when it is safe; otherwise the position's id is, which
+    validation has already made unique.
+    """
+    names = Counter(
+        position.name for position in spec.positions if position.name is not None
+    )
+    return {
+        position.id: (
+            position.name
+            if position.name
+            and names[position.name] == 1
+            and position.name not in _OVERVIEW_RESERVED
+            and position.name not in {p.id for p in spec.positions}
+            else position.id
+        )
+        for position in spec.positions
+    }
+
+
 def variant_overview_dataframe(result: DesignResult) -> pd.DataFrame:
     """One row per variant, one column per position, headed by its name.
 
@@ -889,9 +1004,7 @@ def variant_overview_dataframe(result: DesignResult) -> pd.DataFrame:
     """
     if result.spec is None:
         return pd.DataFrame()
-    headings = {
-        position.id: position.name or position.id for position in result.spec.positions
-    }
+    headings = _overview_headings(result.spec)
     return pd.DataFrame(
         [
             {
@@ -915,7 +1028,11 @@ def primer_dataframe(result: DesignResult, *, full: bool = False) -> pd.DataFram
     every name that asked for it in ``used_as``, so it is ordered and paid for
     once.  ``footprint_Tm (C)`` is the annealing region and ``oligo_Tm (C)`` the
     whole tailed molecule, both from ``tm_engine``; ΔG is kcal/mol and more
-    positive is better.  ``flagged_by`` names the bounds the molecule breaches
+    positive is better.  ``not_analysable_over_60nt`` marks an oligo longer than
+    primer3 will align: it is ordered exactly as designed, but its ΔG and
+    structure Tm describe only its 3'-most 60 bases, so they bound the structure
+    rather than read the whole molecule.  ``flagged_by`` names the bounds it
+    breaches
     and ``flag_severity`` says whether to act: ``error`` when some other split
     avoids it, ``warning`` when none does.  ``full=True`` adds the structure Tm,
     the footprint sequence, the engine of each Tm and the breached bounds in

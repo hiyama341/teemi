@@ -59,9 +59,26 @@ __all__ = [
 ]
 
 DNA_ALPHABET = frozenset("ACGT")
-"""Unambiguous DNA only.  A degenerate code would make Tm, the primer footprint
-and the assembled construct all ambiguous, so it is rejected rather than
-guessed at."""
+"""The only bases a designed sequence may contain."""
+
+IUPAC_AMBIGUITY = frozenset("RYSWKMBDHVN")
+"""Degenerate codes, allowed only where nothing is designed from them.
+
+A degenerate base inside a part is carried through to the construct untouched
+and makes nothing ambiguous.  One in a region a *primer* is taken from would
+make its Tm, its footprint and its homology ambiguous, and that is the thing
+worth refusing -- real library entries carry a handful of them deep inside
+(AMA1 has six, all more than 1.2 kb from either end) and rejecting the part
+whole would turn a designable construct away over bases no primer ever reads."""
+
+DESIGNED_REACH_BP = 80
+"""How far from either end a designed sequence can reach, so how far in the
+sequence must be unambiguous.
+
+Exact rather than generous: a footprint sits at the very end and is at most
+``primer_len_max`` (60) long, and the homology is at most ``homology_length``
+(80) from the end.  Both caps are the spec's own field maxima, so 80 is the
+worst case either can reach."""
 
 MAX_PART_BP = 50_000
 MAX_FILE_BYTES = 10_000_000
@@ -146,10 +163,21 @@ class SourceResolver:
         sequence = text.strip().upper()
         if not sequence:
             raise SourceError(f"{origin} is empty", part_id=part_id)
-        unexpected = sorted(set(sequence) - DNA_ALPHABET)
+        unexpected = sorted(set(sequence) - DNA_ALPHABET - IUPAC_AMBIGUITY)
         if unexpected:
             raise SourceError(
-                f"{origin} has characters outside ACGT: " f"{''.join(unexpected[:8])}",
+                f"{origin} has characters that are not DNA: "
+                f"{''.join(unexpected[:8])}",
+                part_id=part_id,
+            )
+        ends = sequence[:DESIGNED_REACH_BP] + sequence[-DESIGNED_REACH_BP:]
+        degenerate = sorted(set(ends) & IUPAC_AMBIGUITY)
+        if degenerate:
+            raise SourceError(
+                f"{origin} has the degenerate code(s) "
+                f"{''.join(degenerate)} within {DESIGNED_REACH_BP} bp of an end, "
+                "where a primer footprint or the homology is taken from; a "
+                "primer cannot be designed against an ambiguous base",
                 part_id=part_id,
             )
         if len(sequence) > self.max_part_bp:

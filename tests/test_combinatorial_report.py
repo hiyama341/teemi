@@ -461,14 +461,14 @@ def headings(columns):
 def test_the_primer_table_is_readable_by_default(result):
     frame = primer_dataframe(result)
     assert list(frame.columns) == headings(PRIMER_COLUMNS)
-    assert len(frame.columns) <= 16
+    assert len(frame.columns) <= 18
     assert len(frame) == len(result.primers)
 
 
 def test_the_pcr_table_is_readable_by_default(result):
     frame = pcr_dataframe(result)
     assert list(frame.columns) == headings(PCR_COLUMNS)
-    assert len(frame.columns) <= 16
+    assert len(frame.columns) <= 18
     assert len(frame) == len(result.pcrs)
 
 
@@ -915,7 +915,14 @@ def test_a_breach_no_option_avoids_is_a_warning_not_an_error(result):
     assert warnings, "the two terminal homodimers still have to be reported"
     for diagnostic in warnings:
         assert diagnostic.code in STRUCTURE_BOUNDS
-        assert "no option avoids it" in diagnostic.message
+        # Every downgrade states its reason, and the two reasons are different
+        # claims: a sweep that walked every split, or a molecule that has only
+        # ever had one possible form.
+        assert (
+            "no split avoids it" in diagnostic.message
+            or "the footprint is fixed and this primer has no tail"
+            in diagnostic.message
+        ), diagnostic.message
         assert diagnostic.constraint is not None
         # The floor itself is untouched.
         assert diagnostic.constraint.limit == -6.0
@@ -956,11 +963,37 @@ def test_a_breach_some_other_split_avoids_stays_an_error(circular_result):
 
 
 def test_unavoidable_only_ever_names_a_bound_the_sweep_owns(circular_result):
-    """A length or GC breach is not something a split was going to fix."""
+    """A length or GC breach is not something a split was going to fix.
+
+    ``unavoidable`` holds ``(bound, subject)`` pairs, because a candidate's
+    violations cover both its primers and a bound that migrates between them
+    across the sweep must not be downgraded for either.
+    """
     for junction in circular_result.junctions:
-        assert set(junction.unavoidable) <= STRUCTURE_BOUNDS
-        breached = {v.constraint for v in junction.chosen.violations}
-        assert set(junction.unavoidable) <= breached
+        breached = {(v.constraint, v.subject) for v in junction.chosen.violations}
+        for name, subject in junction.unavoidable:
+            assert name in STRUCTURE_BOUNDS, name
+            assert (name, subject) in breached, (name, subject)
+
+
+def test_a_pinned_split_proves_nothing(tmp_path):
+    """``fixed_balanced`` evaluates one candidate, so it claims nothing.
+
+    ``all()`` over a single candidate is vacuously true, so a one-candidate
+    sweep would otherwise "prove" every structure breach unavoidable and flip
+    the design to feasible on evidence that was never gathered -- when the
+    remedy is exactly to let the optimizer search.
+    """
+    fixed = plan(raw(SPEC_A), sources=SourceResolver(base_dir=REPO), offline=True)
+    assert fixed.spec.primer_design.junction.split_search.order == "fixed_balanced"
+    assert all(len(j.profile) == 1 for j in fixed.junctions)
+    assert all(j.unavoidable == () for j in fixed.junctions)
+
+    # Nothing a pinned split breaches is ever downgraded: every warning on this
+    # design comes from a terminal primer, which is a different claim.
+    for diagnostic in fixed.diagnostics:
+        if diagnostic.severity == "warning" and diagnostic.constraint is not None:
+            assert diagnostic.junction_id is None, diagnostic.message
 
 
 def test_a_non_structure_breach_always_blocks():
@@ -1101,3 +1134,74 @@ def test_a_shared_oligo_is_attributed_to_every_part_it_amplifies(circular_result
     for primer in shared:
         named = set(primer.part_id.split("+"))
         assert named == by_part[primer.id], (primer.id, named, by_part[primer.id])
+
+
+def test_plan_returns_a_result_even_when_pydna_refuses_the_assembly(monkeypatch):
+    """``plan()`` has one contract: it returns a result, carrying the problem.
+
+    pydna signals incompatible ends with a bare ``TypeError`` out of
+    ``Dseq.__add__``, which used to travel straight through ``plan`` -- the one
+    input class that broke the contract every other failure mode honours.
+    """
+    import teemi.design.combinatorial.report as report_module
+
+    def refuse(*args, **kwargs):
+        raise TypeError("sticky ends not compatible!")
+
+    monkeypatch.setattr(report_module, "verify_variant", refuse)
+    result = plan(raw(SPEC_B), sources=SourceResolver(base_dir=REPO), offline=True)
+
+    assert result.feasible is False
+    assert result.variants, "the variants are still reported, with the reason"
+    assert all(v.verification.verdict == "assembly_failed" for v in result.variants)
+    assert all("sticky ends" in v.verification.message for v in result.variants)
+    assert result.designs == ()
+    json.dumps(result.to_dict())
+
+
+def test_an_overview_column_cannot_be_taken_by_a_position_name():
+    """``Position.name`` is free text, so it cannot be trusted as a column key.
+
+    Two positions sharing a name collapsed into one column and lost a
+    position's choices; a position named ``assembly`` was overwritten by the
+    fixed key that follows it in the row literal.
+    """
+    for name in ("assembly", "variant_id", "length_bp"):
+        spec = copy.deepcopy(raw(SPEC_B))
+        spec["positions"][0]["name"] = name
+        result = plan(spec, sources=SourceResolver(base_dir=REPO), offline=True)
+        frame = variant_overview_dataframe(result)
+        first = result.spec.positions[0].id
+        assert first in frame.columns, (name, list(frame.columns))
+        assert len(frame.columns) == len(result.spec.positions) + 3
+
+    # Two positions sharing a name keep one column each.
+    spec = copy.deepcopy(raw(SPEC_B))
+    spec["positions"][0]["name"] = "same"
+    spec["positions"][1]["name"] = "same"
+    result = plan(spec, sources=SourceResolver(base_dir=REPO), offline=True)
+    frame = variant_overview_dataframe(result)
+    assert len(frame.columns) == len(result.spec.positions) + 3
+    assert len(set(frame.columns)) == len(frame.columns)
+
+
+def test_a_shared_oligo_reports_every_direction_it_is_used_in(result):
+    """``direction`` is a property of a use, not of a molecule.
+
+    One molecule can be a part's forward primer and another part's reverse
+    primer.  Keeping whichever direction was encountered first had the order
+    sheet call such an oligo ``forward`` while ``pcr_dataframe`` listed that
+    same id under ``reverse_primer_id``.
+    """
+    frame = primer_dataframe(result)
+    pcrs = pcr_dataframe(result)
+    forward_ids = set(pcrs["forward_primer_id"])
+    reverse_ids = set(pcrs["reverse_primer_id"])
+    for _, row in frame.iterrows():
+        claimed = set(row["direction"].split("+"))
+        actual = set()
+        if row["primer_id"] in forward_ids:
+            actual.add("forward")
+        if row["primer_id"] in reverse_ids:
+            actual.add("reverse")
+        assert claimed == actual, (row["primer_id"], claimed, actual)

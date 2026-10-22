@@ -265,9 +265,10 @@ def test_every_variant_of_every_repository_spec_verifies(spec_path):
 def test_verified_construct_carries_the_part_and_primer_features():
     """pydna propagates features from the fragments into the product, which is
     what makes the exported GenBank annotated."""
-    raw = json.loads(
-        (REPO / "tests" / "files_for_testing" / "combinatorial_spec_fixed_overhang.json").read_text()
+    fixture = (
+        REPO / "tests" / "files_for_testing" / "combinatorial_spec_fixed_overhang.json"
     )
+    raw = json.loads(fixture.read_text())
     spec, records, variants, pairs = designed(raw, base_dir=REPO)
     variant = variants[0]
     _, construct = verify_variant(variant, pairs[variant.id], records, spec)

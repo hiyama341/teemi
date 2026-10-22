@@ -119,6 +119,7 @@
     "footprint_len_min": 18,
     "junction": {
       "homology_length": 35,
+      "tune_overhangs": true,
       "split_search": {
         "order": "outward_from_balanced",
         "accept": "first_feasible"

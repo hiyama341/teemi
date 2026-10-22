@@ -140,11 +140,44 @@ class Pad(Part):
 
 
 class Position(_Frozen):
-    """One slot of the library; the variants are the product of the positions."""
+    """One slot of the library; the variants are the product of the positions.
+
+    The six flags are *slot-level* facts, following FLOW's ``construct_part``:
+    they describe the place on the DNA, not the sequence that fills it, so
+    several alternatives at one position cannot disagree about which strand the
+    position sits on or whether its start codon survives the fusion.
+    """
 
     id: Slug
     name: Optional[str] = Field(default=None, max_length=200)
     parts: Tuple[Part, ...] = Field(min_length=1)
+
+    reverse: bool = False
+    """This part sits on the other strand; the reverse complement is taken here
+    so everything downstream reads one orientation."""
+
+    in_tail: bool = False
+    """Build this part into the flanking primer tails instead of amplifying it.
+    A request, not a command: a part too long to fit the primer budget comes
+    back as its own fragment with a warning saying so."""
+
+    no_tail_fwd: bool = False
+    """Omit the homology tail on this part's forward primer, which is the one
+    giving homology at its 5' end.  The junction then takes all its homology
+    from the upstream part's reverse primer."""
+
+    no_tail_rev: bool = False
+    """Omit the homology tail on this part's reverse primer, which lands on its
+    3' end.  The junction takes all its homology from the downstream part's
+    forward primer."""
+
+    drop_start: bool = False
+    """Drop this part's own start codon, as a CDS downstream of a signal
+    peptide does to keep one ATG across the fusion."""
+
+    drop_stop: bool = False
+    """Drop this part's own stop codon, as a CDS fused to a downstream tag or
+    linker does."""
 
 
 class Design(_Frozen):
@@ -181,7 +214,23 @@ class Junction(_Frozen):
     """
 
     homology_length: int = Field(default=35, ge=12, le=80)
+
+    tune_overhangs: bool = False
+    """Search the junction's split, instead of taking pydna's.
+
+    Off by default, and off means pydna: ``pydna.design.assembly_fragments``
+    builds the tails, because it is the maintained and validated
+    implementation of this manoeuvre and there is no reason to prefer a local
+    one.  It offers a single balanced split (``ceil(overlap/2)`` each side),
+    which is why turning this on is what buys a search at all.
+
+    FLOW sends this under the same name, and its own description says why it is
+    safe to hand to a search: 18/22 and 20/20 leave the two amplicons sharing
+    the same 40 bp, so the assembled product is identical either way and only
+    the two primer sequences change."""
+
     split_search: SplitSearch = SplitSearch()
+    """How to search, when :attr:`tune_overhangs` says to."""
 
 
 class PrimerDesign(_Frozen):
@@ -231,8 +280,13 @@ class Constraints(_Frozen):
     3' end is the one a polymerase extends into a primer dimer, and the two are
     scored under different alignment rules.
 
-    :attr:`primer_len_max` is both the orderable-oligo cap and primer3's limit:
-    its thermodynamic alignment raises above 60 nt.
+    :attr:`primer_len_max` is the **orderable** cap and nothing else.  It used
+    to double as primer3's limit, which conflated two unrelated facts: a
+    synthesiser will happily make a 90-mer, while primer3's thermodynamic
+    alignment refuses above 60 nt.  A primer past 60 is therefore ordered as
+    designed and its structure numbers describe only its 3'-most 60 bases,
+    which the tables say in ``primer3_clamped``.  Setting this above 60 is how
+    a 40 bp homology at a 65 C target becomes designable at all.
     """
 
     footprint_tm_window: TmWindow = TmWindow(min=52.0, max=72.0)
@@ -241,10 +295,24 @@ class Constraints(_Frozen):
     homodimer_dg_min: float = Field(default=-6.0, le=0.0)
     heterodimer_dg_min: float = Field(default=-6.0, le=0.0)
     three_prime_dimer_dg_min: float = Field(default=-9.0, le=0.0)
+    in_tail_max_bp: int = Field(default=40, ge=0)
+    """Longest part that may ride in the primer tails rather than be amplified.
+
+    pydna's ``assembly_fragments`` calls this ``maxlink`` and defaults it to 40,
+    which is where the number comes from.  Above it the part comes back as its
+    own fragment with a warning."""
+
     hairpin_tm_max: float = Field(default=45.0, ge=0.0, le=120.0)
     homodimer_tm_max: float = Field(default=45.0, ge=0.0, le=120.0)
     heterodimer_tm_max: float = Field(default=45.0, ge=0.0, le=120.0)
-    primer_len_max: int = Field(default=60, ge=20, le=60)
+    primer_len_max: int = Field(default=60, ge=20, le=200)
+    """What a synthesiser will make, not what primer3 will score.
+
+    The default stays 60 because that is where primer3 stops and so where the
+    structure numbers stop being whole-molecule; raising it is a deliberate
+    choice to order longer oligos and read their ΔG as describing the 3' end
+    only."""
+
     gc_fraction_min: float = Field(default=0.25, ge=0.0, le=1.0)
     gc_fraction_max: float = Field(default=0.75, ge=0.0, le=1.0)
 
@@ -292,6 +360,7 @@ class DesignSpec(_Frozen):
         self._check_pads()
         self._check_ids()
         self._check_size()
+        self._check_flags()
         self._check_feasibility()
         return self
 
@@ -316,6 +385,20 @@ class DesignSpec(_Frozen):
                 "part and pad ids must be unique across the whole spec; "
                 f"repeated: {', '.join(duplicates)}"
             )
+        # A pad sits in two namespaces, so it is checked in both.  It is a
+        # fragment, hence the check above; but ``ordered_slots`` interleaves
+        # pads with positions, so it is also a *slot*, and a pad id equal to a
+        # position id gives two slots one name.  The dict keyed on that name
+        # keeps whichever came last, and an ``after_position`` pad comes last,
+        # so every variant reported the pad as the part chosen at that
+        # position.  A part id may still match a position id: parts are never
+        # slot keys.
+        slots = sorted(set(position_ids) & {pad.id for pad in self.pads})
+        if slots:
+            raise ValueError(
+                "a pad id may not equal a position id; both are slots and the "
+                f"two would collapse into one: {', '.join(slots)}"
+            )
         composite = sorted(
             {i for i in fragment_ids + position_ids if ID_SEPARATOR in i}
         )
@@ -325,6 +408,64 @@ class DesignSpec(_Frozen):
                 f"ids and would make them ambiguous; rename: "
                 f"{', '.join(composite)}"
             )
+
+    def _check_flags(self) -> None:
+        """What the slot flags need in order to mean anything.
+
+        ``in_tail`` removes a slot from the fragment list and splices it into
+        the junction between its neighbours, so it needs neighbours on both
+        sides and a single, known sequence: with variants, which junction you
+        get would depend on the choice made at a slot that is not a fragment.
+        ``no_tail_fwd`` and ``no_tail_rev`` each pin a junction's split to one
+        end, so facing each other across one junction they ask for both ends at
+        once.
+        """
+        for position in self.positions:
+            if not position.in_tail:
+                continue
+            if len(position.parts) != 1:
+                raise ValueError(
+                    f"position {position.id!r} is in_tail with "
+                    f"{len(position.parts)} variants; an in_tail slot rides in "
+                    "its neighbours' primer tails, so it must have exactly one "
+                    "part"
+                )
+        slots = [
+            slot_id
+            for slot_id, _ in self.ordered_slots()
+            if slot_id not in {p.id for p in self.positions if p.in_tail}
+        ]
+        if len(slots) < 2:
+            raise ValueError(
+                "fewer than two fragments are left once the in_tail slots are "
+                "built into the tails; there is nothing to join"
+            )
+        order = [slot_id for slot_id, _ in self.ordered_slots()]
+        by_id = {position.id: position for position in self.positions}
+        in_tail_ids = {p.id for p in self.positions if p.in_tail}
+        if self.design.topology == "linear":
+            for edge in (order[0], order[-1]):
+                if edge in in_tail_ids:
+                    raise ValueError(
+                        f"position {edge!r} is in_tail at the end of a linear "
+                        "design, where there is no neighbour on both sides to "
+                        "carry it"
+                    )
+        # Two no_tail flags facing each other across one junction.
+        fragments = [slot_id for slot_id in order if slot_id not in in_tail_ids]
+        edges = list(zip(fragments, fragments[1:]))
+        if self.design.topology == "circular":
+            edges.append((fragments[-1], fragments[0]))
+        for upstream, downstream in edges:
+            if (
+                getattr(by_id.get(upstream), "no_tail_rev", False)
+                and getattr(by_id.get(downstream), "no_tail_fwd", False)
+            ):
+                raise ValueError(
+                    f"the junction {upstream!r} -> {downstream!r} has "
+                    "no_tail_rev upstream and no_tail_fwd downstream, so "
+                    "neither primer may carry the homology"
+                )
 
     def _check_pads(self) -> None:
         known = {p.id for p in self.positions}

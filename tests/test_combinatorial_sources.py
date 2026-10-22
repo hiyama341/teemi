@@ -38,7 +38,9 @@ def inline_part(sequence, part_id="p", topology="linear") -> Part:
 
 
 def test_resolves_the_notebook_spec():
-    raw = json.loads((REPO / "tests" / "files_for_testing" / "combinatorial_spec_fixed_overhang.json").read_text())
+    raw = json.loads((
+        REPO / "tests" / "files_for_testing" / "combinatorial_spec_fixed_overhang.json"
+    ).read_text())
     records = SourceResolver(base_dir=REPO).resolve_spec(load_spec(raw))
     assert len(records) == 6
     assert all(isinstance(r, Dseqrecord) for r in records.values())
@@ -61,10 +63,36 @@ def test_inline_sequence_is_uppercased_and_topology_honoured():
     assert record.circular is True
 
 
-@pytest.mark.parametrize("sequence", ["ACGTN", "ACGT-ACGT", "ACG TACGT", "ACGU"])
-def test_non_acgt_is_refused(sequence):
-    with pytest.raises(SourceError, match="outside ACGT"):
+@pytest.mark.parametrize("sequence", ["ACGT-ACGT", "ACG TACGT", "ACGU"])
+def test_what_is_not_dna_at_all_is_refused(sequence):
+    with pytest.raises(SourceError, match="not DNA"):
         SourceResolver().resolve(inline_part(sequence))
+
+
+@pytest.mark.parametrize("sequence", ["ACGTN", "NACGT", "ACGTRACGT"])
+def test_a_degenerate_code_near_an_end_is_refused(sequence):
+    """Where a primer is taken from, an ambiguous base has no Tm and no primer."""
+    with pytest.raises(SourceError, match="degenerate code"):
+        SourceResolver().resolve(inline_part(sequence))
+
+
+def test_a_degenerate_code_deep_inside_is_carried_through():
+    """Real library entries have them, and no primer ever reads that far in.
+
+    AMA1 carries six, the nearest 1,252 bp from an end.  Refusing the part
+    whole would turn away a construct that is perfectly designable: the bases a
+    footprint and the homology are taken from are unambiguous, and the
+    degenerate ones are only ever copied into the product.
+    """
+    interior = "ACGT" * 50 + "N" + "ACGT" * 50  # 201 bp, the N at 200
+    record = SourceResolver().resolve(inline_part(interior))
+    assert str(record.seq) == interior
+    assert str(record.seq)[200] == "N"
+
+    # One base closer to the end than a primer can reach is still refused.
+    reaches = "ACGT" * 19 + "N" + "ACGT" * 50
+    with pytest.raises(SourceError, match="degenerate code"):
+        SourceResolver().resolve(inline_part(reaches))
 
 
 def test_length_cap():

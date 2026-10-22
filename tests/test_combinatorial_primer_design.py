@@ -80,7 +80,13 @@ def _raw_spec(**overrides) -> dict:
                 ],
             },
         ],
-        "primer_design": {"target_tm": 57.0, "footprint_len_min": 18},
+        # This module is mostly about the split search, so it asks for it; the
+        # default path is pydna's and is covered on its own.
+        "primer_design": {
+            "target_tm": 57.0,
+            "footprint_len_min": 18,
+            "junction": {"tune_overhangs": True},
+        },
     }
     raw.update(overrides)
     return raw
@@ -289,8 +295,12 @@ def test_the_three_prime_dimer_takes_the_worse_direction():
     structures = D._pair_structures(forward, reverse, T.CONDITIONS)
     assert structures.three_prime_dimer_dg == pytest.approx(
         min(
-            D._structure(primer3.calc_end_stability, (forward, reverse), T.CONDITIONS)[0],
-            D._structure(primer3.calc_end_stability, (reverse, forward), T.CONDITIONS)[0],
+            D._structure(
+                primer3.calc_end_stability, (forward, reverse), T.CONDITIONS
+            )[0],
+            D._structure(
+                primer3.calc_end_stability, (reverse, forward), T.CONDITIONS
+            )[0],
         )
     )
 
@@ -423,7 +433,10 @@ def test_argmin_scores_every_split_and_takes_the_cheapest():
         primer_design={
             "target_tm": 57.0,
             "footprint_len_min": 18,
-            "junction": {"split_search": {"order": "exhaustive", "accept": "argmin"}},
+            "junction": {
+                "tune_overhangs": True,
+                "split_search": {"order": "exhaustive", "accept": "argmin"},
+            },
         }
     )
     junction = _junction(spec, records, footprints)
@@ -438,7 +451,10 @@ def test_fixed_balanced_tries_one_split():
         primer_design={
             "target_tm": 57.0,
             "footprint_len_min": 18,
-            "junction": {"split_search": {"order": "fixed_balanced"}},
+            "junction": {
+                "tune_overhangs": True,
+                "split_search": {"order": "fixed_balanced"},
+            },
         }
     )
     junction = _junction(spec, records, footprints)
@@ -481,7 +497,10 @@ def test_the_least_violating_candidate_is_the_one_reported():
         primer_design={
             "target_tm": 57.0,
             "footprint_len_min": 18,
-            "junction": {"split_search": {"order": "exhaustive"}},
+            "junction": {
+                "tune_overhangs": True,
+                "split_search": {"order": "exhaustive"},
+            },
         },
     )
     junction = _junction(spec, records, footprints, upstream="a2")
@@ -722,7 +741,9 @@ def test_online_a_pair_delta_is_nebs_own_delta_not_pydnas(monkeypatch):
 
 
 def test_the_two_stage_call_costs_fewer_neb_queries(monkeypatch):
-    spec = load_spec(json.loads((SPECS / "combinatorial_spec_fixed_overhang.json").read_text()))
+    spec = load_spec(
+        json.loads((SPECS / "combinatorial_spec_fixed_overhang.json").read_text())
+    )
     records = SRC.SourceResolver(base_dir=REPO).resolve_spec(spec)
 
     calls = _neb_offset(monkeypatch)
@@ -744,7 +765,9 @@ def test_the_two_stage_call_costs_fewer_neb_queries(monkeypatch):
 
 def test_the_neb_offset_lengthens_footprints_and_the_cap_reports_it(monkeypatch):
     calls = _neb_offset(monkeypatch)
-    spec = load_spec(json.loads((SPECS / "combinatorial_spec_fixed_overhang.json").read_text()))
+    spec = load_spec(
+        json.loads((SPECS / "combinatorial_spec_fixed_overhang.json").read_text())
+    )
     records = SRC.SourceResolver(base_dir=REPO).resolve_spec(spec)
     engine = T.FootprintTm(offline=False)
 
@@ -818,8 +841,21 @@ def test_a_dead_neb_leaves_a_message_and_a_local_design(monkeypatch):
 # --------------------------------------------------------------------------- #
 
 
-@pytest.mark.parametrize("name", ["combinatorial_spec_fixed_overhang", "combinatorial_spec_optimized_overhang"])
+@pytest.mark.parametrize(
+    "name",
+    ["combinatorial_spec_fixed_overhang", "combinatorial_spec_optimized_overhang"],
+)
 def test_the_notebook_specs_design_offline_with_every_junction_feasible(name):
+    """Both quickstart specs, on the two different paths they ask for.
+
+    The homology differs by one base between them, and that is pydna's
+    arithmetic rather than a defect: ``assembly_fragments`` puts
+    ``ceil(overlap/2)`` on each side, so an odd ``homology_length`` of 35 comes
+    back as 36 shared bases.  The sweep splits 35 into two tails that sum to
+    35.  For an even overlap -- FLOW sends 40 -- the two agree exactly.  It is
+    measured off the primers either way, never assumed, which is the only
+    reason the difference is visible here at all.
+    """
     spec = load_spec(json.loads((SPECS / f"{name}.json").read_text()))
     records = SRC.SourceResolver(base_dir=REPO).resolve_spec(spec)
     footprints, diagnostics = D.design_footprints(
@@ -829,9 +865,14 @@ def test_the_notebook_specs_design_offline_with_every_junction_feasible(name):
     designs = D.junctions_for_spec(spec, records, footprints)
     assert len(designs) == 8
     assert all(design.feasible for design in designs.values())
+
+    tuning = spec.primer_design.junction.tune_overhangs
+    expected_by = "sweep" if tuning else "pydna"
+    shared = 35 if tuning else 2 * math.ceil(35 / 2)
     for design in designs.values():
-        assert len(design.homology) == 35
-        assert design.chosen.t_f + design.chosen.t_r == 35
+        assert design.designed_by == expected_by
+        assert len(design.homology) == shared
+        assert design.chosen.t_f + design.chosen.t_r == shared
         assert len(design.chosen.forward_primer) <= spec.constraints.primer_len_max
         assert len(design.chosen.reverse_primer) <= spec.constraints.primer_len_max
 
@@ -850,7 +891,10 @@ def test_the_notebook_specs_design_offline_with_every_junction_feasible(name):
 
 def test_case_a_fixes_the_split_and_case_b_searches_it():
     designs = {}
-    for name in ("combinatorial_spec_fixed_overhang", "combinatorial_spec_optimized_overhang"):
+    for name in (
+        "combinatorial_spec_fixed_overhang",
+        "combinatorial_spec_optimized_overhang",
+    ):
         spec = load_spec(json.loads((SPECS / f"{name}.json").read_text()))
         records = SRC.SourceResolver(base_dir=REPO).resolve_spec(spec)
         footprints, _ = D.design_footprints(records, spec, T.FootprintTm(offline=True))

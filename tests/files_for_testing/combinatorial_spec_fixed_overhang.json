@@ -83,6 +83,7 @@
     "footprint_len_min": 18,
     "junction": {
       "homology_length": 35,
+      "tune_overhangs": false,
       "split_search": {
         "order": "fixed_balanced"
       }

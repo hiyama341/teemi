@@ -75,7 +75,8 @@ from typing import (
 import primer3
 from Bio.Seq import Seq
 from Bio.SeqUtils import gc_fraction
-from pydna.design import primer_design
+from pydna.amplify import pcr
+from pydna.design import assembly_fragments, primer_design
 from pydna.dseqrecord import Dseqrecord
 from pydna.primer import Primer
 
@@ -85,6 +86,7 @@ from teemi.design.combinatorial.spec import (
     DesignSpec,
     Pad,
     Part,
+    Position,
     Weights,
 )
 from teemi.design.combinatorial.tm import (
@@ -210,6 +212,10 @@ class Diagnostic:
     message: str
     constraint: Optional[Violation] = None
     part_id: Optional[str] = None
+    #: The oligo a breach belongs to, when it belongs to one.  A molecule
+    #: several parts share has no single ``part_id``, and naming a part that
+    #: does not exist would break grouping worse than leaving it unset.
+    primer_id: Optional[str] = None
     junction_id: Optional[str] = None
     variant_id: Optional[str] = None
 
@@ -220,30 +226,34 @@ class Diagnostic:
         *,
         part_id: Optional[str] = None,
         junction_id: Optional[str] = None,
+        primer_id: Optional[str] = None,
         severity: Severity = "error",
-        tried: Optional[int] = None,
+        exhausted: Optional[str] = None,
     ) -> "Diagnostic":
         """The one place a breach is turned into prose, so every message names
         the quantity, the bound and the model behind both.
 
-        ``tried`` is how many options the search evaluated before settling for
-        this breach, and is worth saying out loud: ``1 tried`` means the spec
-        pinned the overhang and a search would still have somewhere to go,
-        while ``36 tried`` means there is nothing left to try.
+        ``exhausted`` is the reason there was nothing better to pick, in the
+        caller's own words, and is only ever passed with ``severity="warning"``.
+        It is worth saying out loud because the two reasons are different: a
+        sweep that walked every split and found no escape, or a terminal primer
+        that is its own footprint and has no tail to move.
         """
-        exhausted = "" if tried is None else f"; no option avoids it ({tried} tried)"
+        because = "" if exhausted is None else f"; {exhausted}"
         return cls(
             severity=severity,
             code=violation.constraint,
             message=(
-                f"{part_id or junction_id or 'design'}: {violation.subject} "
+                f"{part_id or junction_id or primer_id or 'design'}: "
+                f"{violation.subject} "
                 f"{violation.observed:.2f} {violation.units} breaches "
                 f"{violation.constraint} {violation.limit:.2f} "
-                f"(measured by {violation.measured_by}){exhausted}"
+                f"(measured by {violation.measured_by}){because}"
             ),
             constraint=violation,
             part_id=part_id,
             junction_id=junction_id,
+            primer_id=primer_id,
         )
 
     def to_dict(self) -> dict:
@@ -255,6 +265,7 @@ class Diagnostic:
                 None if self.constraint is None else self.constraint.to_dict()
             ),
             "part_id": self.part_id,
+            "primer_id": self.primer_id,
             "junction_id": self.junction_id,
             "variant_id": self.variant_id,
         }
@@ -348,21 +359,106 @@ class Footprints:
         }
 
 
+START_CODON = "ATG"
+
+#: The three stop codons, so ``drop_stop`` knows what it is removing.
+STOP_CODONS = ("TAA", "TAG", "TGA")
+
+
+def apply_slot_flags(
+    records: Mapping[str, Dseqrecord], spec: DesignSpec
+) -> Tuple[Dict[str, Dseqrecord], Tuple[Diagnostic, ...]]:
+    """Trim the codons the fusion does not keep, then orient each part.
+
+    The codons first, in the part's own reading: a start codon is a fact about
+    the part's frame, not about the construct.  Flipping first would look for
+    the ATG at the 5' end of the oriented sequence, where a reversed CDS
+    instead presents the reverse complement of its stop codon -- so the flag
+    would miss its target and trim three bases of the wrong end if they
+    happened to match.
+
+    A ``drop_start`` or ``drop_stop`` whose codon is not there is reported and
+    nothing is removed.  Silently trimming three bases that were not a codon
+    would shift the reading frame of the fusion, which is worse than saying so.
+    """
+    by_part = {
+        part.id: position
+        for position in spec.positions
+        for part in position.parts
+    }
+    out = dict(records)
+    notes: List[Diagnostic] = []
+    for part_id, position in by_part.items():
+        record = out.get(part_id)
+        if record is None:
+            continue
+        for flag, codons, where in (
+            (position.drop_start, (START_CODON,), "start"),
+            (position.drop_stop, STOP_CODONS, "end"),
+        ):
+            if not flag:
+                continue
+            sequence = str(record.seq).upper()
+            present = (
+                sequence[:3] in codons if where == "start" else sequence[-3:] in codons
+            )
+            if not present:
+                notes.append(
+                    Diagnostic(
+                        severity="warning",
+                        code=f"drop_{where}_codon_absent",
+                        message=(
+                            f"{part_id}: drop_"
+                            f"{'start' if where == 'start' else 'stop'} was "
+                            f"asked for but the part "
+                            f"{'begins' if where == 'start' else 'ends'} "
+                            f"{sequence[:3] if where == 'start' else sequence[-3:]!r}, "
+                            f"not a {where} codon; nothing removed"
+                        ),
+                        part_id=part_id,
+                    )
+                )
+                continue
+            record = record[3:] if where == "start" else record[:-3]
+            record.id = part_id
+            record.name = part_id[:16]
+        if position.reverse:
+            flipped = record.reverse_complement()
+            flipped.id = part_id
+            flipped.name = part_id[:16]
+            record = flipped
+        out[part_id] = record
+    return out, tuple(notes)
+
+
 def design_footprints(
     records: Mapping[str, Dseqrecord],
     spec: DesignSpec,
     engine: FootprintTm,
+    layout: Optional[Layout] = None,
 ) -> Tuple[Dict[str, Footprints], Tuple[Diagnostic, ...]]:
-    """Footprints for every part and pad, plus the bounds they breach.
+    """Footprints for every amplified part and pad, plus the bounds they breach.
+
+    Only the amplified ones.  A part riding in its neighbours' primer tails is
+    never a template, so no primer anneals to it and asking for a footprint
+    would refuse a 9 bp Kozak sequence for being too short to do something it
+    was never going to do.
 
     Raises :class:`FootprintError` for a part no primer can anneal to -- shorter
     than ``footprint_len_min``, or one pydna cannot design against.  That is
     invalid input rather than an infeasible design, so it is an exception and the
     caller turns it into a diagnostic at its own boundary.
     """
+    amplified = {
+        part.id
+        for _, parts in (layout or Layout.from_spec(spec)).fragments
+        for part in parts
+    }
     footprints: Dict[str, Footprints] = {}
     diagnostics: List[Diagnostic] = []
     for part_id, record in records.items():
+        if part_id not in amplified:
+            continue
         footprint = _design_one(part_id, record, spec, engine)
         footprints[part_id] = footprint
         diagnostics.extend(_footprint_diagnostics(footprint, spec.constraints))
@@ -815,10 +911,37 @@ class Junction:
     upstream_seq: str
     downstream_seq: str
     homology_length: int
+    interposed: str = ""
+    """Sequence that sits between the two parts without being amplified.
+
+    An ``in_tail`` slot's part.  It is *inside* the homology, not added to it:
+    ``homology_length`` stays the number of bases the two amplicons share, and
+    what rides in the tails spends part of that budget, exactly as pydna's
+    ``assembly_fragments`` accounts for a fragment shorter than its ``maxlink``.
+    Asking for 40 bp of homology gives 40, whether or not a Kozak sequence sits
+    in the middle of it."""
+
+    forced_t_f: Optional[int] = None
+    """The only split allowed here, when a ``no_tail`` flag pins it.
+
+    ``no_tail_rev`` upstream leaves the downstream forward primer carrying all
+    the homology (``t_f == homology_length``); ``no_tail_fwd`` downstream leaves
+    it all on the upstream reverse primer (``t_f == 0``).  The sweep then has
+    one candidate, which is why :func:`_unavoidable` declines to conclude
+    anything from it."""
 
     @property
     def id(self) -> str:
         return f"{self.upstream.part_id}{ID_SEPARATOR}{self.downstream.part_id}"
+
+    @property
+    def budget(self) -> int:
+        """How much of the homology the two parts themselves must supply.
+
+        ``homology_length`` less whatever rides in the tails, so the split is
+        searched over what is left rather than over the whole.
+        """
+        return self.homology_length - len(self.interposed)
 
     def primers(self, t_f: int) -> Tuple[str, str]:
         """``(forward primer of B, reverse primer of A)`` for this split.
@@ -826,25 +949,36 @@ class Junction:
         The tail goes on the 5' side of each primer and the footprint stays at
         the 3' end, which is the end that has to anneal and extend.
         """
-        t_r = self.homology_length - t_f
-        forward = _suffix(self.upstream_seq, t_f) + self.downstream.forward
+        t_r = self.budget - t_f
+        forward = (
+            _suffix(self.upstream_seq, t_f)
+            + self.interposed
+            + self.downstream.forward
+        )
         reverse = (
-            str(Seq(self.downstream_seq[:t_r]).reverse_complement())
+            str(
+                Seq(self.interposed + self.downstream_seq[:t_r]).reverse_complement()
+            )
             + self.upstream.reverse
         )
         return forward, reverse
 
     def homology(self, t_f: int) -> str:
-        """The ``homology_length`` bases the two amplicons will share."""
+        """The bases the two amplicons will share.
+
+        ``homology_length`` of it comes from the two parts; anything riding in
+        the tails sits in the middle and lengthens it.
+        """
         return (
             _suffix(self.upstream_seq, t_f)
-            + self.downstream_seq[: self.homology_length - t_f]
+            + self.interposed
+            + self.downstream_seq[: self.budget - t_f]
         )
 
     def split_range(self) -> Tuple[int, int]:
         """The ``t_f`` values the two parts are long enough to supply."""
-        low = max(0, self.homology_length - len(self.downstream_seq))
-        high = min(self.homology_length, len(self.upstream_seq))
+        low = max(0, self.budget - len(self.downstream_seq))
+        high = min(self.budget, len(self.upstream_seq))
         return low, high
 
 
@@ -861,11 +995,27 @@ class JunctionDesign:
     #: ``(t_f, cost)`` for every candidate evaluated, in the order tried.  Under
     #: ``first_feasible`` that is only as far as the sweep got.
     profile: Tuple[Tuple[int, float], ...]
-    #: The breached structure bounds that no candidate in the sweep avoided.
-    #: ``first_feasible`` only stops early on a feasible candidate, so whenever
-    #: the chosen split still breaches, the whole range was evaluated and this
-    #: is a statement about every legal split, not about a truncated walk.
-    unavoidable: Tuple[str, ...] = ()
+    #: What rides in the tails between the two parts, if anything.  It sits
+    #: inside :attr:`homology`, which is why that can be longer than
+    #: :attr:`homology_length`.
+    interposed: str = ""
+    #: Who built these primers.  ``pydna`` is
+    #: ``pydna.design.assembly_fragments`` and the default; ``sweep`` is this
+    #: module's own search, which ``tune_overhangs`` turns on; ``forced`` is one
+    #: split this module had to build because a ``no_tail`` flag pins it and
+    #: pydna has no way to express that.  Worth recording because the three
+    #: mean different things by the split, and because a design that asked for
+    #: pydna should be able to see where it did not get it.
+    designed_by: Literal["pydna", "sweep", "forced"] = "sweep"
+    #: ``(bound, subject)`` pairs that no candidate in the sweep avoided.
+    #:
+    #: Two things make this a statement about every legal split rather than a
+    #: truncated walk: ``first_feasible`` only stops early on a *feasible*
+    #: candidate, so whenever the chosen split still breaches, the whole range
+    #: was evaluated; and :func:`_unavoidable` refuses to conclude anything from
+    #: a sweep of fewer than two candidates, which is what ``fixed_balanced``
+    #: produces.
+    unavoidable: Tuple[Tuple[str, str], ...] = ()
 
     @property
     def feasible(self) -> bool:
@@ -877,7 +1027,9 @@ class JunctionDesign:
             "upstream_id": self.upstream_id,
             "downstream_id": self.downstream_id,
             "homology_length": self.homology_length,
-            "unavoidable": list(self.unavoidable),
+            "interposed": self.interposed,
+            "designed_by": self.designed_by,
+            "unavoidable": [list(pair) for pair in self.unavoidable],
             "homology": self.homology,
             "profile": [list(point) for point in self.profile],
             "n_evaluated": len(self.profile),
@@ -904,25 +1056,123 @@ def _split_order(order: str, homology_length: int) -> Tuple[int, ...]:
     )
 
 
+def _shared_run(left: str, right: str, most: int) -> str:
+    """The longest suffix of ``left`` that is also a prefix of ``right``.
+
+    Measured rather than assumed, because on the pydna path the homology is
+    whatever ``assembly_fragments`` built -- which is ``2 * ceil(overlap/2)``
+    for an odd overlap, and includes its share of anything riding in the tails.
+    """
+    for length in range(min(most, len(left), len(right)), 0, -1):
+        if left[-length:] == right[:length]:
+            return left[-length:]
+    return ""
+
+
+def _pydna_candidate(
+    junction: Junction, spec: DesignSpec, conditions: Conditions
+) -> Tuple[Candidate, str]:
+    """The one candidate ``pydna.design.assembly_fragments`` produces.
+
+    pydna is handed this adjacency on its own -- two amplicons, with whatever
+    rides in the tails between them -- which gives the same primers as handing
+    it the whole construct, because the tails it builds depend only on the
+    immediate neighbours.  So the module keeps designing each adjacency once
+    and reusing it, and pydna decides the tails.
+
+    The split is read back off the primers pydna returned rather than computed:
+    it distributes a linker as half to each side, so the tail lengths are not
+    something to predict.
+    """
+    upstream = pcr(
+        Primer(junction.upstream.forward),
+        Primer(junction.upstream.reverse),
+        Dseqrecord(junction.upstream_seq),
+    )
+    downstream = pcr(
+        Primer(junction.downstream.forward),
+        Primer(junction.downstream.reverse),
+        Dseqrecord(junction.downstream_seq),
+    )
+    fragments: List[object] = [upstream]
+    if junction.interposed:
+        fragments.append(Dseqrecord(junction.interposed))
+    fragments.append(downstream)
+    tailed = assembly_fragments(
+        fragments,
+        overlap=junction.homology_length,
+        maxlink=spec.constraints.in_tail_max_bp,
+    )
+    forward = str(tailed[-1].forward_primer.seq)
+    reverse = str(tailed[0].reverse_primer.seq)
+    homology = _shared_run(
+        str(tailed[0].seq),
+        str(tailed[-1].seq),
+        junction.homology_length + len(junction.interposed) + 8,
+    )
+    forward_structures = oligo_structures(forward, conditions)
+    reverse_structures = oligo_structures(reverse, conditions)
+    return Candidate(
+        t_f=len(forward) - len(junction.downstream.forward),
+        t_r=len(reverse) - len(junction.upstream.reverse),
+        forward_primer=forward,
+        reverse_primer=reverse,
+        forward_structures=forward_structures,
+        reverse_structures=reverse_structures,
+        violations=oligo_violations(
+            "forward_primer", forward, forward_structures, spec.constraints
+        )
+        + oligo_violations(
+            "reverse_primer", reverse, reverse_structures, spec.constraints
+        ),
+        cost=_cost(
+            forward,
+            reverse,
+            forward_structures,
+            reverse_structures,
+            spec.objective.weights,
+        ),
+    ), homology
+
+
 def _unavoidable(
     candidates: Sequence[Candidate], chosen: Candidate
-) -> Tuple[str, ...]:
-    """The structure bounds the chosen split breaches that no split avoided.
+) -> Tuple[Tuple[str, str], ...]:
+    """The ``(bound, subject)`` pairs the chosen split breaches that no split avoided.
 
     A breach every candidate shares is a property of the two parts, not of the
-    choice the optimizer made, so there is nothing a caller can do about it by
-    re-running the search.  Only :data:`STRUCTURE_BOUNDS` are considered: a
-    length or GC breach is not something a split was ever going to fix.
+    choice the optimizer made, so re-running the search cannot help.  Only
+    :data:`STRUCTURE_BOUNDS` are considered: a length or GC breach is not
+    something a split was ever going to fix.
+
+    Pairs rather than bare names, because a candidate's ``violations``
+    concatenate the forward *and* the reverse primer's breaches.  Matching on
+    the bound alone lets one that merely migrates from one primer to the other
+    across the sweep count as unavoidable for both, and each would then be
+    downgraded on the other's evidence.
+
+    A sweep of one candidate proves nothing, so it claims nothing.
+    ``fixed_balanced`` pins the split, and ``all()`` over its single candidate
+    would otherwise "prove" every breach unavoidable from evidence that was
+    never gathered -- when the remedy is precisely to let the optimizer search,
+    which is what a blocking error should prompt.
     """
+    if len(candidates) < 2:
+        return ()
     breached = {
-        violation.constraint for violation in chosen.violations
-    } & STRUCTURE_BOUNDS
+        (violation.constraint, violation.subject)
+        for violation in chosen.violations
+        if violation.constraint in STRUCTURE_BOUNDS
+    }
     return tuple(
         sorted(
-            name
-            for name in breached
+            pair
+            for pair in breached
             if all(
-                any(violation.constraint == name for violation in candidate.violations)
+                any(
+                    (violation.constraint, violation.subject) == pair
+                    for violation in candidate.violations
+                )
                 for candidate in candidates
             )
         )
@@ -946,12 +1196,44 @@ def design_junction(
     if low > high:
         raise JunctionError(
             f"{len(junction.upstream_seq)} bp and {len(junction.downstream_seq)} bp "
-            f"cannot supply homology_length {junction.homology_length}",
+            f"cannot supply the {junction.budget} bp of homology left after "
+            f"{len(junction.interposed)} bp riding in the tails"
+            if junction.interposed
+            else f"cannot supply homology_length {junction.homology_length}",
             junction_id=junction.id,
         )
-    search = spec.primer_design.junction.split_search
+    settings = spec.primer_design.junction
+    search = settings.split_search
+    if not settings.tune_overhangs and junction.forced_t_f is None:
+        # pydna's own tails.  Nothing is searched, so there is one candidate and
+        # the homology is whatever it built; both are read back off the result.
+        chosen, homology = _pydna_candidate(junction, spec, conditions)
+        return JunctionDesign(
+            id=junction.id,
+            upstream_id=junction.upstream.part_id,
+            downstream_id=junction.downstream.part_id,
+            homology_length=junction.homology_length,
+            homology=homology,
+            chosen=chosen,
+            profile=((chosen.t_f, chosen.cost),),
+            interposed=junction.interposed,
+            designed_by="pydna",
+        )
+    if junction.forced_t_f is not None:
+        if not low <= junction.forced_t_f <= high:
+            raise JunctionError(
+                f"a no_tail flag pins the split at t_f={junction.forced_t_f}, "
+                f"which these two parts cannot supply (only {low}..{high} of "
+                f"{junction.budget} bp is available)",
+                junction_id=junction.id,
+            )
+        order: Tuple[int, ...] = (junction.forced_t_f,)
+        built_by: Literal["pydna", "sweep", "forced"] = "forced"
+    else:
+        order = _split_order(search.order, junction.budget)
+        built_by = "sweep"
     candidates: List[Candidate] = []
-    for t_f in _split_order(search.order, junction.homology_length):
+    for t_f in order:
         if not low <= t_f <= high:
             continue
         forward, reverse = junction.primers(t_f)
@@ -960,7 +1242,7 @@ def design_junction(
         candidates.append(
             Candidate(
                 t_f=t_f,
-                t_r=junction.homology_length - t_f,
+                t_r=junction.budget - t_f,
                 forward_primer=forward,
                 reverse_primer=reverse,
                 forward_structures=forward_structures,
@@ -1005,8 +1287,10 @@ def design_junction(
         downstream_id=junction.downstream.part_id,
         homology_length=junction.homology_length,
         homology=junction.homology(chosen.t_f),
+        interposed=junction.interposed,
         chosen=chosen,
         profile=tuple((candidate.t_f, candidate.cost) for candidate in candidates),
+        designed_by=built_by,
         unavoidable=_unavoidable(candidates, chosen),
     )
 
@@ -1018,39 +1302,147 @@ def design_junction(
 
 @dataclass(frozen=True, slots=True)
 class Variant:
-    """One member of the library: every fragment, in assembly order.
+    """One member of the library, in assembly order.
 
     The id names only the position choices.  Pads are in :attr:`parts` because
     they are assembled, but they are the same in every variant and so
     distinguish nothing.
+
+    :attr:`parts` is the whole construct, :attr:`fragments` only what is
+    amplified.  They differ by the ``in_tail`` slots, which end up in the
+    product via the primer tails and therefore belong to the first and not the
+    second.
     """
 
     id: str
     parts: Tuple[Part, ...]
+    fragments: Tuple[Part, ...] = ()
 
 
-def variants(spec: DesignSpec) -> Tuple[Variant, ...]:
-    """The library: the product of the positions, pads in place."""
-    slots = spec.ordered_slots()
-    return tuple(
-        Variant(
-            id=ID_SEPARATOR.join(
-                part.id for part in combination if not isinstance(part, Pad)
-            ),
-            parts=combination,
+@dataclass(frozen=True, slots=True)
+class Layout:
+    """Which slots are amplified, and what rides in the tails between them.
+
+    An ``in_tail`` slot is not a fragment: its sequence is built into the two
+    flanking primers instead, so the construct still contains it while one
+    fewer PCR is run.  That decision needs the sequences -- a part past
+    ``in_tail_max_bp`` is amplified after all -- so it is made once, here, and
+    everything downstream reads it rather than re-deriving it.
+    """
+
+    #: ``(slot_id, candidate parts, rides_in_tail)`` in assembly order.
+    slots: Tuple[Tuple[str, Tuple[Part, ...], bool], ...]
+    diagnostics: Tuple[Diagnostic, ...] = ()
+
+    @classmethod
+    def from_spec(cls, spec: DesignSpec) -> "Layout":
+        """The layout the spec asks for, before the sequences are known.
+
+        Honours every ``in_tail`` flag as written.  :func:`plan_layout` is the
+        one that can also decline a request, because only it has the lengths.
+        """
+        asked = {position.id for position in spec.positions if position.in_tail}
+        return cls(
+            slots=tuple(
+                (slot_id, parts, slot_id in asked)
+                for slot_id, parts in spec.ordered_slots()
+            )
         )
-        for combination in itertools.product(*(parts for _, parts in slots))
+
+    @property
+    def fragments(self) -> Tuple[Tuple[str, Tuple[Part, ...]], ...]:
+        """The slots that become their own PCR."""
+        return tuple(
+            (slot_id, parts) for slot_id, parts, tail in self.slots if not tail
+        )
+
+    def interposed(self, records: Mapping[str, Dseqrecord]) -> Dict[str, str]:
+        """Slot id -> the sequence it contributes to its neighbours' tails."""
+        return {
+            slot_id: str(records[parts[0].id].seq)
+            for slot_id, parts, tail in self.slots
+            if tail
+        }
+
+
+def plan_layout(
+    spec: DesignSpec, records: Mapping[str, Dseqrecord]
+) -> Layout:
+    """Decide which ``in_tail`` requests the primer budget can actually honour."""
+    asked = {position.id for position in spec.positions if position.in_tail}
+    limit = spec.constraints.in_tail_max_bp
+    slots: List[Tuple[str, Tuple[Part, ...], bool]] = []
+    notes: List[Diagnostic] = []
+    for slot_id, parts in spec.ordered_slots():
+        if slot_id not in asked:
+            slots.append((slot_id, parts, False))
+            continue
+        length = len(records[parts[0].id])
+        if length > limit:
+            notes.append(
+                Diagnostic(
+                    severity="warning",
+                    code="in_tail_too_long",
+                    message=(
+                        f"{slot_id}: in_tail was asked for but the part is "
+                        f"{length} bp, past in_tail_max_bp {limit}; it would be "
+                        "added to both flanking primers, so it is amplified as "
+                        "its own fragment instead"
+                    ),
+                    part_id=parts[0].id,
+                )
+            )
+            slots.append((slot_id, parts, False))
+            continue
+        slots.append((slot_id, parts, True))
+    return Layout(slots=tuple(slots), diagnostics=tuple(notes))
+
+
+def variants(spec: DesignSpec, layout: Optional[Layout] = None) -> Tuple[Variant, ...]:
+    """The library: the product of the positions, pads in place.
+
+    :attr:`Variant.parts` is the whole construct in order, including whatever
+    rides in the tails, because that is what the product has to come out equal
+    to.  :attr:`Variant.fragments` is only what gets amplified.
+    """
+    layout = layout or Layout.from_spec(spec)
+    fragment_slots = layout.fragments
+    return tuple(
+        _variant(spec, layout, combination)
+        for combination in itertools.product(*(parts for _, parts in fragment_slots))
     )
 
 
-def adjacent_part_pairs(spec: DesignSpec) -> Tuple[Tuple[str, str], ...]:
+def _variant(
+    spec: DesignSpec, layout: Layout, chosen: Tuple[Part, ...]
+) -> Variant:
+    """Put one combination of fragments back into the full construct order."""
+    picks = iter(chosen)
+    order: List[Part] = []
+    for _, parts, tail in layout.slots:
+        order.append(parts[0] if tail else next(picks))
+    return Variant(
+        id=ID_SEPARATOR.join(
+            part.id for part in order if not isinstance(part, Pad)
+        ),
+        parts=tuple(order),
+        fragments=chosen,
+    )
+
+
+def adjacent_part_pairs(
+    spec: DesignSpec, layout: Optional[Layout] = None
+) -> Tuple[Tuple[str, str], ...]:
     """Every ``(upstream_id, downstream_id)`` that occurs in any variant, once.
 
     ``sum(n_i * n_i+1)`` pairs rather than ``prod(n_i)`` variants: a junction
     between two parts is the same junction whatever else the variant contains,
     so it is designed once and reused by every variant that contains it.
+
+    Adjacency is between *fragments*: an ``in_tail`` slot does not break one, it
+    sits inside it.
     """
-    slots = spec.ordered_slots()
+    slots = (layout or Layout.from_spec(spec)).fragments
     adjacencies = list(zip(slots, slots[1:]))
     if spec.design.topology == "circular":
         adjacencies.append((slots[-1], slots[0]))
@@ -1066,10 +1458,18 @@ def junctions_for_spec(
     spec: DesignSpec,
     records: Mapping[str, Dseqrecord],
     footprints: Mapping[str, Footprints],
+    layout: Optional[Layout] = None,
     conditions: Conditions = CONDITIONS,
 ) -> Dict[Tuple[str, str], JunctionDesign]:
     """Design each unique adjacency once, keyed by its part-id pair."""
     homology_length = spec.primer_design.junction.homology_length
+    layout = layout or Layout.from_spec(spec)
+    between = _interposed_between(spec, layout, records)
+    slot_of = {
+        part.id: position
+        for position in spec.positions
+        for part in position.parts
+    }
     return {
         (upstream_id, downstream_id): design_junction(
             Junction(
@@ -1078,12 +1478,67 @@ def junctions_for_spec(
                 upstream_seq=str(records[upstream_id].seq),
                 downstream_seq=str(records[downstream_id].seq),
                 homology_length=homology_length,
+                interposed=between.get((upstream_id, downstream_id), ""),
+                forced_t_f=_forced_split(
+                    slot_of.get(upstream_id),
+                    slot_of.get(downstream_id),
+                    homology_length
+                    - len(between.get((upstream_id, downstream_id), "")),
+                ),
             ),
             spec,
             conditions,
         )
-        for upstream_id, downstream_id in adjacent_part_pairs(spec)
+        for upstream_id, downstream_id in adjacent_part_pairs(spec, layout)
     }
+
+
+def _interposed_between(
+    spec: DesignSpec, layout: Layout, records: Mapping[str, Dseqrecord]
+) -> Dict[Tuple[str, str], str]:
+    """What rides in the tails of each fragment adjacency.
+
+    Consecutive ``in_tail`` slots concatenate in order, so two short elements
+    between the same pair of fragments both end up in the product once.
+    """
+    riding = layout.interposed(records)
+    order = list(layout.slots)
+    if spec.design.topology == "circular":
+        order = order + order[: len(order)]
+    between: Dict[Tuple[str, str], str] = {}
+    pending: List[str] = []
+    previous: Optional[Tuple[str, Tuple[Part, ...]]] = None
+    seen = 0
+    for slot_id, parts, tail in order:
+        if tail:
+            pending.append(riding[slot_id])
+            continue
+        if previous is not None:
+            for part_a in previous[1]:
+                for part_b in parts:
+                    between[(part_a.id, part_b.id)] = "".join(pending)
+        previous = (slot_id, parts)
+        pending = []
+        seen += 1
+        if seen > len(layout.fragments):
+            break
+    return between
+
+
+def _forced_split(
+    upstream: Optional[Position], downstream: Optional[Position], budget: int
+) -> Optional[int]:
+    """The split a ``no_tail`` flag pins this junction to, if either does.
+
+    A pad carries no flags, hence the ``Optional`` on both sides.  Flags facing
+    each other across one junction are refused in the spec, so at most one of
+    these can fire.
+    """
+    if upstream is not None and upstream.no_tail_rev:
+        return budget
+    if downstream is not None and downstream.no_tail_fwd:
+        return 0
+    return None
 
 
 @dataclass(frozen=True, slots=True)
@@ -1119,8 +1574,12 @@ def variant_oligos(
     neighbours.  In a linear design the first fragment's forward primer and the
     last fragment's reverse primer are the bare footprints, with no tail; in a
     circular one the last fragment joins the first and every primer is tailed.
+
+    Only the fragments: an ``in_tail`` part has no PCR of its own, and its
+    sequence reaches the product through the tails of the two primers either
+    side of it.
     """
-    parts = variant.parts
+    parts = variant.fragments or variant.parts
     count = len(parts)
     circular = spec.design.topology == "circular"
     pairs = []

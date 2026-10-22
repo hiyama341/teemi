@@ -15,7 +15,9 @@ from teemi.design.combinatorial.spec import DesignSpec, json_schema, load_spec
 from tests.combinatorial_netguard import no_network  # noqa: F401
 
 REPO = Path(__file__).resolve().parents[1]
-SPEC_FILES = sorted((REPO / "tests" / "files_for_testing").glob("combinatorial_spec_*overhang.json"))
+SPEC_FILES = sorted(
+    (REPO / "tests" / "files_for_testing").glob("combinatorial_spec_*overhang.json")
+)
 
 
 def minimal(**overrides) -> dict:
@@ -225,3 +227,32 @@ def test_a_position_id_may_not_contain_the_separator_either():
     spec["positions"][0]["id"] = "pos__1"
     with pytest.raises(ValidationError, match="may not contain"):
         load_spec(spec)
+
+
+def test_a_pad_id_may_not_equal_a_position_id():
+    """Pads and positions are both slots, so they share that namespace.
+
+    ``ordered_slots`` interleaves them and ``_variant_plans`` keys a dict on the
+    result, so two slots with one name keep only the later -- and an
+    ``after_position`` pad is the later one, so every variant reported the pad
+    as the part chosen at that position and the overview table printed it.
+    """
+    spec = minimal()
+    position_id = spec["positions"][0]["id"]
+    spec["pads"] = [
+        {
+            "id": position_id,
+            "source": {"type": "inline", "sequence": "ATGC" * 40},
+            "after_position": position_id,
+        }
+    ]
+    with pytest.raises(ValidationError, match="may not equal a position id"):
+        load_spec(spec)
+
+    # A distinct pad id is fine, and so is a part id matching a position id --
+    # parts are never slot keys.
+    spec["pads"][0]["id"] = "linker"
+    assert load_spec(spec)
+    shared = minimal()
+    shared["positions"][0]["parts"][0]["id"] = shared["positions"][0]["id"]
+    assert load_spec(shared)

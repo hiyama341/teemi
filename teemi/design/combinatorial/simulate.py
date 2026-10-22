@@ -28,10 +28,13 @@ back written either way round and, when circular, starting anywhere:
   its smallest rotation first (``pydna.utils.smallest_rotation``, Booth's
   algorithm).
 
-The verdict distinguishes four outcomes, and **multiple products is not a
+The verdict distinguishes five outcomes, and **multiple products is not a
 success**: more than one distinct product means the homology is ambiguous, so
 the real library would carry a mixture.  Taking the first product would report a
-plausible-looking construct for a design that scrambles.
+plausible-looking construct for a design that scrambles.  The fifth,
+``assembly_failed``, is pydna declining the assembly at all; it is a verdict
+rather than an exception so that :func:`~teemi.design.combinatorial.plan`
+always returns a result.
 """
 
 from __future__ import annotations
@@ -65,7 +68,16 @@ __all__ = [
 #: intended and reports it as no product.
 PYDNA_ASSEMBLY_LIMIT = 25
 
-Verdict = Literal["verified", "mismatch", "no_product", "multiple_products"]
+Verdict = Literal[
+    "verified",
+    "mismatch",
+    "no_product",
+    "multiple_products",
+    #: pydna refused the assembly outright -- incompatible ends, which it
+    #: reports as a bare ``TypeError``.  A fact about the design, so it is a
+    #: verdict like the others rather than an exception out of ``plan``.
+    "assembly_failed",
+]
 
 
 @dataclass(frozen=True, slots=True)
@@ -163,8 +175,16 @@ def verify_variant(
             None,
         )
 
+    # pydna's linear assembly also returns the degenerate path that is just the
+    # shared region between two amplicons -- a 30 bp "product" beside the 800 bp
+    # one, which made every two-fragment linear design report an ambiguity it
+    # does not have.  A real join of n amplicons is at least as long as its
+    # longest member, so anything shorter is that artefact and not a product.
+    floor = max((len(amplicon) for amplicon in amplicons), default=0)
     distinct: Dict[str, Dseqrecord] = {}
     for product in products:
+        if len(product) < floor:
+            continue
         distinct.setdefault(
             canonical_sequence(str(product.seq), circular=circular), product
         )

@@ -25,7 +25,9 @@ from tests.combinatorial_netguard import no_network  # noqa: F401
 REPO = Path(__file__).resolve().parents[1]
 PACKAGE = REPO / "teemi" / "design" / "combinatorial"
 NOTEBOOK = REPO / "notebooks" / "combinatorial_quickstart.ipynb"
-SPEC_FILES = sorted((REPO / "tests" / "files_for_testing").glob("combinatorial_spec_*overhang.json"))
+SPEC_FILES = sorted(
+    (REPO / "tests" / "files_for_testing").glob("combinatorial_spec_*overhang.json")
+)
 
 
 def notebook_source() -> str:
