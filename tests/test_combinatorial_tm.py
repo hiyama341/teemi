@@ -150,7 +150,11 @@ def test_local_ta_delegates_to_pydna_ta_dbd():
 
 def test_offline_engine_makes_no_request():
     engine = T.FootprintTm(offline=True)
-    assert engine.estimate_function is None
+    # primer3 is the cheap walk either way; what offline changes is the
+    # authoritative pass, which becomes pydna's own model instead of NEB.
+    assert engine.estimate_function(FORWARD) == pytest.approx(
+        T.primer3_tm(FORWARD)
+    )
     assert engine.tm(FORWARD).engine == T.ENGINE_LOCAL_TM
     assert engine.failures == ()
     assert engine.engine == T.ENGINE_LOCAL_TM
@@ -173,8 +177,12 @@ def test_online_engine_tags_neb_values_and_passes_a_two_stage_pair(monkeypatch):
     assert len(calls) == 1
     assert calls[0][1] == pytest.approx(T.CONDITIONS.neb_conc_um)
     assert calls[0][2] == T.NEB_PRODCODE
-    # The estimate function is the cheap local model, not NEB.
+    # The estimate function is primer3, which is free, and is the same model
+    # the structure bounds are read against -- not NEB, and not pydna's.
     assert engine.estimate_function(FORWARD) == pytest.approx(
+        T.primer3_tm(FORWARD)
+    )
+    assert engine.estimate_function(FORWARD) != pytest.approx(
         T.local_tm(FORWARD).celsius
     )
 
@@ -361,3 +369,38 @@ def test_the_report_columns_keep_the_two_tm_quantities_apart(monkeypatch):
     # the pair it derives from.
     assert "tm" not in row
     assert "ta" not in row
+
+
+def test_the_cheap_walk_is_primer3_and_the_reported_value_is_the_engines(monkeypatch):
+    """primer3 chooses where to start looking; the engine says what it is.
+
+    The walk used to ask the authoritative engine at every candidate length,
+    which on a 67-gene library was 1,481 NEB requests.  primer3 now does that
+    climb for free and the engine takes over at the end -- about 3.5 requests
+    per footprint instead of ten -- and the Tm that reaches the window check
+    and the tables is still the engine's, never primer3's.
+    """
+    from pydna.tm import tm_default
+
+    import teemi.design.combinatorial.design as D
+
+    asked = []
+
+    def fake_tm_neb(seq, conc, prodcode):
+        asked.append(seq)
+        return tm_default(seq) - 1.8
+
+    T.clear_tm_caches()
+    monkeypatch.setattr(T, "tm_neb", fake_tm_neb)
+    engine = T.FootprintTm(offline=False)
+    template = FORWARD + "GCATGCATCGATCGGCATTACGGATCCAAGGTTACCGGAT"
+
+    footprint, tm = D._shortest_footprint(template, template[:18], 60.0, engine)
+    assert tm.engine == T.ENGINE_NEB, "the reported value is the engine's"
+    assert tm.celsius >= 60.0
+    assert T.primer3_tm(footprint) >= 60.0, "primer3 cleared it too"
+
+    # The engine was asked only near the end, not from the seed up.
+    assert len(asked) < len(footprint) - 18 + 1 or len(asked) <= 4, len(asked)
+    assert all(len(seq) >= 18 for seq in asked)
+    T.clear_tm_caches()

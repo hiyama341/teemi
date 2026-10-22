@@ -52,6 +52,7 @@ from pydantic import ValidationError
 from pydna.dseqrecord import Dseqrecord
 
 from teemi.design.combinatorial.design import (
+    BLOCKING_BOUNDS,
     STRUCTURE_BOUNDS,
     Diagnostic,
     apply_slot_flags,
@@ -210,27 +211,24 @@ def _shared_id(uses: Sequence[str]) -> str:
     )
 
 
-def _flag_severity(
-    violations: Sequence[Violation], unavoidable: Sequence[str]
-) -> str:
-    """Whether a flagged row needs acting on: ``error``, ``warning`` or ``""``.
+def _severity(violation: Violation) -> str:
+    """``error`` only where the design cannot be built; otherwise a flag.
 
-    A row is only a warning when every bound it breaches is one the split sweep
-    owns *and* one no candidate avoided.  A length or GC breach stays an error
-    because no split was ever going to fix it, and a structure breach some
-    other split did avoid stays an error because there is a choice to make.
+    One rule, read off :data:`BLOCKING_BOUNDS`.  A thermodynamic prediction is
+    a flag however hopeless it looks, and an unorderable primer is an error
+    however good its thermodynamics are.  Whether anything could have avoided
+    the breach is still recorded, in the message -- it says whether re-running
+    with a search would help -- but it no longer decides whether the design is
+    refused.
     """
+    return "error" if violation.constraint in BLOCKING_BOUNDS else "warning"
+
+
+def _flag_severity(violations: Sequence[Violation]) -> str:
+    """The worst severity among a row's breaches, or ``""`` for none."""
     if not violations:
         return ""
-    return (
-        "warning"
-        if all(
-            violation.constraint in STRUCTURE_BOUNDS
-            and violation.constraint in unavoidable
-            for violation in violations
-        )
-        else "error"
-    )
+    return _worst(_severity(violation) for violation in violations)
 
 
 def _worst(severities: Iterable[str]) -> str:
@@ -302,7 +300,7 @@ class PrimerRecord:
             **self.structures.to_dict(),
             "dg_flagged": _dg_flagged(self.violations),
             "flagged_by": _violated(self.violations),
-            "flag_severity": _flag_severity(self.violations, self.unavoidable),
+            "flag_severity": _flag_severity(self.violations),
             "violations": [v.to_dict() for v in self.violations],
             "price": self.price,
         }
@@ -570,12 +568,7 @@ def plan(
             Diagnostic.from_violation(
                 violation,
                 junction_id=junction.id,
-                severity=(
-                    "warning"
-                    if (violation.constraint, violation.subject)
-                    in junction.unavoidable
-                    else "error"
-                ),
+                severity=_severity(violation),
                 exhausted=(
                     f"no split avoids it ({len(junction.profile)} tried)"
                     if (violation.constraint, violation.subject)
@@ -587,7 +580,9 @@ def plan(
             for violation in junction.chosen.violations
         ]
         + [
-            Diagnostic.from_violation(violation, part_id=check.part_id)
+            Diagnostic.from_violation(
+                violation, part_id=check.part_id, severity=_severity(violation)
+            )
             for check in checks
             for violation in check.violations
         ]
@@ -604,11 +599,7 @@ def plan(
                 # shared molecule matches no Part.id anywhere.
                 part_id=primer.part_ids[0] if len(primer.part_ids) == 1 else None,
                 primer_id=primer.id,
-                severity=(
-                    "warning"
-                    if violation.constraint in STRUCTURE_BOUNDS
-                    else "error"
-                ),
+                severity=_severity(violation),
                 exhausted=(
                     "the footprint is fixed and this primer has no tail"
                     if violation.constraint in STRUCTURE_BOUNDS
@@ -837,9 +828,7 @@ def _pcr_records(
             violations=check.violations,
             primer_violations=breaches,
             primer_severity=_worst(
-                _flag_severity(
-                    primers[primer_id].violations, primers[primer_id].unavoidable
-                )
+                _flag_severity(primers[primer_id].violations)
                 for primer_id in (forward_id, reverse_id)
             ),
             homodimer_dg_worst=min(

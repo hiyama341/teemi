@@ -45,6 +45,7 @@ import math
 from dataclasses import dataclass
 from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 
+import primer3
 import requests
 from pydna.tm import ta_dbd, tm_default, tm_neb
 
@@ -54,6 +55,8 @@ __all__ = [
     "NEB_TIMEOUT_S",
     "ENGINE_LOCAL_TM",
     "ENGINE_LOCAL_TA",
+    "ENGINE_PRIMER3",
+    "primer3_tm",
     "ENGINE_NEB",
     "Conditions",
     "CONDITIONS",
@@ -79,6 +82,7 @@ NEB_PRODCODE = "q5-0"
 NEB_TIMEOUT_S = 15.0
 
 ENGINE_LOCAL_TM = "pydna_tm_default"
+ENGINE_PRIMER3 = "primer3"
 ENGINE_LOCAL_TA = "pydna_ta_dbd"
 ENGINE_NEB = "neb"
 
@@ -192,6 +196,16 @@ def local_tm(seq: str, conditions: Conditions = CONDITIONS) -> Tm:
     return Tm(_local_celsius(seq, conditions), ENGINE_LOCAL_TM)
 
 
+@functools.lru_cache(maxsize=1 << 14)
+def primer3_tm(seq: str, conditions: Conditions = CONDITIONS) -> float:
+    """primer3's Tm of one sequence, in C.  Free, and the cheap walk's model.
+
+    Also the only model a primer3 structure Tm is ever compared against -- see
+    :func:`teemi.design.combinatorial.design.anneal_tm`, which is this.
+    """
+    return float(primer3.calc_tm(seq, **conditions.primer3_kwargs))
+
+
 def local_ta(forward_footprint: str, reverse_footprint: str) -> Tm:
     """The local annealing temperature of a **footprint** pair.
 
@@ -264,11 +278,13 @@ class FootprintTm:
         self.prodcode = prodcode
         self._local_only = self.offline
         self._failures: list[str] = []
-        #: pydna's cheap first guess, which halves the NEB queries: measured on
-        #: this repo's fixtures at 6 per footprint against 12 without it.
-        #: ``None`` offline, where ``tm_func`` is already the cheap model and a
-        #: second pass would only double the work.
-        self.estimate_function = None if self.offline else self._local_tm_func
+        #: The cheap first guess pydna's two-stage ``primer_design`` walks
+        #: with: primer3, always, online or off.  It is free, and it is the
+        #: model the structure bounds already use, so a footprint chosen
+        #: against it is chosen against the same numbers its hairpins are
+        #: scored with.  ``tm_func`` is then the authoritative pass -- NEB
+        #: online, pydna's own model offline.
+        self.estimate_function = self._primer3_tm_func
 
     @property
     def engine(self) -> str:
@@ -307,6 +323,10 @@ class FootprintTm:
         comparison.
         """
         return self.tm(seq).celsius
+
+    def _primer3_tm_func(self, seq: str) -> float:
+        """``(str) -> float`` for ``primer_design(estimate_function=...)``."""
+        return primer3_tm(seq, self.conditions)
 
     def _local_tm_func(self, seq: str) -> float:
         return local_tm(seq, self.conditions).celsius

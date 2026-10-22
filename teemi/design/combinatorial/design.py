@@ -95,6 +95,7 @@ from teemi.design.combinatorial.tm import (
     FootprintTm,
     PcrOligos,
     Tm,
+    primer3_tm,
     require_same_engine,
 )
 
@@ -102,6 +103,7 @@ __all__ = [
     "CLAMP_NT",
     "CAL_PER_KCAL",
     "PRIMER3_TEMP_C",
+    "BLOCKING_BOUNDS",
     "Severity",
     "Violation",
     "Diagnostic",
@@ -149,6 +151,22 @@ PRIMER3_TEMP_C = 37.0
 INF = float("inf")
 
 Severity = Literal["info", "warning", "error", "critical"]
+
+#: The one bound whose breach means the design cannot be built as specified.
+#:
+#: Everything else in :class:`~teemi.design.combinatorial.spec.Constraints` is
+#: a *prediction* about how a reaction will behave -- primer3's guess at a
+#: hairpin, a GC fraction, a Tm that missed its target -- and a PCR carrying a
+#: -7 kcal/mol homodimer frequently works.  Blocking on a prediction overstates
+#: what is known, so those are flags: worth attention, not grounds for refusing
+#: the design.  A primer longer than the synthesiser will make is different in
+#: kind: there is no oligo to buy, whatever the thermodynamics say.
+#:
+#: The failures that are not bounds at all -- no footprint possible, a junction
+#: two parts cannot supply, an assembly that gives no product or several, an
+#: unreadable spec -- stay blocking for the same reason.  They are facts about
+#: whether the thing exists, not forecasts about its yield.
+BLOCKING_BOUNDS = frozenset({"primer_len_max"})
 
 #: The bounds the split sweep is there to satisfy: secondary structure on the
 #: complete oligo.
@@ -544,8 +562,24 @@ def _shortest_footprint(
     robust to the 3-4 C offset between the local model and NEB: clearing the
     same target by NEB needs more bases, and a point target plus a hard
     footprint-length cap is non-monotonic in ``target_tm`` where this is not.
+
+    TWO WALKS, CHEAP THEN AUTHORITATIVE.  primer3 walks first, for free, and
+    gets within a base or two; the engine then takes over and extends until the
+    target is cleared by the model that will be reported.  primer3 reads about
+    2 C high, so it stops early and the authoritative walk is a short
+    correction upward rather than the whole climb -- on the 67-gene chaperone
+    library that is 1,481 NEB requests reduced to roughly a tenth.
+
+    The returned Tm is always the engine's, never primer3's: primer3 chooses
+    where to start looking and nothing else, so the number that reaches the
+    window check and the tables comes from one model as before.
     """
     length = len(seed)
+    while (
+        primer3_tm(template[:length], engine.conditions) < target_tm
+        and length < len(template)
+    ):
+        length += 1
     tm = engine.tm(template[:length])
     while tm.celsius < target_tm and length < len(template):
         length += 1
@@ -600,7 +634,6 @@ def _footprint_diagnostics(
 
 
 @functools.lru_cache(maxsize=1 << 16)
-@functools.lru_cache(maxsize=1 << 14)
 def anneal_tm(footprint: str, conditions: Conditions) -> float:
     """primer3's Tm of an annealing region, in C.
 
@@ -609,8 +642,11 @@ def anneal_tm(footprint: str, conditions: Conditions) -> float:
     against it would be the cross-model comparison that has bitten this package
     three times -- so the authoritative footprint Tm, which is NEB's and is what
     the tables report, is deliberately not what this is.
+
+    The same model the footprint walk starts from, and the same memoized
+    function, so asking twice costs once.
     """
-    return float(primer3.calc_tm(footprint, **conditions.primer3_kwargs))
+    return primer3_tm(footprint, conditions)
 
 
 def _structure(

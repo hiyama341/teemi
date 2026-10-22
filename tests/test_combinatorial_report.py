@@ -23,7 +23,10 @@ from teemi.design.combinatorial.report import (
     primer_dataframe,
     variant_overview_dataframe,
 )
-from teemi.design.combinatorial.design import STRUCTURE_BOUNDS
+from teemi.design.combinatorial.design import (
+    BLOCKING_BOUNDS,
+    STRUCTURE_BOUNDS,
+)
 from teemi.design.combinatorial.spec import ID_SEPARATOR
 from teemi.design.combinatorial.sources import SourceResolver
 from teemi.design.combinatorial.spec import load_spec
@@ -213,12 +216,29 @@ def test_every_variant_is_verified_even_without_include_designs(result):
     assert len(result.designs) == 8
 
 
-def test_feasible_errors_and_raise_for_status_agree(circular_result):
-    assert circular_result.errors
-    assert circular_result.feasible is False
+def test_feasible_errors_and_raise_for_status_agree():
+    """``feasible`` means buildable, so only a real blocker clears it.
+
+    The circular fixture's breaches are all predictions now -- homodimers and a
+    GC fraction -- so it is feasible with flags.  An unorderable primer is the
+    other kind: there is no oligo to buy, whatever the thermodynamics say.
+    """
+    tight = copy.deepcopy(raw(CIRCULAR))
+    tight.setdefault("constraints", {})["primer_len_max"] = 40
+    result = plan(tight, sources=SourceResolver(base_dir=REPO), offline=True)
+
+    assert result.errors
+    assert {d.code for d in result.errors} == {"primer_len_max"}
+    assert result.feasible is False
     with pytest.raises(InfeasibleDesignError) as excinfo:
-        circular_result.raise_for_status()
-    assert excinfo.value.diagnostics == circular_result.errors
+        result.raise_for_status()
+    assert excinfo.value.diagnostics == result.errors
+
+    # And with nothing unbuildable, the flags do not refuse the design.
+    flagged = plan(raw(CIRCULAR), sources=SourceResolver(base_dir=REPO), offline=True)
+    assert flagged.feasible is True
+    assert [d for d in flagged.diagnostics if d.severity == "warning"]
+    flagged.raise_for_status()
 
 
 def test_summary_names_the_design_and_the_tallies(result):
@@ -935,47 +955,45 @@ def test_a_breach_no_option_avoids_is_a_warning_not_an_error(result):
         assert set(flagged["flag_severity"]) == {"warning"}
 
 
-def test_a_breach_some_other_split_avoids_stays_an_error():
-    """Exhaustion is proved per bound, never assumed for a whole junction.
+def test_the_message_says_whether_another_split_would_have_helped():
+    """Exhaustion no longer decides severity; it still decides what to try next.
 
-    In the circular library every primer is tailed, so the sweep has 36 splits
-    to choose from.  Where some candidate avoided a bound and the chosen one
-    still breaches it, the optimizer made a trade-off a caller can influence,
-    and that stays blocking.
-
-    The margin is widened to bring the structure-Tm bound into play: at the
-    default it is relative to where each primer anneals, and nothing in this
-    fixture folds anywhere near that, which is the point of making it relative.
+    A structure breach is a flag either way now, so the question it answers is
+    not "is this design refused" but "is there any point re-running".  A breach
+    every candidate shared says so and names how many were tried; one some
+    other split avoided says nothing, because the sweep found an alternative
+    and traded it away.
     """
     tight = copy.deepcopy(raw(CIRCULAR))
     tight.setdefault("constraints", {})["structure_tm_margin_c"] = 25.0
     result = plan(tight, sources=SourceResolver(base_dir=REPO), offline=True)
 
-    assert result.feasible is False
-    severities = {d.severity for d in result.diagnostics}
-    assert severities >= {"warning", "error"}, severities
+    # Flags, not refusals: nothing here is unbuildable.
+    assert result.feasible is True
+    structural = [
+        d
+        for d in result.diagnostics
+        if d.junction_id and d.code in STRUCTURE_BOUNDS
+    ]
+    assert structural
+    assert {d.severity for d in structural} == {"warning"}
 
     by_junction = {j.id: j for j in result.junctions}
-    errors = [
-        d
-        for d in result.diagnostics
-        if d.severity == "error" and d.junction_id and d.code in STRUCTURE_BOUNDS
-    ]
-    assert errors, "this spec has to contain an avoidable structure breach"
-    for diagnostic in errors:
-        junction = by_junction[diagnostic.junction_id]
-        assert (diagnostic.code, diagnostic.constraint.subject) not in (
-            junction.unavoidable
-        )
-        assert "no option avoids it" not in diagnostic.message
-        assert len(junction.profile) > 1
+    exhausted = [d for d in structural if "no split avoids it" in d.message]
+    avoidable = [d for d in structural if "no split avoids it" not in d.message]
+    assert exhausted and avoidable, "both kinds have to occur for this to mean much"
 
-    # And the unavoidable ones are still downgraded, so both paths are live.
-    assert [
-        d
-        for d in result.diagnostics
-        if d.severity == "warning" and d.code in STRUCTURE_BOUNDS
-    ]
+    for diagnostic in exhausted:
+        junction = by_junction[diagnostic.junction_id]
+        assert (diagnostic.code, diagnostic.constraint.subject) in junction.unavoidable
+        assert f"{len(junction.profile)} tried" in diagnostic.message
+    for diagnostic in avoidable:
+        junction = by_junction[diagnostic.junction_id]
+        assert (
+            diagnostic.code,
+            diagnostic.constraint.subject,
+        ) not in junction.unavoidable
+        assert len(junction.profile) > 1
 
 
 def test_unavoidable_only_ever_names_a_bound_the_sweep_owns(circular_result):
@@ -1029,20 +1047,21 @@ def test_a_non_structure_breach_always_blocks():
 
 
 @pytest.mark.parametrize("spec_path", [SPEC_A, SPEC_B, CIRCULAR])
-def test_only_a_structure_bound_is_ever_downgraded(spec_path):
-    """The invariant behind the escape hatch, over every fixture.
+def test_only_an_unbuildable_bound_ever_blocks(spec_path):
+    """The invariant behind the split, over every fixture.
 
-    This is the test that keeps the hatch narrow: whatever a future bound is
-    called, it cannot be quietly downgraded into a warning unless it is one the
-    split sweep is actually responsible for.
+    One rule decides it, so a bound added later cannot block by accident: a
+    breach refuses the design only if it is in ``BLOCKING_BOUNDS``, which holds
+    what makes a design impossible rather than merely unpromising.
     """
     result = plan(raw(spec_path), sources=SourceResolver(base_dir=REPO), offline=True)
-    downgraded = [d for d in result.diagnostics if d.severity == "warning" and d.code]
-    for diagnostic in downgraded:
-        # Warnings that are not breaches at all (an unreachable NEB) carry no
-        # constraint; a breach that was downgraded has to be a structure bound.
-        if diagnostic.constraint is not None:
-            assert diagnostic.code in STRUCTURE_BOUNDS, diagnostic.message
+    for diagnostic in result.diagnostics:
+        if diagnostic.constraint is None:
+            continue
+        if diagnostic.severity == "error":
+            assert diagnostic.code in BLOCKING_BOUNDS, diagnostic.message
+        else:
+            assert diagnostic.code not in BLOCKING_BOUNDS, diagnostic.message
 
 
 def test_shared_id_never_names_a_junction_the_design_does_not_have():
