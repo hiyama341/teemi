@@ -315,9 +315,28 @@ class Constraints(_Frozen):
     which is where the number comes from.  Above it the part comes back as its
     own fragment with a warning."""
 
-    hairpin_tm_max: float = Field(default=45.0, ge=0.0, le=120.0)
-    homodimer_tm_max: float = Field(default=45.0, ge=0.0, le=120.0)
-    heterodimer_tm_max: float = Field(default=45.0, ge=0.0, le=120.0)
+    structure_tm_margin_c: float = Field(default=0.0, ge=-20.0, le=40.0)
+    """How close a hairpin or dimer may melt to where the primer must anneal.
+
+    Replaces three absolute caps of 45 C, which asked the wrong question.  What
+    matters about a structure is whether it still exists at the temperature the
+    primer has to bind its template at: a hairpin melting at 50 C is gone by
+    the time a 63 C anneal happens, and flagging it says nothing about the
+    reaction.  So a structure Tm is a breach when
+
+        structure_tm >= anneal_tm - structure_tm_margin_c
+
+    where ``anneal_tm`` is primer3's Tm of the annealing region.  **primer3's,
+    not NEB's**: the structure Tm is primer3's, and the two differ by about
+    2 C on real footprints, so comparing across them would be the cross-model
+    comparison this package exists to avoid.  The absolute number is therefore
+    not NEB's annealing temperature, and is not meant to be read as one.
+
+    Zero means "a breach only once the structure survives to the annealing
+    temperature".  A positive margin is the conservative choice, since at
+    ``structure_tm == anneal_tm`` half the molecules are still folded.  The ΔG
+    floors are the criterion that says whether there is much structure at all,
+    and they are unchanged."""
     primer_len_max: int = Field(default=60, ge=20, le=200)
     """What a synthesiser will make, not what primer3 will score.
 

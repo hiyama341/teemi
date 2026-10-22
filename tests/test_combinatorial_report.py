@@ -772,11 +772,11 @@ TM_ENGINE_BOUNDS = frozenset(
 PRIMER3_BOUNDS = frozenset(
     {
         "hairpin_dg_min",
-        "hairpin_tm_max",
+        "hairpin_tm_vs_anneal",
         "homodimer_dg_min",
-        "homodimer_tm_max",
+        "homodimer_tm_vs_anneal",
         "heterodimer_dg_min",
-        "heterodimer_tm_max",
+        "heterodimer_tm_vs_anneal",
         "three_prime_dimer_dg_min",
     }
 )
@@ -854,9 +854,9 @@ def test_no_bound_is_ever_checked_against_another_engines_number(offline, monkey
         "homodimer_dg_min": -0.5,
         "heterodimer_dg_min": -0.5,
         "three_prime_dimer_dg_min": -0.5,
-        "hairpin_tm_max": 10.0,
-        "homodimer_tm_max": 10.0,
-        "heterodimer_tm_max": 10.0,
+        # A margin this wide puts the ceiling below any real structure Tm, so
+        # the relative bound is exercised the way the absolute 45 C cap was.
+        "structure_tm_margin_c": 40.0,
     }
     from teemi.design.combinatorial.tm import clear_tm_caches
 
@@ -935,31 +935,47 @@ def test_a_breach_no_option_avoids_is_a_warning_not_an_error(result):
         assert set(flagged["flag_severity"]) == {"warning"}
 
 
-def test_a_breach_some_other_split_avoids_stays_an_error(circular_result):
+def test_a_breach_some_other_split_avoids_stays_an_error():
     """Exhaustion is proved per bound, never assumed for a whole junction.
 
     In the circular library every primer is tailed, so the sweep has 36 splits
     to choose from.  Where some candidate avoided a bound and the chosen one
     still breaches it, the optimizer made a trade-off a caller can influence,
     and that stays blocking.
+
+    The margin is widened to bring the structure-Tm bound into play: at the
+    default it is relative to where each primer anneals, and nothing in this
+    fixture folds anywhere near that, which is the point of making it relative.
     """
-    assert circular_result.feasible is False
-    severities = {d.severity for d in circular_result.diagnostics}
+    tight = copy.deepcopy(raw(CIRCULAR))
+    tight.setdefault("constraints", {})["structure_tm_margin_c"] = 25.0
+    result = plan(tight, sources=SourceResolver(base_dir=REPO), offline=True)
+
+    assert result.feasible is False
+    severities = {d.severity for d in result.diagnostics}
     assert severities >= {"warning", "error"}, severities
 
-    by_junction = {j.id: j for j in circular_result.junctions}
+    by_junction = {j.id: j for j in result.junctions}
     errors = [
         d
-        for d in circular_result.diagnostics
+        for d in result.diagnostics
         if d.severity == "error" and d.junction_id and d.code in STRUCTURE_BOUNDS
     ]
-    assert errors, "this fixture has to contain an avoidable structure breach"
+    assert errors, "this spec has to contain an avoidable structure breach"
     for diagnostic in errors:
         junction = by_junction[diagnostic.junction_id]
-        assert diagnostic.code not in junction.unavoidable
+        assert (diagnostic.code, diagnostic.constraint.subject) not in (
+            junction.unavoidable
+        )
         assert "no option avoids it" not in diagnostic.message
-        # Some candidate really did avoid it, so there was a choice.
         assert len(junction.profile) > 1
+
+    # And the unavoidable ones are still downgraded, so both paths are live.
+    assert [
+        d
+        for d in result.diagnostics
+        if d.severity == "warning" and d.code in STRUCTURE_BOUNDS
+    ]
 
 
 def test_unavoidable_only_ever_names_a_bound_the_sweep_owns(circular_result):

@@ -68,9 +68,9 @@ def inline_spec(parts, topology="linear", homology_length=35) -> dict:
             "homodimer_dg_min": -30.0,
             "heterodimer_dg_min": -30.0,
             "three_prime_dimer_dg_min": -30.0,
-            "hairpin_tm_max": 99.0,
-            "homodimer_tm_max": 99.0,
-            "heterodimer_tm_max": 99.0,
+            # Negative: the ceiling goes above the annealing Tm, so no
+            # structure Tm can breach and only the dG floors are in play.
+            "structure_tm_margin_c": -20.0,
         },
     }
 

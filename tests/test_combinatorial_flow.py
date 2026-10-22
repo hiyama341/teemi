@@ -511,3 +511,83 @@ def test_a_document_that_names_no_polymerase_gets_the_default(library):
         document(INTEGRATION), library=library, fill={"pos4": library["FP_MRFP1"]}
     )
     assert spec.primer_design.polymerase == "q5-0"
+
+
+def test_a_hairpin_that_melts_before_the_anneal_is_not_a_breach(library):
+    """The bound is relative to where the primer has to work.
+
+    An absolute 45 C cap asked the wrong question: a hairpin melting at 50 C is
+    gone by the time a 63 C anneal happens, so flagging it said nothing about
+    the reaction.  These are also ΔG -0.6 to -1.9 kcal/mol against a -6.0
+    floor, which is the criterion that says whether there is much structure at
+    all -- so the cap was firing on structures its own ΔG bound calls trivial.
+    """
+    result, _ = plan_flow(
+        document(CDS_LIBRARY),
+        library=library,
+        policy={"constraints": {"primer_len_max": 90}},
+        offline=True,
+    )
+    breaches = [d.code for d in result.diagnostics if d.constraint is not None]
+    assert "hairpin_tm_vs_anneal" not in breaches, [
+        d.message for d in result.diagnostics if d.code == "hairpin_tm_vs_anneal"
+    ]
+
+    # The hairpins are still there and still reported; they just do not block.
+    hairpins = [p.structures.hairpin_tm for p in result.primers]
+    assert max(hairpins) > 45.0, "this design does have hairpins above the old cap"
+    assert all(p.structures.hairpin_dg > -6.0 for p in result.primers)
+
+
+def test_the_margin_moves_the_ceiling_both_ways(library):
+    """Zero means "a breach once it survives to the annealing temperature"."""
+    import copy
+
+    def breaches(margin):
+        raw = copy.deepcopy(document(CDS_LIBRARY))
+        result, _ = plan_flow(
+            raw,
+            library=library,
+            policy={
+                "constraints": {
+                    "primer_len_max": 90,
+                    "structure_tm_margin_c": margin,
+                }
+            },
+            offline=True,
+        )
+        return [d.code for d in result.diagnostics if d.code.endswith("_vs_anneal")]
+
+    assert breaches(0.0) == []
+    assert breaches(25.0), "a wide margin pulls the ceiling below the hairpins"
+    # Negative pushes the ceiling above the annealing Tm, so nothing can breach.
+    assert breaches(-20.0) == []
+
+
+def test_the_structure_tm_bound_never_crosses_two_engines(library):
+    """Both sides of the comparison are primer3's, and the gap is real.
+
+    primer3's Tm for these footprints runs about 2 C above NEB's, so a primer3
+    structure Tm checked against the authoritative NEB footprint Tm would be
+    the cross-model comparison this package exists to avoid.
+    """
+    import primer3
+
+    from teemi.design.combinatorial.design import CONDITIONS, anneal_tm
+
+    result, _ = plan_flow(
+        document(CDS_LIBRARY),
+        library=library,
+        policy={"constraints": {"primer_len_max": 90}},
+        offline=True,
+    )
+    gaps = []
+    for primer in result.primers:
+        own = anneal_tm(primer.footprint, CONDITIONS)
+        assert own == pytest.approx(
+            primer3.calc_tm(primer.footprint, **CONDITIONS.primer3_kwargs)
+        )
+        gaps.append(own - primer.footprint_tm.celsius)
+    assert max(abs(g) for g in gaps) > 0.5, (
+        "if the two engines agreed, keeping them apart would not matter"
+    )

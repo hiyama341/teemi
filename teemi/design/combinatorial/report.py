@@ -751,6 +751,7 @@ def _primer_records(
                     sequence,
                     structures,
                     spec.constraints,
+                    footprint,
                 ),
                 price=len(sequence) * spec.objective.price_per_base,
                 tailed=sequence in tailed,

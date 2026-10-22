@@ -144,6 +144,10 @@ CAL_PER_KCAL = 1000.0
 #: the -6.0 kcal/mol floors were set against numbers measured at it.
 PRIMER3_TEMP_C = 37.0
 
+#: No ceiling.  Only for a pair whose annealing region is not known, which the
+#: callers here never pass.
+INF = float("inf")
+
 Severity = Literal["info", "warning", "error", "critical"]
 
 #: The bounds the split sweep is there to satisfy: secondary structure on the
@@ -156,11 +160,11 @@ Severity = Literal["info", "warning", "error", "critical"]
 STRUCTURE_BOUNDS = frozenset(
     {
         "hairpin_dg_min",
-        "hairpin_tm_max",
+        "hairpin_tm_vs_anneal",
         "homodimer_dg_min",
-        "homodimer_tm_max",
+        "homodimer_tm_vs_anneal",
         "heterodimer_dg_min",
-        "heterodimer_tm_max",
+        "heterodimer_tm_vs_anneal",
         "three_prime_dimer_dg_min",
     }
 )
@@ -596,6 +600,19 @@ def _footprint_diagnostics(
 
 
 @functools.lru_cache(maxsize=1 << 16)
+@functools.lru_cache(maxsize=1 << 14)
+def anneal_tm(footprint: str, conditions: Conditions) -> float:
+    """primer3's Tm of an annealing region, in C.
+
+    Only ever compared against primer3's own structure Tm.  NEB's number for
+    the same footprint runs about 2 C higher, and a structure Tm checked
+    against it would be the cross-model comparison that has bitten this package
+    three times -- so the authoritative footprint Tm, which is NEB's and is what
+    the tables report, is deliberately not what this is.
+    """
+    return float(primer3.calc_tm(footprint, **conditions.primer3_kwargs))
+
+
 def _structure(
     calc: Callable[..., Any], seqs: Tuple[str, ...], conditions: Conditions
 ) -> Tuple[float, float]:
@@ -694,7 +711,12 @@ def _pair_structures(
 
 
 def oligo_violations(
-    subject: str, seq: str, structures: OligoStructures, constraints: Constraints
+    subject: str,
+    seq: str,
+    structures: OligoStructures,
+    constraints: Constraints,
+    footprint: str,
+    conditions: Conditions = CONDITIONS,
 ) -> Tuple[Violation, ...]:
     """The hard bounds on one complete primer, whatever tube it ends up in.
 
@@ -705,8 +727,15 @@ def oligo_violations(
     there is no whole-oligo pair-Tm bound at all: the tail does not anneal in
     cycle 1, and from cycle 2 a tail only raises Tm, so with Ta set from the
     footprints an imbalance there has no failure mode.
+
+    ``footprint`` is required rather than defaulted, because the structure-Tm
+    bounds are relative to where this primer anneals and a bound that quietly
+    skipped itself when the footprint was missing would be worse than no bound.
     """
     gc = gc_fraction(seq)
+    anneal_ceiling = (
+        anneal_tm(footprint, conditions) - constraints.structure_tm_margin_c
+    )
     checks = (
         _check_max(
             "primer_len_max",
@@ -741,10 +770,10 @@ def oligo_violations(
             "kcal/mol",
         ),
         _check_max(
-            "hairpin_tm_max",
+            "hairpin_tm_vs_anneal",
             subject,
             structures.hairpin_tm,
-            constraints.hairpin_tm_max,
+            anneal_ceiling,
             "primer3",
             "C",
         ),
@@ -757,10 +786,10 @@ def oligo_violations(
             "kcal/mol",
         ),
         _check_max(
-            "homodimer_tm_max",
+            "homodimer_tm_vs_anneal",
             subject,
             structures.homodimer_tm,
-            constraints.homodimer_tm_max,
+            anneal_ceiling,
             "primer3",
             "C",
         ),
@@ -769,7 +798,9 @@ def oligo_violations(
 
 
 def _pair_violations(
-    structures: PairStructures, constraints: Constraints
+    structures: PairStructures,
+    constraints: Constraints,
+    anneal_ceiling: float = INF,
 ) -> Tuple[Violation, ...]:
     """The hard bounds on two primers that share a tube."""
     checks = (
@@ -782,10 +813,10 @@ def _pair_violations(
             "kcal/mol",
         ),
         _check_max(
-            "heterodimer_tm_max",
+            "heterodimer_tm_vs_anneal",
             "primer_pair",
             structures.heterodimer_tm,
-            constraints.heterodimer_tm_max,
+            anneal_ceiling,
             "primer3",
             "C",
         ),
@@ -1120,10 +1151,20 @@ def _pydna_candidate(
         forward_structures=forward_structures,
         reverse_structures=reverse_structures,
         violations=oligo_violations(
-            "forward_primer", forward, forward_structures, spec.constraints
+            "forward_primer",
+            forward,
+            forward_structures,
+            spec.constraints,
+            junction.downstream.forward,
+            conditions,
         )
         + oligo_violations(
-            "reverse_primer", reverse, reverse_structures, spec.constraints
+            "reverse_primer",
+            reverse,
+            reverse_structures,
+            spec.constraints,
+            junction.upstream.reverse,
+            conditions,
         ),
         cost=_cost(
             forward,
@@ -1248,10 +1289,20 @@ def design_junction(
                 forward_structures=forward_structures,
                 reverse_structures=reverse_structures,
                 violations=oligo_violations(
-                    "forward_primer", forward, forward_structures, spec.constraints
+                    "forward_primer",
+                    forward,
+                    forward_structures,
+                    spec.constraints,
+                    junction.downstream.forward,
+                    conditions,
                 )
                 + oligo_violations(
-                    "reverse_primer", reverse, reverse_structures, spec.constraints
+                    "reverse_primer",
+                    reverse,
+                    reverse_structures,
+                    spec.constraints,
+                    junction.upstream.reverse,
+                    conditions,
                 ),
                 cost=_cost(
                     forward,
@@ -1663,6 +1714,16 @@ def check_pcrs(
             forward_id=pair.forward.id,
             reverse_id=pair.reverse.id,
             structures=structures,
-            violations=_pair_violations(structures, constraints),
+            violations=_pair_violations(
+                structures,
+                constraints,
+                # The pair anneals no hotter than its cooler footprint, which is
+                # the same reasoning Ta is set by.
+                min(
+                    anneal_tm(pair.oligos.forward_footprint, conditions),
+                    anneal_tm(pair.oligos.reverse_footprint, conditions),
+                )
+                - constraints.structure_tm_margin_c,
+            ),
         )
     return tuple(checks.values())

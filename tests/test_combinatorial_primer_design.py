@@ -239,13 +239,13 @@ def test_the_dg_floor_is_read_in_kcal_on_a_weak_structure():
     constraints = load_spec(_raw_spec()).constraints
     structures = D.oligo_structures(weak, T.CONDITIONS)
     assert structures.hairpin_dg == pytest.approx(raw_dg / D.CAL_PER_KCAL)
-    passed = D.oligo_violations("p", weak, structures, constraints)
+    passed = D.oligo_violations("p", weak, structures, constraints, weak)
     assert not [v for v in passed if v.constraint == "hairpin_dg_min"]
 
     unconverted = dataclasses.replace(structures, hairpin_dg=raw_dg)
     breached = [
         v
-        for v in D.oligo_violations("p", weak, unconverted, constraints)
+        for v in D.oligo_violations("p", weak, unconverted, constraints, weak)
         if v.constraint == "hairpin_dg_min"
     ]
     assert breached, "a cal/mol observation must not clear a kcal/mol floor"
@@ -517,17 +517,25 @@ def test_the_least_violating_candidate_is_the_one_reported():
         )
 
 
-def _violations_for(forward, reverse, spec):
+def _violations_for(forward, reverse, spec, footprints=None):
+    """The structure-Tm bounds are relative, so a footprint has to be given.
+
+    Without a real one the whole primer stands in, which is what these tests
+    want: they are about the bounds, not about where a junction put the split.
+    """
+    fwd_fp, rev_fp = footprints or (forward, reverse)
     return D.oligo_violations(
         "forward_primer",
         forward,
         D.oligo_structures(forward, T.CONDITIONS),
         spec.constraints,
+        fwd_fp,
     ) + D.oligo_violations(
         "reverse_primer",
         reverse,
         D.oligo_structures(reverse, T.CONDITIONS),
         spec.constraints,
+        rev_fp,
     )
 
 
