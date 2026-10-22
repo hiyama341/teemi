@@ -584,22 +584,27 @@ def test_no_table_column_conflates_the_two_tm_quantities(result, full):
                 ), column
 
 
-def test_every_tm_column_is_accompanied_by_its_engine(result):
-    """One ``tm_engine`` heading per row, covering both Tm columns.
+def test_the_engines_are_named_once_in_the_summary_not_in_every_row(result):
+    """A per-row engine column repeated itself for every oligo.
 
-    Both Tm of a row are measured by the same engine, so a second identical
-    column said nothing; the engine is still on every record for provenance,
-    and Ta keeps its own because its model is a different one.
+    A degraded run gives up NEB for everything rather than half way, so the
+    column held one value 16 times and answered nothing a reader asked of a
+    row.  The summary names all three models instead, and the record still
+    carries the engine beside every value it produced.
     """
-    primers = primer_dataframe(result)
-    assert set(primers["tm_engine"]) == {ENGINE_LOCAL_TM}
-    assert "oligo_tm_engine" not in primers.columns
-    pcrs = pcr_dataframe(result)
-    assert set(pcrs["ta_engine"]) == {ENGINE_LOCAL_TA}
-    assert set(pcrs["tm_engine"]) == {ENGINE_LOCAL_TM}
-    # Dropped from the readable table, never from the record.
-    for row in (result.primers[0].to_dict(), result.pcrs[0].to_dict()):
-        assert row["oligo_tm_engine"] == ENGINE_LOCAL_TM
+    for frame in (primer_dataframe(result), pcr_dataframe(result)):
+        assert not [c for c in frame.columns if "engine" in c], list(frame.columns)
+
+    text = result.summary()
+    assert f"Tm {ENGINE_LOCAL_TM}" in text
+    assert f"Ta {ENGINE_LOCAL_TA}" in text
+    assert "structures primer3" in text
+
+    # Never dropped from the record, which is what a consumer reads.
+    row = result.primers[0].to_dict()
+    assert row["footprint_tm_engine"] == ENGINE_LOCAL_TM
+    assert row["oligo_tm_engine"] == ENGINE_LOCAL_TM
+    assert result.pcrs[0].to_dict()["ta_engine"] == ENGINE_LOCAL_TA
 
 
 def test_ta_comes_from_the_footprint_pair_not_the_tailed_oligos(result):
@@ -948,11 +953,14 @@ def test_a_breach_no_option_avoids_is_a_warning_not_an_error(result):
         assert diagnostic.constraint.limit == -6.0
         assert diagnostic.constraint.observed < -6.0
 
-    # Still visible in both tables, and marked as not worth acting on.
+    # Still visible in both tables.  ``flag_severity`` is gone from them: with
+    # one blocking bound it was readable off ``flagged_by``, and it said
+    # "warning" on every row that had anything at all.
     for frame in (primer_dataframe(result), pcr_dataframe(result)):
         flagged = frame[frame["flagged_by"] != ""]
         assert not flagged.empty
-        assert set(flagged["flag_severity"]) == {"warning"}
+        assert "flag_severity" not in frame.columns
+    assert {d.severity for d in result.diagnostics} == {"warning"}
 
 
 def test_the_message_says_whether_another_split_would_have_helped():
@@ -1117,7 +1125,6 @@ def test_a_tailed_primer_shows_its_own_breaches_in_its_own_row(circular_result):
     frame = primer_dataframe(circular_result)
     shown = frame[frame["flagged_by"] != ""]
     assert len(shown) == len(flagged)
-    assert set(shown["flag_severity"]) <= {"error", "warning"}
 
     # Still reported exactly once, against the junction that chose the split.
     for primer in flagged:

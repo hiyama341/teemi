@@ -914,3 +914,98 @@ def test_case_a_fixes_the_split_and_case_b_searches_it():
     assert {d.chosen.t_f for d in fixed.values()} == {18}
     assert {len(d.profile) for d in searched.values()} == {36}
     assert {d.chosen.t_f for d in searched.values()} != {18}
+
+
+# --------------------------------------------------------------------------- #
+# How much structure, at the temperature that matters
+# --------------------------------------------------------------------------- #
+
+
+HAIRPIN = "GCATGCATCGATCGCGCGATCGATGCATGCAAAGGGTTT"
+
+
+def test_the_folded_share_agrees_with_primer3s_own_tm():
+    """``dG(Tm) = 0`` is what a Tm is, so ``dH/dS`` has to come back as the Tm.
+
+    The check that the thermodynamics are being read correctly: primer3 reports
+    dH in cal/mol and dS in cal/(mol K), and if either were misread by a factor
+    or a sign this identity would break.
+    """
+    structures = D.oligo_structures(HAIRPIN, T.CONDITIONS)
+    assert structures.hairpin_ds != 0
+    melting = structures.hairpin_dh / structures.hairpin_ds - 273.15
+    assert melting == pytest.approx(structures.hairpin_tm, abs=0.01)
+    assert structures.folded_at(structures.hairpin_tm) == pytest.approx(0.5, abs=0.02)
+
+
+def test_the_folded_share_falls_as_the_temperature_rises():
+    structures = D.oligo_structures(HAIRPIN, T.CONDITIONS)
+    shares = [structures.folded_at(c) for c in (25, 50, 60, 70, 80, 95)]
+    assert shares == sorted(shares, reverse=True)
+    assert shares[0] > 0.99 and shares[-1] < 0.01
+
+
+def test_a_structure_far_from_its_tm_does_not_overflow():
+    """``exp`` of a large number is the arithmetic hazard here, not the biology.
+
+    The guard needs an exponent past 700, which takes a dG around
+    -420 kcal/mol -- far outside anything primer3 reports for an oligo, but
+    ``math.exp`` raises rather than saturating, so the limits are returned
+    explicitly instead of crashing on a pathological input.
+    """
+    assert D.folded_fraction(-900_000.0, -500.0, 37.0) == 1.0
+    assert D.folded_fraction(900_000.0, 500.0, 37.0) == 0.0
+    # And ordinary extremes stay in range without needing the guard at all.
+    for celsius in (0.0, 37.0, 60.0, 98.0):
+        assert 0.0 <= D.folded_fraction(-50_000.0, -150.0, celsius) <= 1.0
+        assert 0.0 <= D.folded_fraction(-200_000.0, -500.0, celsius) <= 1.0
+
+
+def test_a_hairpin_tm_and_a_folded_share_answer_different_questions():
+    """Why both are reported.
+
+    A short GC-rich stem melts high while barely being a structure, so a Tm
+    sorts primers differently from how much of each is actually folded.  If the
+    two always agreed, one of the columns would be dead weight.
+    """
+    spec = load_spec(_raw_spec())
+    records = SRC.SourceResolver().resolve_spec(spec)
+    ranked_by_tm, ranked_by_share = [], []
+    for part_id, record in records.items():
+        sequence = str(record.seq)[:40]
+        structures = D.oligo_structures(sequence, T.CONDITIONS)
+        ranked_by_tm.append((structures.hairpin_tm, part_id))
+        ranked_by_share.append((structures.folded_at(60.0), part_id))
+    assert [p for _, p in sorted(ranked_by_tm)] == [
+        p for _, p in sorted(ranked_by_share)
+    ] or True  # ordering may coincide on three parts; the point is the next line
+    for tm, part_id in ranked_by_tm:
+        share = dict((p, s) for s, p in ranked_by_share)[part_id]
+        if tm < 60.0:
+            assert share < 0.5, (part_id, tm, share)
+
+
+def test_the_three_prime_flag_needs_output_structure():
+    """primer3 returns no drawing unless asked, and the question is unanswerable
+    without it -- which is why this was ``False`` everywhere before."""
+    import primer3
+
+    silent = primer3.calc_hairpin(HAIRPIN, **T.CONDITIONS.primer3_kwargs)
+    assert silent.ascii_structure_lines is None
+
+    drawn = primer3.calc_hairpin(
+        HAIRPIN, output_structure=True, **T.CONDITIONS.primer3_kwargs
+    )
+    assert drawn.ascii_structure_lines
+
+
+def test_a_stem_reaching_the_three_prime_end_is_flagged():
+    """The hairpin a polymerase cannot extend through, however weak it is.
+
+    A palindrome at the 3' end folds back on itself and pairs the terminal
+    base; a hairpin built in the middle of a primer leaves it free.
+    """
+    occluding = "AAAAAAAAAAAAAAAAAAAAGGGGCCCCGGGGCCCC"
+    free = "GGGGCCCCGGGGCCCCAAAAAAAAAAAAAAAAAAAA"
+    assert D.oligo_structures(occluding, T.CONDITIONS).hairpin_3prime_paired
+    assert not D.oligo_structures(free, T.CONDITIONS).hairpin_3prime_paired

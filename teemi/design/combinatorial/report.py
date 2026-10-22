@@ -105,18 +105,16 @@ PRIMER_COLUMNS = (
     "part_id",
     "direction",
     "n_uses",
-    "used_as",
     "length_nt",
     "sequence",
     "footprint_len",
     "footprint_tm_c",
-    "oligo_tm_c",
-    "footprint_tm_engine",
+    "hairpin_folded_at_ta",
+    "hairpin_3prime_paired",
     "hairpin_dg",
     "homodimer_dg",
     "primer3_clamped",
     "flagged_by",
-    "flag_severity",
     "price",
 )
 
@@ -127,18 +125,15 @@ PCR_COLUMNS = (
     "reverse_primer_id",
     "amplicon_bp",
     "ta_from_footprints",
-    "ta_engine",
     "footprint_tm_forward",
     "footprint_tm_reverse",
-    "oligo_tm_forward",
-    "oligo_tm_reverse",
-    "footprint_tm_engine",
+    "hairpin_folded_at_ta",
+    "hairpin_3prime_paired",
     "heterodimer_dg",
     "three_prime_dimer_dg",
     "homodimer_dg_worst",
     "primer3_clamped",
     "flagged_by",
-    "flag_severity",
 )
 
 #: Headings for the tables: the key a row carries -> what a reader should see.
@@ -166,6 +161,8 @@ COLUMN_LABELS = {
     "three_prime_dimer_dg": "three_prime_dimer_deltaG (kcal/mol)",
     "homodimer_dg_worst": "worst_primer_homodimer_deltaG (kcal/mol)",
     "primer3_clamped": "not_analysable_over_60nt",
+    "hairpin_folded_at_ta": "hairpin_folded_at_Ta",
+    "hairpin_3prime_paired": "hairpin_blocks_3prime",
 }
 
 
@@ -209,6 +206,17 @@ def _shared_id(uses: Sequence[str]) -> str:
         "+".join(sorted(set(column))) if index == varying[0] else column[0]
         for index, column in enumerate(columns)
     )
+
+
+def _one_engine(engines: Iterable[str]) -> str:
+    """The engine behind a column, named once instead of in every row.
+
+    A per-row engine column said the same thing 142 times, because a degraded
+    run gives up NEB for everything rather than half way.  If that ever stops
+    being true this says so rather than quietly picking one.
+    """
+    seen = sorted(set(engines))
+    return "/".join(seen) if seen else ""
 
 
 def _severity(violation: Violation) -> str:
@@ -277,6 +285,10 @@ class PrimerRecord:
     #: avoided.  For an untailed terminal primer there was no sweep and no
     #: tail, so every structure bound it breaches is in here.
     unavoidable: Tuple[str, ...] = ()
+    #: The coolest annealing temperature this molecule is used at, which is the
+    #: one its hairpin is most folded at.  A shared oligo can sit in reactions
+    #: with different Ta, so the worst of them is the one to report.
+    anneal_ta: Optional[float] = None
     #: Whether a junction split produced this molecule.  A tailed primer's
     #: breach is reported as a diagnostic against its junction, where the split
     #: that caused it lives; the row still shows it either way.
@@ -298,6 +310,14 @@ class PrimerRecord:
             "oligo_tm_c": self.oligo_tm.celsius,
             "oligo_tm_engine": self.oligo_tm.engine,
             **self.structures.to_dict(),
+            # What a Tm cannot say: how much of the primer is tied up when it
+            # has to anneal.  Blank rather than 0 where no Ta is known, so an
+            # absent number is never read as "none folded".
+            "hairpin_folded_at_ta": (
+                None
+                if self.anneal_ta is None
+                else self.structures.folded_at(self.anneal_ta)
+            ),
             "dg_flagged": _dg_flagged(self.violations),
             "flagged_by": _violated(self.violations),
             "flag_severity": _flag_severity(self.violations),
@@ -331,6 +351,10 @@ class PcrRecord:
     #: against the union let a bound that is unavoidable for one primer
     #: downgrade the other primer's avoidable breach of the same bound.
     primer_severity: str = ""
+    #: The worse of the two primers' hairpins at this reaction's own Ta, and
+    #: whether either of them has its 3' end inside a stem.
+    hairpin_folded_at_ta: Optional[float] = None
+    hairpin_3prime_paired: bool = False
 
     def to_dict(self) -> dict:
         return {
@@ -341,6 +365,8 @@ class PcrRecord:
             **self.temperatures.to_dict(),
             **self.structures.to_dict(),
             "homodimer_dg_worst": self.homodimer_dg_worst,
+            "hairpin_folded_at_ta": self.hairpin_folded_at_ta,
+            "hairpin_3prime_paired": self.hairpin_3prime_paired,
             "dg_flagged": _dg_flagged(self.violations + self.primer_violations),
             "flagged_by": _violated(self.violations + self.primer_violations),
             # The pair bounds are errors: the sweep optimises each junction on
@@ -445,6 +471,27 @@ class DesignResult:
                     + ")"
                     if self.junctions
                     else ""
+                ),
+                "  temperatures: "
+                + ", ".join(
+                    f"{what} {engine}"
+                    for what, engine in (
+                        (
+                            "Tm",
+                            _one_engine(
+                                p.footprint_tm.engine for p in self.primers
+                            ),
+                        ),
+                        (
+                            "Ta",
+                            _one_engine(
+                                p.temperatures.ta_from_footprints.engine
+                                for p in self.pcrs
+                            ),
+                        ),
+                        ("structures", "primer3"),
+                    )
+                    if engine
                 ),
                 f"  {len(self.primers)} primers (longest {longest} nt), "
                 f"{len(self.pcrs)} PCRs, "
@@ -697,6 +744,7 @@ def _primer_records(
     uses: Dict[str, List[str]] = {}
     parts: Dict[str, List[str]] = {}
     directions: Dict[str, List[str]] = {}
+    coolest_ta: Dict[str, float] = {}
     for pair in pairs:
         temps = temperatures[pair.oligos]
         for direction, primer, footprint, footprint_tm, oligo_tm in (
@@ -716,6 +764,10 @@ def _primer_records(
             ),
         ):
             sequence = str(primer.seq)
+            this_ta = temps.ta_from_footprints.celsius
+            coolest_ta[sequence] = min(
+                coolest_ta.get(sequence, this_ta), this_ta
+            )
             if sequence in records:
                 if primer.id not in uses[sequence]:
                     uses[sequence].append(primer.id)
@@ -755,6 +807,7 @@ def _primer_records(
             # A shared molecule belongs to every part it amplifies, so the
             # column agrees with the row's own id and ``used_as`` and can be
             # joined against the PCR table.
+            anneal_ta=coolest_ta[sequence],
             part_id="+".join(sorted(parts[sequence])),
             part_ids=tuple(sorted(parts[sequence])),
             # One molecule can be a part's forward primer and another part's
@@ -834,6 +887,16 @@ def _pcr_records(
             homodimer_dg_worst=min(
                 primers[forward_id].structures.homodimer_dg,
                 primers[reverse_id].structures.homodimer_dg,
+            ),
+            hairpin_folded_at_ta=max(
+                primers[primer_id].structures.folded_at(
+                    temperatures[oligos].ta_from_footprints.celsius
+                )
+                for primer_id in (forward_id, reverse_id)
+            ),
+            hairpin_3prime_paired=any(
+                primers[primer_id].structures.hairpin_3prime_paired
+                for primer_id in (forward_id, reverse_id)
             ),
         )
     return tuple(out.values())

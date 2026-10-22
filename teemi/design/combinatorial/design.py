@@ -73,6 +73,7 @@ from typing import (
 )
 
 import primer3
+from primer3 import calc_hairpin
 from Bio.Seq import Seq
 from Bio.SeqUtils import gc_fraction
 from pydna.amplify import pcr
@@ -103,6 +104,8 @@ __all__ = [
     "CLAMP_NT",
     "CAL_PER_KCAL",
     "PRIMER3_TEMP_C",
+    "GAS_CONSTANT",
+    "folded_fraction",
     "BLOCKING_BOUNDS",
     "Severity",
     "Violation",
@@ -141,6 +144,41 @@ CLAMP_NT = 60
 #: plausible either way, so the conversion happens exactly once per primer3
 #: call, at that boundary.
 CAL_PER_KCAL = 1000.0
+
+#: The gas constant in the units primer3 reports dH and dS in.
+GAS_CONSTANT = 1.987
+"""cal/(mol K).  primer3 gives dH in cal/mol and dS in cal/(mol K), so a dG at
+any temperature is ``dH - T * dS`` with no conversion."""
+
+
+def folded_fraction(dh: float, ds: float, celsius: float) -> float:
+    """What share of the molecules hold this structure at this temperature.
+
+    The question a Tm cannot answer and a dG at 37 C answers for the wrong
+    temperature.  A hairpin is unimolecular, so the folded share depends only
+    on temperature and not on how much primer is in the tube:
+
+        dG(T) = dH - T*dS      K = exp(-dG/RT)      folded = K/(1+K)
+
+    Self-consistent with primer3's own Tm by construction, since ``dG(Tm) = 0``
+    is what a Tm is -- ``dh / ds`` comes back as exactly the Tm primer3
+    reports, which is what the test asserts.
+
+    Only valid for a unimolecular structure.  A homodimer or heterodimer is
+    bimolecular and its bound share depends on primer concentration, so this is
+    deliberately not applied to those.
+    """
+    kelvin = celsius + 273.15
+    delta_g = dh - kelvin * ds
+    # exp overflows for a structure far below its Tm; the limit is 1.0 folded.
+    exponent = -delta_g / (GAS_CONSTANT * kelvin)
+    if exponent > 700:
+        return 1.0
+    if exponent < -700:
+        return 0.0
+    k = math.exp(exponent)
+    return k / (1 + k)
+
 
 #: The temperature primer3 evaluates dG at.  primer3's own default, kept because
 #: the -6.0 kcal/mol floors were set against numbers measured at it.
@@ -662,6 +700,45 @@ def _structure(
     return result.dg / CAL_PER_KCAL, result.tm
 
 
+@functools.lru_cache(maxsize=1 << 16)
+def _hairpin(
+    seq: str, conditions: Conditions
+) -> Tuple[float, float, float, float, bool]:
+    """``(dg, tm, dh, ds, three_prime_paired)`` for one primer's hairpin.
+
+    Its own call rather than :func:`_structure` because it needs two things
+    that one does not return: the enthalpy and entropy, which give the folded
+    share at any temperature, and the structure drawing, which says whether the
+    3' end is inside the stem.  ``output_structure`` is what produces the
+    drawing -- without it primer3 returns ``None`` and the question cannot be
+    asked at all.
+
+    A 3' end inside the stem is the hairpin that stops a polymerase extending,
+    which is a different and sharper question than how stable the hairpin is.
+    """
+    result = calc_hairpin(
+        seq,
+        temp_c=PRIMER3_TEMP_C,
+        output_structure=True,
+        **conditions.primer3_kwargs,
+    )
+    lines = result.ascii_structure_lines or []
+    # The drawing's first line marks the stem with "/" and "\" and everything
+    # unpaired with "-", over the sequence 5' to 3', so the last character is
+    # the 3'-terminal base.
+    paired = False
+    if lines:
+        drawn = lines[0].split("\t")[-1].rstrip()
+        paired = bool(drawn) and drawn[-1] != "-"
+    return (
+        result.dg / CAL_PER_KCAL,
+        result.tm,
+        float(result.dh),
+        float(result.ds),
+        paired,
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class OligoStructures:
     """primer3's hairpin and self-dimer numbers for one **complete** primer.
@@ -677,11 +754,25 @@ class OligoStructures:
     homodimer_dg: float
     homodimer_tm: float
     clamped: bool
+    #: primer3's enthalpy and entropy for the hairpin, which turn its Tm into a
+    #: folded share at whatever temperature the reaction will anneal at.
+    hairpin_dh: float = 0.0
+    hairpin_ds: float = 0.0
+    #: Whether the hairpin's stem reaches the primer's 3' end.  The one a
+    #: polymerase cannot extend through, however weak it is.
+    hairpin_3prime_paired: bool = False
+
+    def folded_at(self, celsius: float) -> float:
+        """The share of molecules holding the hairpin at this temperature."""
+        if not self.hairpin_ds:
+            return 0.0
+        return folded_fraction(self.hairpin_dh, self.hairpin_ds, celsius)
 
     def to_dict(self, prefix: str = "") -> dict:
         return {
             f"{prefix}hairpin_dg": self.hairpin_dg,
             f"{prefix}hairpin_tm": self.hairpin_tm,
+            f"{prefix}hairpin_3prime_paired": self.hairpin_3prime_paired,
             f"{prefix}homodimer_dg": self.homodimer_dg,
             f"{prefix}homodimer_tm": self.homodimer_tm,
             f"{prefix}primer3_clamped": self.clamped,
@@ -714,7 +805,9 @@ class PairStructures:
 
 def oligo_structures(seq: str, conditions: Conditions) -> OligoStructures:
     clamped = seq[-CLAMP_NT:]
-    hairpin_dg, hairpin_tm = _structure(primer3.calc_hairpin, (clamped,), conditions)
+    hairpin_dg, hairpin_tm, hairpin_dh, hairpin_ds, paired = _hairpin(
+        clamped, conditions
+    )
     homodimer_dg, homodimer_tm = _structure(
         primer3.calc_homodimer, (clamped,), conditions
     )
@@ -724,6 +817,9 @@ def oligo_structures(seq: str, conditions: Conditions) -> OligoStructures:
         homodimer_dg=homodimer_dg,
         homodimer_tm=homodimer_tm,
         clamped=len(seq) > CLAMP_NT,
+        hairpin_dh=hairpin_dh,
+        hairpin_ds=hairpin_ds,
+        hairpin_3prime_paired=paired,
     )
 
 
