@@ -53,7 +53,8 @@ untouched and still available.
 
 Module map::
 
-    spec.py       the one pydantic schema for the JSON spec
+    flow.py       FLOW's design document as the input boundary
+    spec.py       the backend's own spec: the policy FLOW never sends
     sources.py    part sources -> Dseqrecord; the untrusted-input boundary
     tm.py         Tm and Ta, each tagged with the engine behind it
     design.py     footprints, the split sweep, variants, PCR checks
@@ -63,6 +64,13 @@ Module map::
 """
 
 from teemi.design.combinatorial.design import Diagnostic, Violation
+from teemi.design.combinatorial.flow import (
+    FlowDocument,
+    UndecidedPosition,
+    UnknownPart,
+    from_flow,
+    plan_flow,
+)
 from teemi.design.combinatorial.export import (
     write_assembly_figures,
     write_genbank_files,
@@ -96,4 +104,9 @@ __all__ = [
     "Diagnostic",
     "Violation",
     "Verification",
+    "FlowDocument",
+    "from_flow",
+    "plan_flow",
+    "UndecidedPosition",
+    "UnknownPart",
 ]

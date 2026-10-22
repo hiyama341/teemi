@@ -1,0 +1,385 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lucaslevassor/FLOW/schemas/heterologous-expression/1.0.json",
+  "title": "FLOW heterologous expression design",
+  "description": "Every setting reachable in FLOW's heterologous-expression flow, as the document the frontend sends the backend.\n\nSCOPE. This covers the `heterologous-expression` task only. Gene deletion carries `needsTarget` and `needsConstruct: false` and is a different document kind; nothing here describes it.\n\nWHAT THIS IS NOT. It carries no primer-design policy, no reaction conditions and no objective weights. Those belong to the backend's own spec, which owns them and defaults every one. FLOW sends what the user decided and nothing else, so an absent field means 'not decided' rather than 'decided to be the default'.\n\nNO PROHIBITIONS. `splitByMethod` in partTypes.ts divides part types by method for DISPLAY ORDER ONLY and removes nothing, on the stated grounds that FLOW has no business refusing a construct it merely does not expect. So `construct_part_type` is the full vocabulary under both methods. The one pair the source calls out as biologically exclusive - an ARS and a targeting sequence, since an AMA1 element is precisely what stops a plasmid integrating - is therefore NOT forbidden here either. A backend may warn; this schema does not reject.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "flow_schema_version",
+    "task",
+    "method",
+    "organism",
+    "construct"
+  ],
+  "properties": {
+    "flow_schema_version": {
+      "const": "1.0",
+      "description": "The wire format's own version. Unrelated to storage.ts's VERSION, which is a disposable autosave counter with a discard-on-mismatch policy. This one is a contract and migrates."
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "A handle for the design. FLOW holds none today, so this is absent until it does."
+    },
+    "task": {
+      "const": "heterologous-expression"
+    },
+    "method": {
+      "enum": [
+        "he-invivo-plasmid",
+        "he-genomic-integration"
+      ],
+      "description": "Task-namespaced, as workflow.ts mints them. Keys are namespaced so a stored choice can never resolve against another task's method."
+    },
+    "topology": {
+      "enum": [
+        "circular",
+        "linear"
+      ],
+      "description": "Resolved from Method.circular rather than left for the backend to infer, because `circular` is undefined on most methods and an undefined default is not an answer."
+    },
+    "organism": {
+      "$ref": "#/$defs/organism"
+    },
+    "construct": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/construct_part"
+      },
+      "description": "Ordered, reading 5' to 3' along the DNA. A position with variants multiplies the design count; it does not lengthen the construct."
+    },
+    "oligos": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/oligo_part"
+      },
+      "description": "Ordered alongside the construct, not sitting in it. Unordered in any meaningful sense."
+    },
+    "assembly": {
+      "$ref": "#/$defs/assembly_settings"
+    },
+    "design_count": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "The product of variant counts across positions, as designCount() computes it. Reported, never enumerated: FLOW does not expand the library and the number runs past anything worth holding in a browser."
+    },
+    "library_version": {
+      "type": "string",
+      "description": "Which build of parts.json the part_ids resolve against. parts.json is generated, ids have been retired before (RETIRED_TYPES exists for that reason), and libraryPart() returns undefined silently, so an unpinned reference can fail quietly."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "method": {
+            "const": "he-invivo-plasmid"
+          }
+        },
+        "required": [
+          "method"
+        ]
+      },
+      "then": {
+        "properties": {
+          "topology": {
+            "const": "circular"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "method": {
+            "const": "he-genomic-integration"
+          }
+        },
+        "required": [
+          "method"
+        ]
+      },
+      "then": {
+        "properties": {
+          "topology": {
+            "const": "linear"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "organism": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key"
+      ],
+      "description": "The host, and the assembly its genome work resolves against. The reference travels because which assembly changes the answers: a search run against a different strain reports hits the target strain does not have, and misses ones it does.",
+      "properties": {
+        "key": {
+          "enum": [
+            "a-nidulans",
+            "a-oryzae",
+            "a-niger",
+            "t-reesei",
+            "s-cerevisiae",
+            "p-pastoris",
+            "d-hansenii"
+          ]
+        },
+        "genome": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "accession"
+          ],
+          "description": "A REFERENCE, never the sequence. These assemblies run 9 to 38 Mb and the browser refuses uploads over 5 MB.",
+          "properties": {
+            "accession": {
+              "type": "string",
+              "pattern": "^GC[AF]_[0-9]{9}\\.[0-9]+$",
+              "description": "NCBI assembly accession, e.g. GCF_000011425.1."
+            },
+            "assembly_name": {
+              "type": "string"
+            },
+            "strain": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "construct_part_type": {
+      "enum": [
+        "selection_marker",
+        "replicator",
+        "fluorescent_protein",
+        "platform_flank",
+        "promoter",
+        "kozak_like",
+        "signal_peptide",
+        "cds",
+        "linker_peptide",
+        "nls_tag",
+        "terminator",
+        "protospacer",
+        "sgRNA_scaffold",
+        "crRNA_direct_repeat",
+        "trna",
+        "ribozyme"
+      ],
+      "description": "A PartTypeDef key, matching the part_type column in data/external/*.csv. The full construct vocabulary, not the method's subset, for the reason given at the top of this file.\n\nBy layer: core = selection_marker, fluorescent_protein, promoter, kozak_like, signal_peptide, cds, linker_peptide, nls_tag, terminator. replicon = replicator. locus = platform_flank. guide = protospacer, sgRNA_scaffold, crRNA_direct_repeat, trna, ribozyme.\n\nhe-invivo-plasmid calls for core + replicon; he-genomic-integration calls for core + locus."
+    },
+    "oligo_part_type": {
+      "enum": [
+        "crRNA_oligo",
+        "repair_oligo",
+        "ddpcr_probe"
+      ],
+      "description": "The types that live on the oligos list rather than on the DNA."
+    },
+    "source": {
+      "description": "Where the sequence comes from. A tagged union, because the two cases are resolved by different owners and must not be confused.\n\nABSENT means no choice has been made yet - a block drawn amber reading 'Choose a part'. That is a legitimate state of a saved design and the schema allows it rather than requiring a guess.\n\nThere is deliberately no file-path arm. A browser File exposes a name, never a path, so a fabricated path means nothing on the server and would make one document different DNA on two machines.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "part_id"
+          ],
+          "properties": {
+            "type": {
+              "const": "library"
+            },
+            "part_id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_]+$",
+              "description": "A LibraryPart.part_id, e.g. PRO_ANID_TEF1. Mixed case: 48 of the 338 current ids carry lowercase, as PROBE_DIV_Probe_AN_oliC_HEX and CRRNA_oAT4079 do, so this is not an uppercase-only key. The backend resolves the sequence from this and never from the name, so there is one owner."
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "sequence",
+            "format"
+          ],
+          "properties": {
+            "type": {
+              "const": "inline"
+            },
+            "sequence": {
+              "type": "string",
+              "minLength": 1
+            },
+            "format": {
+              "enum": [
+                "fasta",
+                "genbank"
+              ]
+            },
+            "upload_id": {
+              "type": "string",
+              "description": "The id pydna mints for an uploaded record. Derived FROM THE SEQUENCE by the backend and handed back, never invented in the browser, which would be a competing identity for the same molecule."
+            }
+          }
+        }
+      ]
+    },
+    "variant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id"
+      ],
+      "description": "One alternative at a combinatorial position. A CHOICE, not a segment: the variants of a position are things that COULD sit there, never things that sit there together.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        }
+      }
+    },
+    "construct_part": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type"
+      ],
+      "description": "One position on the DNA. Slot-level facts (the flags, the notes) live here; content-level facts live on the source or on each variant, so three alternatives at one position cannot disagree about which strand the position sits on.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable within one document. Anything referring to a position refers to it by this, never by list index, because positions shift whenever something is inserted or removed."
+        },
+        "type": {
+          "$ref": "#/$defs/construct_part_type"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display only, copied from the library so an old design still reads correctly if an entry moves. The backend resolves from the source, never from this."
+        },
+        "notes": {
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "variants": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/variant"
+          },
+          "description": "Present only where the position is combinatorial. When set it is the SOLE source of truth for what can sit here, so `source` above must be absent: two sources of truth for 'what goes here' is a bug waiting to be read the wrong way."
+        },
+        "reverse": {
+          "type": "boolean",
+          "description": "This part sits on the other strand. Absent means forward - the flag records the departure, not the normal case. It does NOT change the assembly arithmetic; the reverse complement is the backend's to take."
+        },
+        "in_tail": {
+          "type": "boolean",
+          "description": "Build this part into the flanking primer tails instead of amplifying it. RECORDED, NEVER CHECKED here: whether it is feasible depends on the final primer length, which depends on the neighbours and the overlap. Note that teemi hardcodes maxlink=40, so a part above that comes back as its own PCR however this is set."
+        },
+        "no_tail_fwd": {
+          "type": "boolean",
+          "description": "Omit the homology tail on the forward primer, which is the one giving homology at this part's 5' end. Named by the primer that carries the tail AND the end it lands on, so neither convention can be misread."
+        },
+        "no_tail_rev": {
+          "type": "boolean",
+          "description": "Omit the homology tail on the reverse primer, which lands on this part's 3' end."
+        },
+        "drop_start": {
+          "type": "boolean",
+          "description": "Drop this part's own start codon - a CDS downstream of a signal peptide keeps only one ATG across the fusion. Meaningful only where the type is translated: selection_marker, fluorescent_protein, signal_peptide, cds, linker_peptide, nls_tag."
+        },
+        "drop_stop": {
+          "type": "boolean",
+          "description": "Drop this part's own stop codon, as a CDS fused to a downstream tag or linker does."
+        }
+      },
+      "not": {
+        "required": [
+          "source",
+          "variants"
+        ]
+      }
+    },
+    "oligo_part": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type"
+      ],
+      "description": "Something ordered alongside the construct. The per-part tail and codon flags are absent by design: none of them means anything off the DNA.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "$ref": "#/$defs/oligo_part_type"
+        },
+        "name": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        }
+      }
+    },
+    "assembly_settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "In vivo assembly settings, as collected. No ranges are enforced, following assembly.ts: FLOW does not know what a sensible Tm or overlap is for your hosts and polymerase, and a made-up limit that quietly rejects a valid number is worse than no limit. Every quantity carries its unit in the field name, because the one real bug in this area is that 0.5 uM and 250 nM are the same number written two ways.",
+      "properties": {
+        "homology_bp": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "bp of homology shared between neighbouring fragments. FLOW's working default is 40."
+        },
+        "target_tm_c": {
+          "type": "number",
+          "description": "Target melting temperature of the annealing region, degrees Celsius. FLOW's working default is 65."
+        },
+        "primer_conc_um": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Primer concentration in MICROMOLAR. FLOW's default is 0.5 uM, the standard working concentration. Backends that want nanomolar multiply by 1000; the unit is in the name so the conversion happens once."
+        },
+        "min_footprint_nt": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Shortest annealing region allowed, nt. FLOW's default is 15."
+        },
+        "polymerase": {
+          "type": "string",
+          "description": "NEB's own product code, e.g. q5-0 or taq-0, copied verbatim from streptocad's polymerase_dict at a pinned commit (see polymerases.ts and scripts/fetch_polymerases.py). It selects the Tm model; choosing that model is the backend's job. Omit the field rather than sending an empty string when nothing is chosen."
+        },
+        "tune_overhangs": {
+          "type": "boolean",
+          "description": "Let the backend move a junction's split off centre to find primers that behave. Safe to hand to a search: 18/22 and 20/20 leave the two amplicons sharing the same 40 bp, so the assembled product is byte-for-byte identical either way and only the two primer sequences change. Off by default."
+        }
+      }
+    }
+  }
+}

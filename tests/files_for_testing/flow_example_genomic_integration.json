@@ -1,0 +1,23 @@
+{
+  "flow_schema_version": "1.0",
+  "task": "heterologous-expression",
+  "method": "he-genomic-integration",
+  "topology": "linear",
+  "organism": {
+    "key": "p-pastoris",
+    "genome": { "accession": "GCF_000027005.1", "assembly_name": "ASM2700v1", "strain": "GS115" }
+  },
+  "construct": [
+    { "id": "pos1", "type": "platform_flank", "name": "AOXTT", "source": { "type": "library", "part_id": "FLANK_KP_AOXTT" } },
+    { "id": "pos2", "type": "promoter", "name": "PADH2", "source": { "type": "library", "part_id": "PRO_KP_ADH2" } },
+    { "id": "pos3", "type": "kozak_like", "name": "TIS 8 (strongest of 8)", "source": { "type": "library", "part_id": "KOZ_SC_TIS8" }, "in_tail": true,
+      "notes": "characterised in S. cerevisiae; seating it here asserts a cross-species equivalence nobody has measured" },
+    { "id": "pos4", "type": "cds", "name": "", "notes": "not chosen yet" },
+    { "id": "pos5", "type": "linker_peptide", "name": "(EAAAK)4 rigid alpha-helical linker", "source": { "type": "library", "part_id": "LINK_EAAAK4" }, "drop_start": true, "drop_stop": true },
+    { "id": "pos6", "type": "fluorescent_protein", "name": "eGFP", "source": { "type": "library", "part_id": "FP_GP_EGFP" }, "drop_start": true },
+    { "id": "pos7", "type": "terminator", "name": "IDP1tt", "source": { "type": "library", "part_id": "TER_KP_IDP1" }, "no_tail_rev": true },
+    { "id": "pos8", "type": "platform_flank", "name": "DIVERSIFY A1 targeting sequence", "source": { "type": "library", "part_id": "FLANK_A1" }, "reverse": true }
+  ],
+  "assembly": { "homology_bp": 40, "target_tm_c": 65, "primer_conc_um": 0.5, "min_footprint_nt": 15 },
+  "design_count": 1
+}

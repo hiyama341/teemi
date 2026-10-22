@@ -69,6 +69,14 @@ def test_the_public_surface_is_small_and_complete():
             "Diagnostic",
             "Violation",
             "Verification",
+            # FLOW's document as the input boundary.  The spec stays the
+            # internal model and keeps its own entry points, because FLOW's
+            # schema says the backend owns the policy it never sends.
+            "FlowDocument",
+            "from_flow",
+            "plan_flow",
+            "UndecidedPosition",
+            "UnknownPart",
         ]
     )
     for name in cb.__all__:
@@ -82,17 +90,23 @@ def test_the_notebook_uses_only_the_public_surface():
     assert used <= set(cb.__all__), used - set(cb.__all__)
 
 
-def test_the_package_is_the_seven_modules_the_map_names():
+def test_the_package_is_the_modules_the_map_names():
     assert sorted(p.name for p in PACKAGE.glob("*.py")) == [
         "__init__.py",
         "design.py",
         "export.py",
+        "flow.py",
         "report.py",
         "simulate.py",
         "sources.py",
         "spec.py",
         "tm.py",
     ]
+    # Every one of them is in the map at the top of __init__.
+    documented = cb.__doc__ or ""
+    for module in PACKAGE.glob("*.py"):
+        if module.name != "__init__.py":
+            assert module.name in documented, module.name
 
 
 def test_there_is_one_schema_with_no_version_and_no_migrations():

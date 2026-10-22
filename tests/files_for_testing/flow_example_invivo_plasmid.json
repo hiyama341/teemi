@@ -1,0 +1,68 @@
+{
+  "flow_schema_version": "1.0",
+  "name": "AMA1 plasmid, two promoters x one gene",
+  "task": "heterologous-expression",
+  "method": "he-invivo-plasmid",
+  "topology": "circular",
+  "organism": {
+    "key": "a-nidulans",
+    "genome": { "accession": "GCF_000011425.1", "assembly_name": "ASM1142v1", "strain": "FGSC A4" }
+  },
+  "construct": [
+    {
+      "id": "pos1",
+      "type": "promoter",
+      "variants": [
+        { "id": "v1", "name": "Ptef1 (A. nidulans tef1 / AN4218)", "source": { "type": "library", "part_id": "PRO_ANID_TEF1" } },
+        { "id": "v2", "name": "Af U3 promoter", "source": { "type": "library", "part_id": "PRO_AFUM_U3" } }
+      ]
+    },
+    {
+      "id": "pos2",
+      "type": "signal_peptide",
+      "name": "AA9A signal peptide",
+      "source": { "type": "library", "part_id": "SP_Q4X066" },
+      "in_tail": true,
+      "drop_stop": true
+    },
+    {
+      "id": "pos3",
+      "type": "cds",
+      "name": "my biosynthetic gene",
+      "notes": "uploaded from the bench GenBank",
+      "source": { "type": "inline", "sequence": "LOCUS       myGene\nORIGIN\n        1 atgagcaaag gtgaagaatt g\n//\n", "format": "genbank" },
+      "drop_start": true
+    },
+    {
+      "id": "pos4",
+      "type": "terminator",
+      "name": "Ttef1 (A. nidulans tef1 / AN4218)",
+      "source": { "type": "library", "part_id": "TER_ANID_TEF1" }
+    },
+    {
+      "id": "pos5",
+      "type": "selection_marker",
+      "name": "An_P-argB-T",
+      "source": { "type": "library", "part_id": "MRK_ANID_ARGB" }
+    },
+    {
+      "id": "pos6",
+      "type": "replicator",
+      "name": "AMA1",
+      "source": { "type": "library", "part_id": "REP_AMA1" }
+    }
+  ],
+  "oligos": [
+    { "id": "o1", "type": "ddpcr_probe", "name": "Probe_AN_oliC-HEX", "source": { "type": "library", "part_id": "PROBE_DIV_Probe_AN_oliC_HEX" } }
+  ],
+  "assembly": {
+    "homology_bp": 40,
+    "target_tm_c": 65,
+    "primer_conc_um": 0.5,
+    "min_footprint_nt": 15,
+    "polymerase": "q5-0",
+    "tune_overhangs": true
+  },
+  "design_count": 2,
+  "library_version": "parts.json@1fd747d"
+}
