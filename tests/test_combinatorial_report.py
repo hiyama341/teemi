@@ -10,6 +10,7 @@ import json
 import random
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 from teemi.design.combinatorial.report import (
@@ -146,9 +147,7 @@ def test_a_reaction_shows_the_breaches_of_its_own_primers(result):
     for pcr in result.pcrs:
         pair = [by_id[pcr.forward_id], by_id[pcr.reverse_id]]
         row = pcr.to_dict()
-        assert row["homodimer_dg_worst"] == min(
-            p.structures.homodimer_dg for p in pair
-        )
+        assert row["homodimer_dg_worst"] == min(p.structures.homodimer_dg for p in pair)
         if any(p.to_dict()["dg_flagged"] for p in pair):
             assert row["dg_flagged"], pcr.part_id
 
@@ -492,6 +491,66 @@ def test_the_pcr_table_is_readable_by_default(result):
     assert len(frame) == len(result.pcrs)
 
 
+def test_a_table_does_not_print_more_precision_than_primer3_has(result):
+    """``-2.367446221426836`` reads as certainty; ``-2.37`` reads as what it
+    is.  primer3's dG is good to a few tenths of a kcal/mol and its Tm to about
+    a degree, so a table that prints sixteen figures is claiming a precision
+    nothing in the stack has got.
+    """
+    from teemi.design.combinatorial.report import _decimals
+
+    seen = 0
+    for columns, frame in (
+        (PRIMER_COLUMNS, primer_dataframe(result)),
+        (PCR_COLUMNS, pcr_dataframe(result)),
+    ):
+        for key in columns:
+            decimals = _decimals(key)
+            column = frame[COLUMN_LABELS.get(key, key)]
+            if decimals is None or not pd.api.types.is_numeric_dtype(column):
+                continue
+            for value in column.dropna():
+                assert round(float(value), decimals) == float(value), (key, value)
+                seen += 1
+    assert seen, "the tables have to carry some rounded quantity at all"
+
+
+def test_rounding_a_table_does_not_move_a_threshold(result):
+    """The tables are rounded; the records are not.
+
+    A floor compared against a rounded number is a floor at a different
+    place -- a dG of -5.996 is not a breach of -6 and must not become one by
+    being printed.  The flags are computed from the records, so this asserts
+    the records still carry every digit the tables hide.
+    """
+    full = [
+        primer.structures.homodimer_dg
+        for primer in result.primers
+        if primer.structures.homodimer_dg
+    ]
+    assert full, "this library has to predict some homodimer at all"
+    assert any(
+        round(value, 2) != value for value in full
+    ), "the records would have to be unrounded for this to prove anything"
+
+
+def test_the_folded_fraction_is_shown_as_the_percentage_it_is(result):
+    """A reader asked whether the number was a percentage.  Now it says so.
+
+    The column is a percentage of the oligo folded at its own annealing
+    temperature, which is the fraction the floors use, scaled by a hundred.
+    """
+    frame = primer_dataframe(result)
+    column = frame["hairpin_folded_at_Ta (%)"]
+    by_label = {p.label: p for p in result.primers}
+    assert ((column >= 0) & (column <= 100)).all()
+    for label, shown in zip(frame["primer"], column):
+        primer = by_label[label]
+        assert primer.anneal_ta is not None, label
+        fraction = primer.structures.folded_at(primer.anneal_ta)
+        assert shown == pytest.approx(round(fraction * 100, 1))
+
+
 def _quantity_keys(columns):
     """The wire keys that carry a dG or a temperature, engines excluded."""
     return [
@@ -542,9 +601,7 @@ def test_no_two_columns_share_a_heading():
         rendered = [COLUMN_LABELS.get(c, c) for c in group]
         assert len(set(rendered)) == len(rendered), rendered
     # And no label is the bare key of some other column.
-    assert not set(COLUMN_LABELS.values()) & set(headings) - set(
-        COLUMN_LABELS.values()
-    )
+    assert not set(COLUMN_LABELS.values()) & set(headings) - set(COLUMN_LABELS.values())
 
 
 def test_full_tables_are_a_superset_of_the_readable_ones(result):
@@ -979,9 +1036,7 @@ def test_the_message_says_whether_another_split_would_have_helped():
     # Flags, not refusals: nothing here is unbuildable.
     assert result.feasible is True
     structural = [
-        d
-        for d in result.diagnostics
-        if d.junction_id and d.code in STRUCTURE_BOUNDS
+        d for d in result.diagnostics if d.junction_id and d.code in STRUCTURE_BOUNDS
     ]
     assert structural
     assert {d.severity for d in structural} == {"warning"}

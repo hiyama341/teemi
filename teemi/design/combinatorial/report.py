@@ -163,7 +163,7 @@ COLUMN_LABELS = {
     "three_prime_dimer_dg": "three_prime_dimer_deltaG (kcal/mol)",
     "homodimer_dg_worst": "worst_primer_homodimer_deltaG (kcal/mol)",
     "primer3_clamped": "not_analysable_over_60nt",
-    "hairpin_folded_at_ta": "hairpin_folded_at_Ta",
+    "hairpin_folded_at_ta": "hairpin_folded_at_Ta (%)",
     "hairpin_3prime_paired": "hairpin_blocks_3prime",
 }
 
@@ -1131,12 +1131,51 @@ def _variant_plans(
 # --------------------------------------------------------------------------- #
 
 
+#: Display columns given as a percentage rather than the fraction stored.
+#: The fraction is what the floors are compared against; a reader asked
+#: "is it a percentage?", and the answer belongs in the heading.
+_PERCENT = frozenset({"hairpin_folded_at_ta"})
+
+#: Decimals a display column is rounded to, where the key convention does not
+#: already say.  Rounding is for the TABLES only: the records keep every digit,
+#: so a threshold is never compared against a rounded number.
+_DECIMALS = {"price": 2}
+
+
+def _decimals(key: str) -> Optional[int]:
+    """How many decimals a column is worth, by the same key convention that
+    decides whether it needs a unit.
+
+    A prediction printed to sixteen figures claims a precision primer3 has
+    not got: its deltaG is good to a few tenths of a kcal/mol and its Tm to
+    about a degree, so ``-2.367446221426836`` reads as certainty where
+    ``-2.37`` reads as an estimate.
+    """
+    if key in _DECIMALS:
+        return _DECIMALS[key]
+    if key in _PERCENT:
+        return 1
+    if "_dg" in key:
+        return 2
+    if "_tm" in key or key.startswith("ta_"):
+        return 1
+    return None
+
+
 def _project(rows: List[dict], columns: Sequence[str], full: bool) -> pd.DataFrame:
     frame = pd.DataFrame(rows)
     if frame.empty:
         return frame
     if not full:
         frame = frame[list(columns)]
+    for key in frame.columns:
+        if not pd.api.types.is_numeric_dtype(frame[key]):
+            continue
+        if key in _PERCENT:
+            frame[key] = frame[key] * 100
+        decimals = _decimals(key)
+        if decimals is not None:
+            frame[key] = frame[key].round(decimals)
     return frame.rename(columns=COLUMN_LABELS)
 
 
