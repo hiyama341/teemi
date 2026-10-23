@@ -101,6 +101,7 @@ __all__ = [
 
 #: The readable projection of a primer row; everything else is behind ``full``.
 PRIMER_COLUMNS = (
+    "primer",
     "primer_id",
     "part_id",
     "direction",
@@ -121,8 +122,8 @@ PRIMER_COLUMNS = (
 #: The readable projection of a PCR row.
 PCR_COLUMNS = (
     "part_id",
-    "forward_primer_id",
-    "reverse_primer_id",
+    "forward_primer",
+    "reverse_primer",
     "amplicon_bp",
     "ta_from_footprints",
     "footprint_tm_forward",
@@ -277,6 +278,17 @@ class PrimerRecord:
     structures: OligoStructures
     violations: Tuple[Violation, ...]
     price: float
+    #: Position in the order sheet, from 1.  ``label`` renders it ``P001``,
+    #: matching what the legacy ``DesignAssembly`` minted, because "P7" is what
+    #: gets said at a bench and ``PRO_ANID_TEF1__gene_KP2612_000062_rv`` is not.
+    #:
+    #: A LABEL, NOT AN IDENTITY.  It is the molecule's position in *this* plan:
+    #: deterministic, so the same spec always numbers the same way, but
+    #: positional, so inserting a gene renumbers everything after it.  The
+    #: sequence is the identity, and it is in the row beside the number for
+    #: exactly that reason -- check it before ordering against a number you
+    #: wrote down from an earlier run.
+    number: int = 0
     uses: Tuple[str, ...] = ()
     #: Every part this molecule amplifies, unjoined.  :attr:`part_id` is the
     #: readable join of these; anything that has to name a real part uses this.
@@ -294,8 +306,14 @@ class PrimerRecord:
     #: that caused it lives; the row still shows it either way.
     tailed: bool = False
 
+    @property
+    def label(self) -> str:
+        """``P001``: short enough to say out loud."""
+        return f"P{self.number:03d}"
+
     def to_dict(self) -> dict:
         return {
+            "primer": self.label,
             "primer_id": self.id,
             "part_id": self.part_id,
             "direction": self.direction,
@@ -344,6 +362,10 @@ class PcrRecord:
     temperatures: PcrTemperatures
     structures: PairStructures
     violations: Tuple[Violation, ...]
+    #: The two primers' order-sheet numbers, so a reaction can be read without
+    #: a sixty-character name in each cell.
+    forward_label: str = ""
+    reverse_label: str = ""
     primer_violations: Tuple[Violation, ...] = ()
     homodimer_dg_worst: Optional[float] = None
     #: The worse of the two primers' own verdicts, each scored against its own
@@ -359,6 +381,8 @@ class PcrRecord:
     def to_dict(self) -> dict:
         return {
             "part_id": self.part_id,
+            "forward_primer": self.forward_label,
+            "reverse_primer": self.reverse_label,
             "forward_primer_id": self.forward_id,
             "reverse_primer_id": self.reverse_id,
             "amplicon_bp": self.amplicon_bp,
@@ -799,9 +823,15 @@ def _primer_records(
                 price=len(sequence) * spec.objective.price_per_base,
                 tailed=sequence in tailed,
             )
+    # Numbered in the order the walk first met each molecule, which follows the
+    # construct, so P001 is the first fragment's forward primer.  dict keeps
+    # insertion order, and the walk is deterministic, so the same spec numbers
+    # the same way every run -- which is the only reason a number is safe to
+    # write down at all.
     oligos = tuple(
         replace(
             record,
+            number=position,
             id=_shared_id(uses[sequence]),
             uses=tuple(uses[sequence]),
             # A shared molecule belongs to every part it amplifies, so the
@@ -824,7 +854,7 @@ def _primer_records(
                 else tuple(sorted({v.constraint for v in record.violations}))
             ),
         )
-        for sequence, record in records.items()
+        for position, (sequence, record) in enumerate(records.items(), start=1)
     )
     return oligos, {
         name: record.id for record in oligos for name in record.uses
@@ -869,6 +899,8 @@ def _pcr_records(
             part_id=pair.part_id,
             forward_id=forward_id,
             reverse_id=reverse_id,
+            forward_label=primers[forward_id].label,
+            reverse_label=primers[reverse_id].label,
             amplicon_bp=(
                 len(records[pair.part_id])
                 + len(oligos.forward_oligo)

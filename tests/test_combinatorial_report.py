@@ -1236,7 +1236,9 @@ def test_a_shared_oligo_reports_every_direction_it_is_used_in(result):
     same id under ``reverse_primer_id``.
     """
     frame = primer_dataframe(result)
-    pcrs = pcr_dataframe(result)
+    # The readable PCR table names primers by number now, so the ids come from
+    # the full projection.
+    pcrs = pcr_dataframe(result, full=True)
     forward_ids = set(pcrs["forward_primer_id"])
     reverse_ids = set(pcrs["reverse_primer_id"])
     for _, row in frame.iterrows():
@@ -1247,3 +1249,88 @@ def test_a_shared_oligo_reports_every_direction_it_is_used_in(result):
         if row["primer_id"] in reverse_ids:
             actual.add("reverse")
         assert claimed == actual, (row["primer_id"], claimed, actual)
+
+
+# --------------------------------------------------------------------------- #
+# The order-sheet number
+# --------------------------------------------------------------------------- #
+
+
+def test_every_primer_has_a_short_number_and_they_are_unique(result):
+    """``P001`` is what gets said at a bench; the long name is what identifies.
+
+    Matches what the legacy ``DesignAssembly`` minted, so an order sheet from
+    either reads the same way.
+    """
+    labels = [p.label for p in result.primers]
+    assert labels == [f"P{n:03d}" for n in range(1, len(result.primers) + 1)]
+    assert len(set(labels)) == len(labels)
+
+    frame = primer_dataframe(result)
+    assert list(frame.columns)[0] == "primer", "first column, where a label belongs"
+    assert list(frame["primer"]) == labels
+
+
+def test_the_numbering_is_the_same_on_every_run(result):
+    """A number nobody can rely on is worse than no number.
+
+    The walk is deterministic, so the same spec numbers the same molecules the
+    same way -- which is the whole reason one is safe to write down.
+    """
+    again = plan(raw(SPEC_B), sources=SourceResolver(base_dir=REPO), offline=True)
+    assert [(p.label, p.sequence) for p in again.primers] == [
+        (p.label, p.sequence) for p in result.primers
+    ]
+
+
+def test_the_number_is_positional_and_the_sequence_is_the_identity(result):
+    """Insert a part and the numbers after it move.  That is why the sequence
+    sits in the row beside the number.
+
+    Not a defect to fix -- a stable-forever number would have to be a hash, and
+    "Pa3f91c" is not a thing anyone says out loud -- but a number written down
+    from an earlier run has to be checked against its sequence, so this pins
+    the behaviour rather than leaving it to be discovered at a bench.
+    """
+    before = {p.label: p.sequence for p in result.primers}
+
+    grown = copy.deepcopy(raw(SPEC_B))
+    first = grown["positions"][0]
+    first["parts"].insert(
+        0,
+        {
+            "id": "pEXTRA",
+            "source": {
+                "type": "inline",
+                "sequence": "".join(
+                    random.Random(99).choice("ACGT") for _ in range(900)
+                ),
+            },
+        },
+    )
+    after = plan(grown, sources=SourceResolver(base_dir=REPO), offline=True)
+    moved = {
+        label
+        for label, sequence in ((p.label, p.sequence) for p in after.primers)
+        if label in before and before[label] != sequence
+    }
+    assert moved, "adding a part at the front has to renumber something"
+
+    # The sequence is in the readable table, which is what makes that detectable.
+    assert "sequence" in primer_dataframe(after).columns
+
+
+def test_the_pcr_table_names_primers_by_number(result):
+    """A reaction row with two sixty-character names in it is unreadable."""
+    labels = {p.label for p in result.primers}
+    frame = pcr_dataframe(result)
+    assert "forward_primer_id" not in frame.columns
+    assert set(frame["forward_primer"]) <= labels
+    assert set(frame["reverse_primer"]) <= labels
+
+    # And the full projection still carries the ids, for joining.
+    wide = pcr_dataframe(result, full=True)
+    by_label = {p.label: p.id for p in result.primers}
+    for _, row in wide.iterrows():
+        assert by_label[row["forward_primer"]] == row["forward_primer_id"]
+        assert by_label[row["reverse_primer"]] == row["reverse_primer_id"]
