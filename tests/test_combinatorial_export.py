@@ -236,6 +236,85 @@ def test_a_primer_label_survives_the_genbank_line_wrap(tmp_path):
     assert found & {p.label for p in long_named}
 
 
+def test_a_shared_oligos_note_does_not_list_every_junction(tmp_path):
+    """A map should say which oligo this is, not recite the library.
+
+    A shared molecule is named after every junction it serves, so the
+    terminator primer of the 67-gene chaperone library came out as 1,445
+    characters of note -- two thirds of each GenBank file, repeated on all 67
+    of them.  Past a point the note says what the oligo is and leaves the
+    roll-call to primers.csv, which is where an oligo is looked up anyway.
+    """
+    from teemi.design.combinatorial.report import (
+        _NOTE_NAME_MAX,
+        _NOTE_PART_MAX,
+    )
+
+    spec = json.loads(SPEC_A.read_text())
+    for position in spec["positions"]:
+        for part in position["parts"]:
+            part["id"] = f"{part['id']}-{'x' * 45}"
+    result = plan(
+        spec,
+        sources=SourceResolver(base_dir=REPO),
+        offline=True,
+        include_designs=True,
+    )
+    shared = [p for p in result.primers if len(p.uses) > 1]
+    assert shared, "this library has to contain a shared oligo"
+    verbose = [p for p in shared if len(p.id) > _NOTE_NAME_MAX]
+    assert verbose, "the lengthened ids have to overrun the note"
+
+    written = write_genbank_files(result.designs, tmp_path)
+    by_label = {p.label: p for p in verbose}
+    checked = 0
+    for path in written:
+        for feature in SeqIO.read(path, "genbank").features:
+            if feature.type != "primer_bind":
+                continue
+            primer = by_label.get(feature.qualifiers["label"][0])
+            if primer is None:
+                continue
+            note = feature.qualifiers["note"][0]
+            assert primer.id not in note, "the roll-call belongs in the CSV"
+            assert primer.direction in note
+            assert f"shared by {len(primer.uses)} junctions" in note
+            assert "primers.csv" in note, "say where the full name is"
+            # Bounded whatever the ids are, which is the point: part_id is
+            # itself a join here and would overrun just as the name did.
+            assert len(note) < 120, (len(note), note)
+            assert primer.part_id[:_NOTE_PART_MAX] in note
+            checked += 1
+    assert checked, "the shared oligo has to be on a map at all"
+
+
+def test_a_short_shared_name_is_still_given_in_full(linear, tmp_path):
+    """The cap is for a roll-call, not for every shared oligo.
+
+    Two sharers with ordinary ids make a name worth reading in full, and it
+    stays on the map: ``AAA17732 + AKF02530__tCYC1_rv (used 2x)``.
+    """
+    shared = [p for p in linear.primers if len(p.uses) > 1]
+    assert shared and all(len(p.id) < 110 for p in shared)
+
+    written = write_genbank_files(linear.designs, tmp_path)
+    by_label = {p.label: p for p in shared}
+    seen = 0
+    for path in written:
+        for feature in SeqIO.read(path, "genbank").features:
+            if feature.type != "primer_bind":
+                continue
+            primer = by_label.get(feature.qualifiers["label"][0])
+            if primer is None:
+                continue
+            note = feature.qualifiers["note"][0]
+            assert primer.id.replace("+", " + ") in note
+            assert f"used {len(primer.uses)}x" in note
+            assert "primers.csv" not in note, "nothing was left out"
+            seen += 1
+    assert seen
+
+
 # --------------------------------------------------------------------------- #
 # The bundle
 # --------------------------------------------------------------------------- #

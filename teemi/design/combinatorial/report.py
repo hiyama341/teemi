@@ -952,7 +952,8 @@ def _annotate_primer_binds(
     ``gene_gene-1+gene_gene-2+gene_gene-3+gene_gene-4__TER_ANID_TEF1_fw`` came
     back as ``...__TE R_ANID_TEF1_fw`` -- a map naming a primer that is on no
     order sheet, which is the exact failure the labelling was meant to prevent.
-    ``007`` cannot wrap.  The note holds the name, spaced at the ``+`` that
+    ``007`` cannot wrap.  The note holds the name while the name is worth
+    carrying, spaced at the ``+`` that
     joins the junctions an oligo serves, so the wrap falls on a space the name
     already has and the halves rejoin unharmed.  A part id longer than the
     wrap width would still break mid-token; the number is what a map promises
@@ -988,10 +989,7 @@ def _annotate_primer_binds(
             # Not one of ours after all; leave the label pydna gave it.
             continue
         feature.qualifiers["label"] = [primer.label]
-        feature.qualifiers["note"] = [
-            f"primer {primer.label}: {primer.id.replace('+', ' + ')}"
-            + (f" (used {len(primer.uses)}x)" if len(primer.uses) > 1 else "")
-        ]
+        feature.qualifiers["note"] = [f"primer {primer.label}: {_note(primer)}"]
         tail = len(primer.sequence) - len(primer.footprint)
         if tail <= 0:
             continue
@@ -1003,6 +1001,35 @@ def _annotate_primer_binds(
             start -= tail
         feature.location = _span(start, end, strand, length, construct.circular)
     return construct
+
+
+#: How much of a name a note will carry.  A shared oligo is named after every
+#: junction it serves, which for the terminator primer of a 67-gene library is
+#: 1,445 characters -- on each of 67 maps, two thirds of the file.  Past this
+#: the note says what the oligo is and leaves the roll-call to primers.csv,
+#: which is where someone looks an oligo up anyway.
+_NOTE_NAME_MAX = 110
+
+#: How much of the part name the short form carries.  ``part_id`` is itself a
+#: join where one oligo amplifies several parts, so it is no more bounded than
+#: the name it stands in for; trimming it beats trading one overrun for
+#: another, and the untrimmed name is one column away.
+_NOTE_PART_MAX = 40
+
+
+def _note(primer) -> str:
+    """What to say about an oligo on a map, beside its number."""
+    name = primer.id.replace("+", " + ")
+    shared = len(primer.uses) > 1
+    if len(name) <= _NOTE_NAME_MAX:
+        return f"{name} (used {len(primer.uses)}x)" if shared else name
+    part = primer.part_id
+    if len(part) > _NOTE_PART_MAX:
+        part = part[:_NOTE_PART_MAX] + "..."
+    return (
+        f"{part} {primer.direction}, shared by {len(primer.uses)} "
+        "junctions; full name in primers.csv"
+    )
 
 
 def _logical_bounds(location, length: int) -> Tuple[int, int]:
