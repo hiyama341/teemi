@@ -454,6 +454,7 @@ def test_a_verification_failure_is_an_error_naming_its_variant():
 def test_variant_overview_has_one_column_per_position_headed_by_its_name(result):
     frame = variant_overview_dataframe(result)
     assert list(frame.columns) == [
+        "construct",
         "variant_id",
         "Promoter",
         "CDS",
@@ -1270,7 +1271,7 @@ def test_an_overview_column_cannot_be_taken_by_a_position_name():
         frame = variant_overview_dataframe(result)
         first = result.spec.positions[0].id
         assert first in frame.columns, (name, list(frame.columns))
-        assert len(frame.columns) == len(result.spec.positions) + 3
+        assert len(frame.columns) == len(result.spec.positions) + 4
 
     # Two positions sharing a name keep one column each.
     spec = copy.deepcopy(raw(SPEC_B))
@@ -1278,7 +1279,7 @@ def test_an_overview_column_cannot_be_taken_by_a_position_name():
     spec["positions"][1]["name"] = "same"
     result = plan(spec, sources=SourceResolver(base_dir=REPO), offline=True)
     frame = variant_overview_dataframe(result)
-    assert len(frame.columns) == len(result.spec.positions) + 3
+    assert len(frame.columns) == len(result.spec.positions) + 4
     assert len(set(frame.columns)) == len(frame.columns)
 
 

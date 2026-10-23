@@ -81,6 +81,9 @@ def test_the_public_surface_is_small_and_complete():
             "write_bundle",
             "write_bundle_zip",
             "build_summary",
+            # Where each thing lands, so a reader need not hard-code it.
+            "BUNDLE_PATHS",
+            "BUNDLE_LAYOUT",
         ]
     )
     for name in cb.__all__:
@@ -154,9 +157,11 @@ def test_the_notebook_runs_against_both_specs(spec_path, tmp_path):
     genbank = cb.write_genbank_files(designs, tmp_path)
     assert len(figures) == len(genbank) == 1
 
+    # The construct's number leads the filename, so the id is in the middle.
     vid = R["variants"][0]["id"]
-    assert next(tmp_path.glob(f"{vid}*.txt")).read_text()
-    record = SeqIO.read(next(tmp_path.glob(f"{vid}*.gb")), "genbank")
+    number = R["variants"][0]["construct"]
+    assert next(tmp_path.glob(f"{number}_{vid}*.txt")).read_text()
+    record = SeqIO.read(next(tmp_path.glob(f"{number}_{vid}*.gb")), "genbank")
     assert len(record.features) == 9
 
 

@@ -427,9 +427,21 @@ class VariantPlan:
     length_bp: int
     verification: Verification
     construct: Optional[Dseqrecord] = None
+    #: Position in the library, from 1.  A variant id names every part it is
+    #: made of, which is precise and unquotable: "construct 014" is what gets
+    #: written on a tube and said out loud, the same reason the primers are
+    #: numbered.  Assigned in the order the variants come out of the spec, so
+    #: it is stable for a given spec.
+    number: int = 0
+
+    @property
+    def label(self) -> str:
+        """The number as it is written: zero-padded, so it sorts."""
+        return f"{self.number:03d}"
 
     def to_dict(self) -> dict:
         return {
+            "construct": self.label,
             "id": self.id,
             "choices": [list(choice) for choice in self.choices],
             "fragment_ids": list(self.fragment_ids),
@@ -1131,6 +1143,7 @@ def _variant_plans(
             )
         plans.append(
             VariantPlan(
+                number=len(plans) + 1,
                 id=variant.id,
                 choices=tuple(
                     (position_id, by_slot[position_id].id)
@@ -1207,7 +1220,7 @@ def _project(rows: List[dict], columns: Sequence[str], full: bool) -> pd.DataFra
 
 
 #: Columns the overview always has, which a position heading must not take.
-_OVERVIEW_RESERVED = ("variant_id", "length_bp", "assembly")
+_OVERVIEW_RESERVED = ("construct", "variant_id", "length_bp", "assembly")
 
 
 def _overview_headings(spec: DesignSpec) -> Dict[str, str]:
@@ -1248,6 +1261,7 @@ def variant_overview_dataframe(result: DesignResult) -> pd.DataFrame:
     return pd.DataFrame(
         [
             {
+                "construct": variant.label,
                 "variant_id": variant.id,
                 **{
                     headings[position_id]: part_id

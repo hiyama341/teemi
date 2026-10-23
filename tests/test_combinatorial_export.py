@@ -12,6 +12,7 @@ import pytest
 from Bio import SeqIO
 
 from teemi.design.combinatorial.export import (
+    BUNDLE_PATHS,
     write_assembly_figures,
     write_bundle,
     write_bundle_zip,
@@ -51,16 +52,19 @@ def circular():
 def test_genbank_files_are_named_after_their_variant(linear, tmp_path):
     designs = list(linear.designs)[:2]
     written = write_genbank_files(designs, tmp_path)
-    assert [p.name for p in written] == [f"{d.id}.gb" for d in designs]
+    assert [p.name for p in written] == [f"{d.label}_{d.id}.gb" for d in designs]
     assert all(p.parent == tmp_path.resolve() for p in written)
 
 
 def test_assembly_figures_are_named_after_their_variant(linear, tmp_path):
     designs = list(linear.designs)[:1]
     written = write_assembly_figures(designs, tmp_path)
-    assert [p.name for p in written] == [f"{designs[0].id}.txt"]
+    assert [p.name for p in written] == [f"{designs[0].label}_{designs[0].id}.txt"]
     text = written[0].read_text()
-    assert text.startswith(f"{designs[0].id}  {designs[0].length_bp} bp  linear")
+    assert text.startswith(
+        f"construct {designs[0].label}  {designs[0].id}  "
+        f"{designs[0].length_bp} bp  linear"
+    )
     for part_id in designs[0].fragment_ids:
         assert part_id in text
 
@@ -320,15 +324,17 @@ def test_a_short_shared_name_is_still_given_in_full(linear, tmp_path):
 # --------------------------------------------------------------------------- #
 
 
+#: Built from the module's own path map, so renaming an entry cannot leave the
+#: test asserting the old name while the layout advertises the new one.
 PROMISED = (
-    "LAYOUT.txt",
-    "SUMMARY.txt",
-    "design.json",
-    "primers/primers.csv",
-    "primers/analysis.csv",
-    "pcrs/pcrs.csv",
-    "parts/parts.csv",
-    "constructs/assemblies.txt",
+    BUNDLE_PATHS["layout"],
+    BUNDLE_PATHS["summary"],
+    BUNDLE_PATHS["design"],
+    f"{BUNDLE_PATHS['primers']}/primers.csv",
+    f"{BUNDLE_PATHS['primers']}/analysis.csv",
+    f"{BUNDLE_PATHS['pcrs']}/pcrs.csv",
+    f"{BUNDLE_PATHS['parts']}/parts.csv",
+    f"{BUNDLE_PATHS['constructs']}/assemblies.txt",
 )
 
 
@@ -342,9 +348,9 @@ def test_the_bundle_writes_everything_its_own_layout_promises(linear, tmp_path):
     for relative in PROMISED:
         assert (folder / relative).is_file(), relative
 
-    layout = (folder / "LAYOUT.txt").read_text()
+    layout = (folder / BUNDLE_PATHS["layout"]).read_text()
     for relative in PROMISED:
-        if relative != "LAYOUT.txt":
+        if relative != BUNDLE_PATHS["layout"]:
             named = relative.split("/")[-1]
             assert named in layout or relative.replace("/", "/*") in layout, relative
 
@@ -354,6 +360,73 @@ def test_the_bundle_writes_everything_its_own_layout_promises(linear, tmp_path):
     maps = {name for name in written if name.endswith(".gb")}
     assert len(maps) == len(list(linear.designs))
     assert written == set(PROMISED) | maps
+
+
+def test_every_map_is_named_by_its_construct_number(linear, tmp_path):
+    """A variant id names every part it is made of, which is precise and
+    unquotable.  "Construct 014" is what goes on a tube, so the number leads
+    the filename and the files sort into library order.
+
+    The number has to be the same one the tables carry, or the map cannot be
+    found from the overview.
+    """
+    folder = write_bundle(linear, tmp_path / "build")
+    designs = list(linear.designs)
+
+    labels = [design.label for design in designs]
+    assert labels == [f"{n:03d}" for n in range(1, len(designs) + 1)]
+    assert len(set(labels)) == len(labels)
+
+    maps = sorted((folder / BUNDLE_PATHS["constructs"]).glob("*.gb"))
+    assert len(maps) == len(designs)
+    assert [path.name for path in maps] == sorted(
+        path.name for path in maps
+    ), "numbered names have to sort into library order"
+    by_label = {design.label: design for design in designs}
+    for path in maps:
+        number = path.name.split("_")[0]
+        assert number in by_label, path.name
+        assert path.name.startswith(f"{number}_")
+
+    # And the number is in the tables, so a row leads back to a file.
+    from teemi.design.combinatorial.report import variant_overview_dataframe
+
+    overview = variant_overview_dataframe(linear)
+    assert list(overview.columns)[0] == "construct"
+    assert list(overview["construct"]) == [v.label for v in linear.variants]
+    payload = json.loads((folder / BUNDLE_PATHS["design"]).read_text())
+    assert [v["construct"] for v in payload["variants"]] == [
+        v.label for v in linear.variants
+    ]
+
+
+def test_a_second_bundle_does_not_leave_the_first_behind(linear, tmp_path):
+    """Half of one design and half of another, with nothing to tell them apart,
+    is worse than a refusal.
+
+    So a non-empty folder is refused, and ``overwrite`` removes the entries
+    this function writes -- including maps of constructs the new design no
+    longer has -- while leaving anything else in the folder alone.
+    """
+    target = tmp_path / "build"
+    folder = write_bundle(linear, target)
+
+    with pytest.raises(FileExistsError, match="overwrite=True"):
+        write_bundle(linear, target)
+
+    # A map from a design that no longer exists, and a file that is not ours.
+    stale = folder / BUNDLE_PATHS["constructs"] / "999_gone_for_good.gb"
+    stale.write_text("stale\n")
+    mine = folder / "notes_of_my_own.txt"
+    mine.write_text("keep me\n")
+
+    again = write_bundle(linear, target, overwrite=True)
+    assert not stale.exists(), "a map of a construct that is gone has to go"
+    assert mine.read_text() == "keep me\n", "only our own entries are removed"
+    maps = list((again / BUNDLE_PATHS["constructs"]).glob("*.gb"))
+    assert len(maps) == len(list(linear.designs))
+    for relative in PROMISED:
+        assert (again / relative).is_file(), relative
 
 
 def test_the_zip_holds_the_same_files_under_one_root(linear, tmp_path):
@@ -385,7 +458,7 @@ def test_every_construct_map_annotates_its_primers_over_the_whole_primer(
     folder = write_bundle(circular, tmp_path / "build")
     by_id = {p.label: p for p in circular.primers}
     checked = 0
-    for path in sorted((folder / "constructs").glob("*.gb")):
+    for path in sorted((folder / BUNDLE_PATHS["constructs"]).glob("*.gb")):
         record = SeqIO.read(path, "genbank")
         for feature in record.features:
             if feature.type != "primer_bind":
@@ -398,7 +471,9 @@ def test_every_construct_map_annotates_its_primers_over_the_whole_primer(
             checked += 1
     assert checked, "the maps have to carry primer_bind features at all"
     # And the parts are annotated too, which is the other half of a map.
-    record = SeqIO.read(next((folder / "constructs").glob("*.gb")), "genbank")
+    record = SeqIO.read(
+        next((folder / BUNDLE_PATHS["constructs"]).glob("*.gb")), "genbank"
+    )
     parts = [f for f in record.features if f.type == "misc_feature"]
     assert parts
     for feature in parts:
@@ -414,7 +489,7 @@ def test_the_parts_table_counts_reactions_and_constructs_separately(linear, tmp_
     import pandas as pd
 
     folder = write_bundle(linear, tmp_path / "build")
-    parts = pd.read_csv(folder / "parts" / "parts.csv")
+    parts = pd.read_csv(folder / BUNDLE_PATHS["parts"] / "parts.csv")
     assert set(parts["part_id"]) == {f.part_id for f in linear.footprints}
     assert (parts["reactions"] >= 1).all()
     assert (
@@ -438,20 +513,20 @@ def test_part_provenance_comes_from_the_caller(linear, tmp_path):
         tmp_path / "build",
         part_info={first: {"addgene": "#12345", "doi": "10.1000/x"}},
     )
-    parts = pd.read_csv(folder / "parts" / "parts.csv")
+    parts = pd.read_csv(folder / BUNDLE_PATHS["parts"] / "parts.csv")
     assert "addgene" in parts.columns and "doi" in parts.columns
     row = parts[parts["part_id"] == first].iloc[0]
     assert row["addgene"] == "#12345"
 
     # And the summary says which parts it was given nothing for, rather than
     # leaving a blank column to be noticed.
-    summary = (folder / "SUMMARY.txt").read_text()
+    summary = (folder / BUNDLE_PATHS["summary"]).read_text()
     assert "no provenance given for" in summary
 
 
 def test_the_summary_says_what_to_order_run_source_and_check(linear, tmp_path):
     folder = write_bundle(linear, tmp_path / "build")
-    summary = (folder / "SUMMARY.txt").read_text()
+    summary = (folder / BUNDLE_PATHS["summary"]).read_text()
     for heading in (
         "WHAT TO ORDER",
         "WHAT TO RUN",
@@ -471,12 +546,12 @@ def test_the_summary_says_what_to_order_run_source_and_check(linear, tmp_path):
 
 def test_assemblies_are_one_file_with_one_figure_per_construct(linear, tmp_path):
     folder = write_bundle(linear, tmp_path / "build")
-    text = (folder / "constructs" / "assemblies.txt").read_text()
+    text = (folder / BUNDLE_PATHS["constructs"] / "assemblies.txt").read_text()
     for design in linear.designs:
         assert design.id in text, design.id
     assert text.count("-" * 72) == max(len(list(linear.designs)) - 1, 0)
     # The per-figure files are folded into the one file, not left beside it.
-    assert not list((folder / "constructs").glob("*.txt")) == []
-    assert sorted(p.name for p in (folder / "constructs").glob("*.txt")) == [
-        "assemblies.txt"
-    ]
+    assert not list((folder / BUNDLE_PATHS["constructs"]).glob("*.txt")) == []
+    assert sorted(
+        p.name for p in (folder / BUNDLE_PATHS["constructs"]).glob("*.txt")
+    ) == ["assemblies.txt"]

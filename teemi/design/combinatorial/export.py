@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 import tempfile
 import zipfile
 from collections import Counter
@@ -60,14 +61,19 @@ def write_genbank_files(
 
     A variant with no assembled construct -- verification found no product or
     more than one -- is not written, so the returned paths say what exists
-    rather than a count having to be trusted.  The file is named for the
-    variant where the id can carry it; see :func:`_stems`.
+    rather than a count having to be trusted.
+
+    The name is the construct's number and then the variant id, so the files
+    sort into library order and a map can be asked for by number; the id is
+    kept because it says what the construct is made of.  See :func:`_stems`
+    for what happens when the id cannot fit in a filename.
     """
     plans = [design for design in designs if design.construct is not None]
-    stems = _stems([design.id for design in plans], ".gb")
+    names = {design.id: f"{design.label}_{design.id}" for design in plans}
+    stems = _stems(list(names.values()), ".gb")
     written: List[Path] = []
     for design in plans:
-        path = _target(out_dir, stems[design.id], ".gb")
+        path = _target(out_dir, stems[names[design.id]], ".gb")
         path.write_text(design.construct.format("genbank"))
         written.append(path)
     return tuple(written)
@@ -78,12 +84,13 @@ def write_assembly_figures(
 ) -> Tuple[Path, ...]:
     """Write pydna's own assembly figure per design, one text file each."""
     plans = [design for design in designs if design.construct is not None]
-    stems = _stems([design.id for design in plans], ".txt")
+    names = {design.id: f"{design.label}_{design.id}" for design in plans}
+    stems = _stems(list(names.values()), ".txt")
     written: List[Path] = []
     for design in plans:
-        path = _target(out_dir, stems[design.id], ".txt")
+        path = _target(out_dir, stems[names[design.id]], ".txt")
         path.write_text(
-            f"{design.id}  {design.length_bp} bp  "
+            f"construct {design.label}  {design.id}  {design.length_bp} bp  "
             f"{'circular' if design.construct.circular else 'linear'}\n\n"
             f"{design.construct.figure()}\n"
         )
@@ -144,15 +151,30 @@ def _target(out_dir: Union[str, Path], stem: str, suffix: str) -> Path:
 # --------------------------------------------------------------------------- #
 
 #: What a bundle contains, and in what order a person should read it.
-BUNDLE_LAYOUT = """\
-SUMMARY.txt            read this first: what to order, run, and look at twice
-design.json            the whole result, machine-readable; re-runs the design
-primers/primers.csv    the order sheet, one row per distinct molecule
-primers/analysis.csv   every column the primer table has, not just the readable ones
-pcrs/pcrs.csv          one row per reaction
-parts/parts.csv        what to source, how often each is used, and what is known
-constructs/*.gb        one annotated map per verified construct
-constructs/assemblies.txt  every assembly figure, in one file
+#: The order to read the bundle in, which is why the entries are numbered: a
+#: folder listing is alphabetical and would otherwise open on ``constructs/``.
+BUNDLE_ORDER = (
+    ("summary", "01_SUMMARY.txt"),
+    ("primers", "02_primers"),
+    ("pcrs", "03_pcrs"),
+    ("parts", "04_parts"),
+    ("constructs", "05_constructs"),
+    ("design", "06_design.json"),
+    ("layout", "00_LAYOUT.txt"),
+)
+
+#: Where each thing is, by the key :data:`BUNDLE_ORDER` gives it.
+BUNDLE_PATHS = dict(BUNDLE_ORDER)
+
+BUNDLE_LAYOUT = f"""\
+{BUNDLE_PATHS["summary"]:<30} read this first: what to order, run, look at twice
+{BUNDLE_PATHS["primers"] + "/primers.csv":<30} the order sheet, one row per distinct molecule
+{BUNDLE_PATHS["primers"] + "/analysis.csv":<30} every column the primer table has, not just the readable ones
+{BUNDLE_PATHS["pcrs"] + "/pcrs.csv":<30} one row per reaction
+{BUNDLE_PATHS["parts"] + "/parts.csv":<30} what to source, how often each is used, and what is known
+{BUNDLE_PATHS["constructs"] + "/NNN_*.gb":<30} one annotated map per verified construct, numbered
+{BUNDLE_PATHS["constructs"] + "/assemblies.txt":<30} every assembly figure, in one file
+{BUNDLE_PATHS["design"]:<30} the whole result, machine-readable; re-runs the design
 """
 
 
@@ -161,12 +183,15 @@ def write_bundle(
     out_dir: Union[str, Path],
     *,
     part_info: Optional[Mapping[str, Mapping[str, object]]] = None,
+    overwrite: bool = False,
 ) -> Path:
     """Write the whole build to one folder and return it.
 
     Everything a person needs to go and do the work, in the order they need it:
     what to order, what to run, what to source, what the constructs should come
     out as, and the summary that says which of it is worth looking at twice.
+    The entries are numbered in that order, because a folder listing is
+    alphabetical and would otherwise open on ``constructs/``.
     :data:`BUNDLE_LAYOUT` is the map, and is written into the folder too.
 
     ``part_info`` is provenance this package cannot know -- an Addgene number, a
@@ -178,23 +203,45 @@ def write_bundle(
 
     Only verified constructs are written, because an unverified one has no
     single product to draw.  The summary says how many were left out.
+
+    A non-empty folder is refused unless ``overwrite`` says otherwise, because
+    a second run writing into the first leaves both: drop a part and its maps
+    stay, and someone reads half of one design and half of another with
+    nothing to tell them.  With ``overwrite`` only the entries this function
+    writes are removed -- by the names in :data:`BUNDLE_PATHS`, so whatever
+    else is in the folder is left alone.
     """
     root = Path(out_dir).resolve()
-    for folder in ("primers", "pcrs", "parts", "constructs"):
-        (root / folder).mkdir(parents=True, exist_ok=True)
+    if root.is_dir() and any(root.iterdir()):
+        if not overwrite:
+            raise FileExistsError(
+                f"{root} is not empty; pass overwrite=True to replace the "
+                "bundle in it"
+            )
+        for name in BUNDLE_PATHS.values():
+            stale = root / name
+            if stale.is_dir():
+                shutil.rmtree(stale)
+            elif stale.exists():
+                stale.unlink()
+    for key in ("primers", "pcrs", "parts", "constructs"):
+        (root / BUNDLE_PATHS[key]).mkdir(parents=True, exist_ok=True)
 
-    (root / "LAYOUT.txt").write_text(BUNDLE_LAYOUT)
-    (root / "design.json").write_text(json.dumps(result.to_dict(), indent=2) + "\n")
-
-    _frame(result, "primer").to_csv(root / "primers" / "primers.csv", index=False)
-    _frame(result, "primer", full=True).to_csv(
-        root / "primers" / "analysis.csv", index=False
+    (root / BUNDLE_PATHS["layout"]).write_text(BUNDLE_LAYOUT)
+    (root / BUNDLE_PATHS["design"]).write_text(
+        json.dumps(result.to_dict(), indent=2) + "\n"
     )
-    _frame(result, "pcr").to_csv(root / "pcrs" / "pcrs.csv", index=False)
-    _parts_frame(result, part_info).to_csv(root / "parts" / "parts.csv", index=False)
+
+    primers = root / BUNDLE_PATHS["primers"]
+    _frame(result, "primer").to_csv(primers / "primers.csv", index=False)
+    _frame(result, "primer", full=True).to_csv(primers / "analysis.csv", index=False)
+    _frame(result, "pcr").to_csv(root / BUNDLE_PATHS["pcrs"] / "pcrs.csv", index=False)
+    _parts_frame(result, part_info).to_csv(
+        root / BUNDLE_PATHS["parts"] / "parts.csv", index=False
+    )
 
     designs = list(result.designs)
-    constructs = root / "constructs"
+    constructs = root / BUNDLE_PATHS["constructs"]
     write_genbank_files(designs, constructs)
     figures = write_assembly_figures(designs, constructs)
     # A blank line and a rule between figures, or they run into each other.
@@ -205,7 +252,7 @@ def write_bundle(
     for path in figures:
         path.unlink()
 
-    (root / "SUMMARY.txt").write_text(build_summary(result, part_info))
+    (root / BUNDLE_PATHS["summary"]).write_text(build_summary(result, part_info))
     return root
 
 
@@ -220,7 +267,8 @@ def write_bundle_zip(
     What a backend returns: one file, with the folder structure intact inside
     it.  The folder is built on disk first rather than streamed into the
     archive, so a half-written bundle is a half-written temporary directory and
-    never a corrupt download.
+    never a corrupt download.  That directory is new every time, so there is
+    no ``overwrite`` here: an existing *archive* is replaced outright.
     """
     target = Path(zip_path).resolve()
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -358,7 +406,10 @@ def build_summary(
                 f"{pcr['reverse_primer']}  {pcr['flagged_by']}"
             )
         if len(flagged) > 20:
-            lines.append(f"     ... and {len(flagged) - 20} more, see pcrs/pcrs.csv")
+            lines.append(
+                f"     ... and {len(flagged) - 20} more, see "
+                f"{BUNDLE_PATHS['pcrs']}/pcrs.csv"
+            )
         lines.append(
             "  A flag is a prediction, not a refusal: primer3's forecast that a"
         )
@@ -413,10 +464,14 @@ def build_summary(
     ]
     for variant in unverified[:10]:
         lines.append(
-            f"     {variant.id[:40]:40s} {variant.verification.verdict}: "
+            f"     {variant.label}  {variant.id[:34]:34s} "
+            f"{variant.verification.verdict}: "
             f"{' '.join(variant.verification.message.split())[-70:]}"
         )
-    lines.append(f"  {len(list(result.designs))} annotated maps written to constructs/")
+    lines.append(
+        f"  {len(list(result.designs))} annotated maps written to "
+        f"{BUNDLE_PATHS['constructs']}/"
+    )
     if unverified:
         lines.append(
             f"  {len(unverified)} not written: an unverified assembly has no single "
