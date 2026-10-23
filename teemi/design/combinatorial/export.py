@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import shutil
 import tempfile
 import zipfile
@@ -159,12 +160,17 @@ BUNDLE_ORDER = (
     ("pcrs", "03_pcrs"),
     ("parts", "04_parts"),
     ("constructs", "05_constructs"),
-    ("design", "06_design.json"),
+    ("spec", "06_spec.json"),
+    ("design", "07_design.json"),
     ("layout", "00_LAYOUT.txt"),
 )
 
 #: Where each thing is, by the key :data:`BUNDLE_ORDER` gives it.
 BUNDLE_PATHS = dict(BUNDLE_ORDER)
+
+#: An entry named the way this module names them.  Used to recognise an entry
+#: from an older numbering, which no current name would match.
+_NUMBERED = re.compile(r"^\d\d_")
 
 BUNDLE_LAYOUT = f"""\
 {BUNDLE_PATHS["summary"]:<30} read this first: what to order, run, look at twice
@@ -174,8 +180,27 @@ BUNDLE_LAYOUT = f"""\
 {BUNDLE_PATHS["parts"] + "/parts.csv":<30} what to source, how often each is used, and what is known
 {BUNDLE_PATHS["constructs"] + "/NNN_*.gb":<30} one annotated map per verified construct, numbered
 {BUNDLE_PATHS["constructs"] + "/assemblies.txt":<30} every assembly figure, in one file
-{BUNDLE_PATHS["design"]:<30} the whole result, machine-readable; re-runs the design
+{BUNDLE_PATHS["spec"]:<30} every setting that was used, defaults filled in; re-runs this
+{BUNDLE_PATHS["design"]:<30} the whole result: junctions, primers, PCRs, diagnostics
 """
+
+
+def spec_json(spec) -> str:
+    """The spec as it was actually used, as JSON text.
+
+    Not the document the caller handed in: the *validated* spec, so every
+    default the caller never typed is written down -- the Tm the footprints
+    were walked to, the dG floors a flag was raised against, which polymerase
+    named the annealing temperature.  That is what "which settings were used"
+    means, and a document that leaves them out cannot answer it.
+
+    Sources are kept whole, inline sequences included, so the file re-runs the
+    design on its own: :func:`load_spec` accepts it back unchanged.  For a
+    67-gene library that is about 100 kB, which is a fifth of the result beside
+    it and the price of an archive that does not depend on the machine it was
+    built on.
+    """
+    return json.dumps(spec.model_dump(mode="json", exclude_none=True), indent=2)
 
 
 def write_bundle(
@@ -204,12 +229,22 @@ def write_bundle(
     Only verified constructs are written, because an unverified one has no
     single product to draw.  The summary says how many were left out.
 
+    The spec goes in beside the result, because the result does not contain
+    it: a reader asking which floors, which polymerase or which flags produced
+    these primers had nowhere to look, and nothing in the folder could be
+    re-run.
+
     A non-empty folder is refused unless ``overwrite`` says otherwise, because
     a second run writing into the first leaves both: drop a part and its maps
     stay, and someone reads half of one design and half of another with
-    nothing to tell them.  With ``overwrite`` only the entries this function
-    writes are removed -- by the names in :data:`BUNDLE_PATHS`, so whatever
-    else is in the folder is left alone.
+    nothing to tell them.
+
+    ``overwrite`` removes the entries in :data:`BUNDLE_PATHS` **and anything
+    else numbered the way this function numbers things**, which is how a
+    renamed entry gets cleaned up: adding ``06_spec.json`` pushed the result
+    to ``07_design.json`` and left the old ``06_design.json`` sitting in the
+    folder, which is the same two-runs-in-one-folder problem by another route.
+    Everything not matching that convention is left alone.
     """
     root = Path(out_dir).resolve()
     if root.is_dir() and any(root.iterdir()):
@@ -218,8 +253,9 @@ def write_bundle(
                 f"{root} is not empty; pass overwrite=True to replace the "
                 "bundle in it"
             )
-        for name in BUNDLE_PATHS.values():
-            stale = root / name
+        ours = {root / name for name in BUNDLE_PATHS.values()}
+        ours |= {path for path in root.iterdir() if _NUMBERED.match(path.name)}
+        for stale in sorted(ours):
             if stale.is_dir():
                 shutil.rmtree(stale)
             elif stale.exists():
@@ -231,6 +267,8 @@ def write_bundle(
     (root / BUNDLE_PATHS["design"]).write_text(
         json.dumps(result.to_dict(), indent=2) + "\n"
     )
+    if result.spec is not None:
+        (root / BUNDLE_PATHS["spec"]).write_text(spec_json(result.spec) + "\n")
 
     primers = root / BUNDLE_PATHS["primers"]
     _frame(result, "primer").to_csv(primers / "primers.csv", index=False)

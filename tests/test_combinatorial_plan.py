@@ -84,6 +84,7 @@ def test_the_public_surface_is_small_and_complete():
             # Where each thing lands, so a reader need not hard-code it.
             "BUNDLE_PATHS",
             "BUNDLE_LAYOUT",
+            "spec_json",
         ]
     )
     for name in cb.__all__:

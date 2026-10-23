@@ -19,6 +19,7 @@ from teemi.design.combinatorial.export import (
     write_genbank_files,
 )
 from teemi.design.combinatorial.report import VariantPlan, plan
+from teemi.design.combinatorial.spec import load_spec
 from teemi.design.combinatorial.simulate import Verification
 from teemi.design.combinatorial.sources import SourceResolver
 
@@ -329,6 +330,7 @@ def test_a_short_shared_name_is_still_given_in_full(linear, tmp_path):
 PROMISED = (
     BUNDLE_PATHS["layout"],
     BUNDLE_PATHS["summary"],
+    BUNDLE_PATHS["spec"],
     BUNDLE_PATHS["design"],
     f"{BUNDLE_PATHS['primers']}/primers.csv",
     f"{BUNDLE_PATHS['primers']}/analysis.csv",
@@ -400,6 +402,52 @@ def test_every_map_is_named_by_its_construct_number(linear, tmp_path):
     ]
 
 
+@pytest.mark.parametrize("fixture", ["linear", "circular"])
+def test_the_bundle_carries_the_spec_it_was_built_from(fixture, tmp_path, request):
+    """The result does not contain the settings, so the folder has to.
+
+    A reader asking which dG floor raised a flag, which Tm the footprints were
+    walked to, or which polymerase named the annealing temperature had nowhere
+    in the bundle to look: ``design.json`` carries a six-field header and no
+    settings at all.
+    """
+    result = request.getfixturevalue(fixture)
+    folder = write_bundle(result, tmp_path / "build")
+    written = json.loads((folder / BUNDLE_PATHS["spec"]).read_text())
+
+    # The settings a flag is raised against, written down rather than implied.
+    assert written["constraints"]["homodimer_dg_min"] is not None
+    assert written["primer_design"]["target_tm"] is not None
+    assert written["primer_design"]["polymerase"]
+    assert [p["id"] for p in written["positions"]] == [
+        p.id for p in result.spec.positions
+    ]
+
+
+@pytest.mark.parametrize("fixture", ["linear", "circular"])
+def test_the_spec_in_the_bundle_re_runs_the_design(fixture, tmp_path, request):
+    """What the layout claims about that file, asserted.
+
+    ``load_spec`` has to take it back unchanged -- including the sources, so
+    the archive does not depend on files on the machine that built it.  A dump
+    that merely looks like a spec is worth nothing.
+    """
+    result = request.getfixturevalue(fixture)
+    folder = write_bundle(result, tmp_path / "build")
+    again = load_spec(json.loads((folder / BUNDLE_PATHS["spec"]).read_text()))
+    assert again == result.spec
+
+
+def test_a_bundle_without_a_spec_does_not_promise_one(tmp_path):
+    """A refused design has no spec, and the folder must not imply it has."""
+    nothing = plan({"design": {"name": "no"}, "positions": []}, offline=True)
+    assert nothing.spec is None
+
+    folder = write_bundle(nothing, tmp_path / "build")
+    assert not (folder / BUNDLE_PATHS["spec"]).exists()
+    assert (folder / BUNDLE_PATHS["summary"]).read_text().startswith("no design")
+
+
 def test_a_second_bundle_does_not_leave_the_first_behind(linear, tmp_path):
     """Half of one design and half of another, with nothing to tell them apart,
     is worse than a refusal.
@@ -414,14 +462,18 @@ def test_a_second_bundle_does_not_leave_the_first_behind(linear, tmp_path):
     with pytest.raises(FileExistsError, match="overwrite=True"):
         write_bundle(linear, target)
 
-    # A map from a design that no longer exists, and a file that is not ours.
+    # A map from a design that no longer exists, an entry from an older
+    # numbering of the bundle, and a file that is not ours at all.
     stale = folder / BUNDLE_PATHS["constructs"] / "999_gone_for_good.gb"
     stale.write_text("stale\n")
+    renumbered = folder / "06_design.json"
+    renumbered.write_text("{}\n")
     mine = folder / "notes_of_my_own.txt"
     mine.write_text("keep me\n")
 
     again = write_bundle(linear, target, overwrite=True)
     assert not stale.exists(), "a map of a construct that is gone has to go"
+    assert not renumbered.exists(), "an entry from an older numbering has to go"
     assert mine.read_text() == "keep me\n", "only our own entries are removed"
     maps = list((again / BUNDLE_PATHS["constructs"]).glob("*.gb"))
     assert len(maps) == len(list(linear.designs))
