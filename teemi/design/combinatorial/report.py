@@ -278,9 +278,14 @@ class PrimerRecord:
     structures: OligoStructures
     violations: Tuple[Violation, ...]
     price: float
-    #: Position in the order sheet, from 1.  ``label`` renders it ``P001``,
-    #: matching what the legacy ``DesignAssembly`` minted, because "P7" is what
-    #: gets said at a bench and ``PRO_ANID_TEF1__gene_KP2612_000062_rv`` is not.
+    #: Position in the order sheet, from 1.  ``label`` renders it zero-padded
+    #: to three digits -- ``007`` -- because that is what gets said at a bench
+    #: and ``PRO_ANID_TEF1__gene_KP2612_000062_rv`` is not.
+    #:
+    #: Padded and a string, so it sorts and lines up in a column.  A
+    #: spreadsheet will read ``007`` as the number 7 and drop the padding on
+    #: paste, which costs nothing here but is worth knowing before a vendor
+    #: form is filled from one.
     #:
     #: A LABEL, NOT AN IDENTITY.  It is the molecule's position in *this* plan:
     #: deterministic, so the same spec always numbers the same way, but
@@ -308,8 +313,8 @@ class PrimerRecord:
 
     @property
     def label(self) -> str:
-        """``P001``: short enough to say out loud."""
-        return f"P{self.number:03d}"
+        """``001``: short enough to say out loud."""
+        return f"{self.number:03d}"
 
     def to_dict(self) -> dict:
         return {
@@ -824,7 +829,7 @@ def _primer_records(
                 tailed=sequence in tailed,
             )
     # Numbered in the order the walk first met each molecule, which follows the
-    # construct, so P001 is the first fragment's forward primer.  dict keeps
+    # construct, so 001 is the first fragment's forward primer.  dict keeps
     # insertion order, and the walk is deterministic, so the same spec numbers
     # the same way every run -- which is the only reason a number is safe to
     # write down at all.

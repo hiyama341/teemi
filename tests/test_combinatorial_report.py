@@ -1257,13 +1257,13 @@ def test_a_shared_oligo_reports_every_direction_it_is_used_in(result):
 
 
 def test_every_primer_has_a_short_number_and_they_are_unique(result):
-    """``P001`` is what gets said at a bench; the long name is what identifies.
+    """``001`` is what gets said at a bench; the long name is what identifies.
 
-    Matches what the legacy ``DesignAssembly`` minted, so an order sheet from
-    either reads the same way.
+    A string, not an int, so the padding survives and the column lines up.
     """
     labels = [p.label for p in result.primers]
-    assert labels == [f"P{n:03d}" for n in range(1, len(result.primers) + 1)]
+    assert labels == [f"{n:03d}" for n in range(1, len(result.primers) + 1)]
+    assert all(isinstance(label, str) for label in labels)
     assert len(set(labels)) == len(labels)
 
     frame = primer_dataframe(result)
