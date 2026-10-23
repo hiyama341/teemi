@@ -49,6 +49,7 @@ from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Uni
 
 import pandas as pd
 from pydantic import ValidationError
+from Bio.SeqFeature import CompoundLocation, SimpleLocation
 from pydna.dseqrecord import Dseqrecord
 
 from teemi.design.combinatorial.design import (
@@ -507,9 +508,7 @@ class DesignResult:
                     for what, engine in (
                         (
                             "Tm",
-                            _one_engine(
-                                p.footprint_tm.engine for p in self.primers
-                            ),
+                            _one_engine(p.footprint_tm.engine for p in self.primers),
                         ),
                         (
                             "Ta",
@@ -598,9 +597,7 @@ def plan(
 
     layout = plan_layout(validated, records)
 
-    engine = FootprintTm(
-        offline=offline, prodcode=validated.primer_design.polymerase
-    )
+    engine = FootprintTm(offline=offline, prodcode=validated.primer_design.polymerase)
     try:
         footprints, diagnostics = design_footprints(records, validated, engine, layout)
         junctions = junctions_for_spec(validated, records, footprints, layout)
@@ -636,6 +633,7 @@ def plan(
         records,
         validated,
         oligo_of,
+        by_id,
         include_designs=include_designs,
     )
 
@@ -647,8 +645,7 @@ def plan(
                 severity=_severity(violation),
                 exhausted=(
                     f"no split avoids it ({len(junction.profile)} tried)"
-                    if (violation.constraint, violation.subject)
-                    in junction.unavoidable
+                    if (violation.constraint, violation.subject) in junction.unavoidable
                     else None
                 ),
             )
@@ -794,9 +791,7 @@ def _primer_records(
         ):
             sequence = str(primer.seq)
             this_ta = temps.ta_from_footprints.celsius
-            coolest_ta[sequence] = min(
-                coolest_ta.get(sequence, this_ta), this_ta
-            )
+            coolest_ta[sequence] = min(coolest_ta.get(sequence, this_ta), this_ta)
             if sequence in records:
                 if primer.id not in uses[sequence]:
                     uses[sequence].append(primer.id)
@@ -861,9 +856,7 @@ def _primer_records(
         )
         for position, (sequence, record) in enumerate(records.items(), start=1)
     )
-    return oligos, {
-        name: record.id for record in oligos for name in record.uses
-    }
+    return oligos, {name: record.id for record in oligos for name in record.uses}
 
 
 def _pcr_records(
@@ -939,36 +932,122 @@ def _pcr_records(
     return tuple(out.values())
 
 
-def _relabel_primer_binds(
-    construct: Optional[Dseqrecord], oligo_of: Mapping[str, str]
+def _annotate_primer_binds(
+    construct: Optional[Dseqrecord],
+    oligo_of: Mapping[str, str],
+    primers: Mapping[str, "PrimerRecord"],
 ) -> Optional[Dseqrecord]:
-    """Give the ``primer_bind`` features the name the order sheet uses.
+    """Name each ``primer_bind`` as the order sheet does, and span the whole primer.
 
-    ``pydna.amplify.pcr`` labels each feature with the ``Primer.id`` of the
-    junction it came from, which for a shared molecule is only one of the names
-    that molecule serves.  Someone reading the GenBank has to be able to find
-    that label on the order sheet, so the feature carries the oligo's name and
-    the junction context is left to be read off the map.
+    Two corrections to what ``pydna.amplify.pcr`` leaves behind.
+
+    THE NAME.  ``pcr`` labels a feature with the ``Primer.id`` of the junction
+    it came from, which for a shared molecule is only one of the names that
+    molecule serves.  Someone reading the map has to be able to find the label
+    on the order sheet, so the label is the oligo's **number** and the name
+    goes in a note beside it.
+
+    The number rather than the name because GenBank wraps a qualifier at 58
+    characters and Biopython rejoins the halves with a space, so a name like
+    ``gene_gene-1+gene_gene-2+gene_gene-3+gene_gene-4__TER_ANID_TEF1_fw`` came
+    back as ``...__TE R_ANID_TEF1_fw`` -- a map naming a primer that is on no
+    order sheet, which is the exact failure the labelling was meant to prevent.
+    ``007`` cannot wrap.  The note holds the name, spaced at the ``+`` that
+    joins the junctions an oligo serves, so the wrap falls on a space the name
+    already has and the halves rejoin unharmed.  A part id longer than the
+    wrap width would still break mid-token; the number is what a map promises
+    to round-trip, and the note is a convenience beside it.
+
+    THE SPAN.  ``pcr`` annotates where a primer *anneals on its template*, so
+    the feature covers the footprint and stops.  In the assembled construct the
+    tail is there too -- it is the neighbouring part's sequence -- so the
+    feature under-reported a 43 nt primer as 30 bp.  A forward primer's tail
+    runs upstream of its part and a reverse primer's downstream, which is the
+    direction each is extended in.  In a circular design the first part's
+    forward tail comes from the last part, so that one crosses the origin and
+    becomes a two-part location rather than being clamped.
 
     Only features this design's own PCRs created are touched.  A part sourced
     from a GenBank file brings its own annotations through the assembly, and one
-    of its ``primer_bind`` features could carry a label that happens to equal a
-    constructed primer name; renaming that would claim an oligo binds a site it
-    does not and lose the user's annotation.  ``pcr`` marks its own features
-    with a ``PCR_conditions`` qualifier, which is the discriminator, and a
-    feature with no label of its own is left without one rather than given an
-    empty list.
+    could carry a label that happens to equal a constructed primer name;
+    rewriting that would claim an oligo binds a site it does not.  ``pcr`` marks
+    its own with a ``PCR_conditions`` qualifier, which is the discriminator.
     """
     if construct is None:
         return None
+    length = len(construct)
     for feature in construct.features:
         if feature.type != "primer_bind" or "PCR_conditions" not in feature.qualifiers:
             continue
         labels = feature.qualifiers.get("label")
         if not labels:
             continue
-        feature.qualifiers["label"] = [oligo_of.get(label, label) for label in labels]
+        named = [oligo_of.get(label, label) for label in labels]
+        primer = primers.get(named[0])
+        if primer is None:
+            # Not one of ours after all; leave the label pydna gave it.
+            continue
+        feature.qualifiers["label"] = [primer.label]
+        feature.qualifiers["note"] = [
+            f"primer {primer.label}: {primer.id.replace('+', ' + ')}"
+            + (f" (used {len(primer.uses)}x)" if len(primer.uses) > 1 else "")
+        ]
+        tail = len(primer.sequence) - len(primer.footprint)
+        if tail <= 0:
+            continue
+        strand = feature.location.strand
+        start, end = _logical_bounds(feature.location, length)
+        if strand == -1:
+            end += tail
+        else:
+            start -= tail
+        feature.location = _span(start, end, strand, length, construct.circular)
     return construct
+
+
+def _logical_bounds(location, length: int) -> Tuple[int, int]:
+    """``(start, end)`` reading along the molecule, which may pass the origin.
+
+    ``location.start`` and ``.end`` are the minimum and maximum coordinates, so
+    on a feature pydna has already wrapped -- ``[(0, 9), (3264, 3275)]`` -- they
+    report 0 and 3275 and describe the whole plasmid rather than the 20 bases
+    the primer anneals to.  Read in order it runs 3264 to 3275 and on to 9, so
+    the end comes back as ``length + 9`` and the caller extends from there.
+    """
+    parts = list(location.parts)
+    if len(parts) == 1:
+        return int(parts[0].start), int(parts[0].end)
+    before = next((part for part in parts if int(part.end) == length), None)
+    after = next((part for part in parts if int(part.start) == 0), None)
+    if before is None or after is None:
+        # A join that is not an origin crossing: an intron-like feature from a
+        # part's own annotation.  Not ours to reinterpret.
+        return int(location.start), int(location.end)
+    return int(before.start), length + int(after.end)
+
+
+def _span(start: int, end: int, strand: int, length: int, circular: bool):
+    """A location for ``start..end``, wrapped at the origin when it has to be.
+
+    Only a circular construct can need the wrap: in a linear one the primers
+    that would run off either end are the terminal ones, and those have no tail
+    to extend by.
+    """
+    if 0 <= start and end <= length:
+        return SimpleLocation(start, end, strand=strand)
+    if not circular:
+        # Nothing should reach here; clamping silently would hide a real
+        # geometry error, so it is reported as one.
+        raise ValueError(
+            f"a primer_bind at {start}..{end} runs outside a linear "
+            f"{length} bp construct"
+        )
+    return CompoundLocation(
+        [
+            SimpleLocation(start % length, length, strand=strand),
+            SimpleLocation(0, end % length, strand=strand),
+        ]
+    )
 
 
 def _variant_plans(
@@ -977,6 +1056,7 @@ def _variant_plans(
     records: Mapping[str, Dseqrecord],
     spec: DesignSpec,
     oligo_of: Mapping[str, str],
+    by_id: Mapping[str, PrimerRecord],
     *,
     include_designs: bool,
 ) -> Tuple[Tuple[VariantPlan, ...], Tuple[Diagnostic, ...]]:
@@ -1037,7 +1117,7 @@ def _variant_plans(
                 length_bp=verification.expected_bp,
                 verification=verification,
                 construct=(
-                    _relabel_primer_binds(construct, oligo_of)
+                    _annotate_primer_binds(construct, oligo_of, by_id)
                     if include_designs
                     else None
                 ),

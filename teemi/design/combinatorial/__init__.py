@@ -60,7 +60,7 @@ Module map::
     design.py     footprints, the split sweep, variants, PCR checks
     simulate.py   assemble it and compare with the intended construct
     report.py     plan(), the result, the three tables
-    export.py     the file-writing edge: GenBank and assembly figures
+    export.py     the file-writing edge: the bundle, GenBank, figures
 """
 
 from teemi.design.combinatorial.design import Diagnostic, Violation
@@ -72,7 +72,10 @@ from teemi.design.combinatorial.flow import (
     plan_flow,
 )
 from teemi.design.combinatorial.export import (
+    build_summary,
     write_assembly_figures,
+    write_bundle,
+    write_bundle_zip,
     write_genbank_files,
 )
 from teemi.design.combinatorial.report import (
@@ -96,6 +99,9 @@ __all__ = [
     "pcr_dataframe",
     "write_genbank_files",
     "write_assembly_figures",
+    "write_bundle",
+    "write_bundle_zip",
+    "build_summary",
     "DesignSpec",
     "load_spec",
     "json_schema",

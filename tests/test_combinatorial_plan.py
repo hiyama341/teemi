@@ -77,6 +77,10 @@ def test_the_public_surface_is_small_and_complete():
             "plan_flow",
             "UndecidedPosition",
             "UnknownPart",
+            # The whole build in one folder, or one zip for a backend.
+            "write_bundle",
+            "write_bundle_zip",
+            "build_summary",
         ]
     )
     for name in cb.__all__:
