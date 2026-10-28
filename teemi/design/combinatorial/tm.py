@@ -42,7 +42,7 @@ from __future__ import annotations
 
 import functools
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 
 import primer3
@@ -75,6 +75,13 @@ __all__ = [
 #: NEB's batch endpoint.  ``seqpairs`` takes a list of ``[seq]`` or
 #: ``[seq1, seq2]``, so N pairs are one request rather than N.
 NEB_BATCH_ENDPOINT = "https://tmapi.neb.com/tm/batch"
+
+#: The one-pair endpoint.  It answers with the annealing temperature NEB
+#: actually computed -- 63.5 -- where the batch rounds it to an integer.  The
+#: half degree is not noise: the batch rounds a .5 up and NEB's own web form
+#: shows it down, so a reaction read 64 here and 63 there, which is a whole
+#: degree of apparent disagreement over a number that goes on a thermocycler.
+NEB_ENDPOINT = "https://tmapi.neb.com/tm"
 
 #: Q5, the polymerase this package's conditions describe.
 NEB_PRODCODE = "q5-0"
@@ -459,7 +466,76 @@ def neb_pair_temperatures(
             footprint_tm_reverse=Tm(footprint_reverse, ENGINE_NEB),
             ta_from_footprints=Tm(ta, ENGINE_NEB),
         )
-    return results, tuple(failures)
+    return _refine_ta(results, conditions, prodcode, timeout), tuple(failures)
+
+
+def _refine_ta(
+    results: Dict[PcrOligos, PcrTemperatures],
+    conditions: Conditions,
+    prodcode: str,
+    timeout: float,
+) -> Dict[PcrOligos, PcrTemperatures]:
+    """Replace the batch's rounded Ta with the one NEB actually computed.
+
+    The batch answers ``ta`` as a whole number.  The one-pair endpoint answers
+    the same question as a float, and the two disagree by up to half a degree
+    -- which becomes a whole degree against NEB's web form, because the batch
+    rounds a .5 up and the form shows it down.  Ta is the number that goes on a
+    thermocycler, so it is worth one request per reaction to report what NEB
+    computed rather than what it rounded to.
+
+    The batch's integer is kept wherever a request fails, so this refines the
+    answer and never costs one: a reaction whose refinement does not arrive is
+    exactly as well served as before.  The walk that designs the footprints
+    already makes a request per candidate length, so this is a small addition
+    to a pipeline that is already per-sequence, not a return to one.
+    """
+    if not results:
+        return results
+    refined = dict(results)
+    for pcr, temperatures in results.items():
+        if temperatures.ta_from_footprints.engine != ENGINE_NEB:
+            continue  # already degraded to the local model; leave it there
+        exact = _exact_ta(
+            pcr.forward_footprint,
+            pcr.reverse_footprint,
+            conditions.neb_conc_um,
+            prodcode,
+            timeout,
+        )
+        if exact is not None:
+            refined[pcr] = replace(
+                temperatures, ta_from_footprints=Tm(exact, ENGINE_NEB)
+            )
+    return refined
+
+
+def _exact_ta(
+    forward: str,
+    reverse: str,
+    conc: float,
+    prodcode: str,
+    timeout: float,
+) -> Optional[float]:
+    """NEB's unrounded Ta for one pair, or ``None`` if it cannot be had."""
+    try:
+        response = requests.get(
+            NEB_ENDPOINT,
+            params={
+                "seq1": forward,
+                "seq2": reverse,
+                "conc": conc,
+                "prodcode": prodcode,
+            },
+            timeout=timeout,
+        )
+        response.raise_for_status()
+        body = response.json()
+    except (requests.RequestException, ValueError):
+        return None
+    if not isinstance(body, Mapping) or not body.get("success"):
+        return None
+    return _number(body.get("data"), "ta")
 
 
 def _local_temperatures(pcr: PcrOligos, conditions: Conditions) -> PcrTemperatures:

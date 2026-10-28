@@ -152,9 +152,7 @@ def test_offline_engine_makes_no_request():
     engine = T.FootprintTm(offline=True)
     # primer3 is the cheap walk either way; what offline changes is the
     # authoritative pass, which becomes pydna's own model instead of NEB.
-    assert engine.estimate_function(FORWARD) == pytest.approx(
-        T.primer3_tm(FORWARD)
-    )
+    assert engine.estimate_function(FORWARD) == pytest.approx(T.primer3_tm(FORWARD))
     assert engine.tm(FORWARD).engine == T.ENGINE_LOCAL_TM
     assert engine.failures == ()
     assert engine.engine == T.ENGINE_LOCAL_TM
@@ -179,9 +177,7 @@ def test_online_engine_tags_neb_values_and_passes_a_two_stage_pair(monkeypatch):
     assert calls[0][2] == T.NEB_PRODCODE
     # The estimate function is primer3, which is free, and is the same model
     # the structure bounds are read against -- not NEB, and not pydna's.
-    assert engine.estimate_function(FORWARD) == pytest.approx(
-        T.primer3_tm(FORWARD)
-    )
+    assert engine.estimate_function(FORWARD) == pytest.approx(T.primer3_tm(FORWARD))
     assert engine.estimate_function(FORWARD) != pytest.approx(
         T.local_tm(FORWARD).celsius
     )
@@ -224,9 +220,25 @@ def test_offline_batch_makes_no_request_and_uses_the_local_ta_model():
     )
 
 
+def no_exact_ta(monkeypatch):
+    """Stub the one-pair endpoint with a reply carrying no ``ta``.
+
+    ``neb_pair_temperatures`` asks it for the annealing temperature NEB
+    computed rather than the integer the batch rounds to.  A test about the
+    BATCH wants that refinement out of the way, and the honest way to do that
+    is a reply it cannot use -- which exercises the fallback at the same time.
+    """
+
+    def fake_get(url, params=None, timeout=None, **kwargs):
+        return FakeResponse({"success": True, "data": {"tm1": 60.0}})
+
+    monkeypatch.setattr(requests, "get", fake_get)
+
+
 def test_one_post_carries_both_row_sets_and_ta_comes_from_the_footprint_rows(
     monkeypatch,
 ):
+    no_exact_ta(monkeypatch)
     posts = []
 
     def fake_post(url, json=None, timeout=None):
@@ -264,6 +276,7 @@ def test_one_post_carries_both_row_sets_and_ta_comes_from_the_footprint_rows(
 
 
 def test_batch_deduplicates_identical_pcrs(monkeypatch):
+    no_exact_ta(monkeypatch)
     posts = []
 
     def fake_post(url, json=None, timeout=None):
@@ -277,6 +290,103 @@ def test_batch_deduplicates_identical_pcrs(monkeypatch):
     results, _ = T.neb_pair_temperatures([pcr, pcr, pcr], offline=False)
     assert len(results) == 1
     assert len(posts[0]["seqpairs"]) == 2
+
+
+def test_ta_is_the_number_neb_computed_not_the_one_the_batch_rounded_to(
+    monkeypatch,
+):
+    """The batch answers ``ta`` as a whole number; the one-pair endpoint does
+    not, and the two disagree by up to half a degree.
+
+    That half becomes a whole degree against NEB's own web form, which shows a
+    .5 down where the batch rounds it up: one reaction read 64 in the table and
+    63 on the form, over a number that goes on a thermocycler.
+    """
+    gets = []
+
+    def fake_post(url, json=None, timeout=None):
+        count = len(json["seqpairs"]) // 2
+        return FakeResponse(
+            {
+                "success": True,
+                "data": [{"tm1": 70.0, "tm2": 71.0, "ta": 99.0} for _ in range(count)]
+                + [{"tm1": 60.0, "tm2": 60.0, "ta": 64.0} for _ in range(count)],
+            }
+        )
+
+    def fake_get(url, params=None, timeout=None, **kwargs):
+        gets.append((url, params))
+        return FakeResponse({"success": True, "data": {"ta": 63.5}})
+
+    monkeypatch.setattr(requests, "post", fake_post)
+    monkeypatch.setattr(requests, "get", fake_get)
+    pcr = _pcr()
+    results, failures = T.neb_pair_temperatures([pcr], offline=False)
+
+    assert failures == ()
+    assert results[pcr].ta_from_footprints == T.Tm(63.5, T.ENGINE_NEB)
+    # Asked about the FOOTPRINTS, which is what anneals, at the run's own
+    # concentration and polymerase -- the same question the batch was asked.
+    assert len(gets) == 1
+    url, params = gets[0]
+    assert url == T.NEB_ENDPOINT
+    assert params["seq1"] == pcr.forward_footprint
+    assert params["seq2"] == pcr.reverse_footprint
+    assert params["conc"] == pytest.approx(T.CONDITIONS.neb_conc_um)
+    # And the Tm are untouched: only Ta was rounded.
+    assert results[pcr].footprint_tm_forward == T.Tm(60.0, T.ENGINE_NEB)
+    assert results[pcr].oligo_tm_forward == T.Tm(70.0, T.ENGINE_NEB)
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        {"success": True, "data": {"tm1": 60.0}},  # no ta in the reply
+        {"success": True, "data": {"ta": None}},
+        {"success": False, "error": "nope"},
+        "boom",  # the request itself fails
+    ],
+)
+def test_a_failed_refinement_keeps_the_batch_answer(reply, monkeypatch):
+    """Refining must never cost an answer: a reaction whose exact Ta does not
+    arrive is exactly as well served as before, with the batch's integer."""
+
+    def fake_post(url, json=None, timeout=None):
+        count = len(json["seqpairs"]) // 2
+        return FakeResponse(
+            {
+                "success": True,
+                "data": [{"tm1": 70.0, "tm2": 71.0, "ta": 99.0} for _ in range(count)]
+                + [{"tm1": 60.0, "tm2": 60.0, "ta": 64.0} for _ in range(count)],
+            }
+        )
+
+    def fake_get(url, params=None, timeout=None, **kwargs):
+        if reply == "boom":
+            raise requests.exceptions.ConnectionError("no route to host")
+        return FakeResponse(reply)
+
+    monkeypatch.setattr(requests, "post", fake_post)
+    monkeypatch.setattr(requests, "get", fake_get)
+    pcr = _pcr()
+    results, failures = T.neb_pair_temperatures([pcr], offline=False)
+
+    assert failures == (), "a refinement that does not arrive is not a failure"
+    assert results[pcr].ta_from_footprints == T.Tm(64.0, T.ENGINE_NEB)
+
+
+def test_offline_asks_the_one_pair_endpoint_nothing(monkeypatch):
+    """``offline=True`` issues no request at all, refinement included."""
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("offline must not reach the network")
+
+    monkeypatch.setattr(requests, "get", forbidden)
+    monkeypatch.setattr(requests, "post", forbidden)
+    pcr = _pcr()
+    results, failures = T.neb_pair_temperatures([pcr], offline=True)
+    assert failures == ()
+    assert results[pcr].ta_from_footprints.engine == T.ENGINE_LOCAL_TA
 
 
 def test_an_unreachable_endpoint_degrades_to_local_values_and_reports(monkeypatch):
@@ -340,6 +450,8 @@ def test_an_empty_batch_is_not_a_request():
 
 
 def test_the_report_columns_keep_the_two_tm_quantities_apart(monkeypatch):
+    no_exact_ta(monkeypatch)
+
     def fake_post(url, json=None, timeout=None):
         return FakeResponse(
             {
