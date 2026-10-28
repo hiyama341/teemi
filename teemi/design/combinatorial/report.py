@@ -109,6 +109,7 @@ PRIMER_COLUMNS = (
     "n_uses",
     "length_nt",
     "sequence",
+    "footprint",
     "footprint_len",
     "footprint_tm_c",
     "hairpin_folded_at_ta",
@@ -169,6 +170,13 @@ COLUMN_LABELS = {
     "three_prime_dimer_dg": "three_prime_dimer_deltaG (kcal/mol)",
     "homodimer_dg_worst": "worst_primer_homodimer_deltaG (kcal/mol)",
     "primer3_clamped": "not_analysable_over_60nt",
+    # A bare column of ACGT does not say which end is which, and a footprint
+    # read the wrong way round still looks like a primer.  Both of these are
+    # the oligo's own orientation: the footprint is a literal suffix of the
+    # sequence, which :func:`primer_dataframe`'s tests assert rather than
+    # assume.
+    "sequence": "sequence(5'-3')",
+    "footprint": "footprint_sequence(5'-3')",
     "hairpin_folded_at_ta": "hairpin_folded_at_Ta (%)",
     "footprint_len_forward": "footprint_len_fwd (nt)",
     "footprint_len_reverse": "footprint_len_rev (nt)",

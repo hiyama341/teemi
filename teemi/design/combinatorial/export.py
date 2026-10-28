@@ -442,8 +442,11 @@ def _parts_frame(result, part_info: Optional[Mapping[str, Mapping[str, object]]]
         }
         footprint = footprints.get(part_id)
         if footprint:
-            row["forward_footprint"] = footprint["forward_footprint"]
-            row["reverse_footprint"] = footprint["reverse_footprint"]
+            # Named for the orientation, like every other column of DNA here:
+            # these are the two primers' footprints, in each primer's own
+            # 5'-3' direction, not two reads of the same strand.
+            row["forward_footprint(5'-3')"] = footprint["forward_footprint"]
+            row["reverse_footprint(5'-3')"] = footprint["reverse_footprint"]
         row.update(dict((part_info or {}).get(part_id, {})))
         rows.append(row)
     return pd.DataFrame(rows)

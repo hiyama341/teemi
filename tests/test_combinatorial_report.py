@@ -633,6 +633,31 @@ def test_the_pcr_table_summarises_a_roll_call_name_too():
         assert frame[column].str.len().max() <= _NAME_MAX, column
 
 
+def test_the_footprint_is_the_oligos_own_3_prime_end(result):
+    """What makes ``footprint_sequence(5'-3')`` true rather than decorative.
+
+    The footprint is the part of the oligo that anneals, and it is reported in
+    the OLIGO's orientation, not the template's -- so it is a literal suffix
+    of the sequence beside it, and the tail is what comes before.  Were it the
+    template-strand read, a reverse primer's footprint would be the reverse
+    complement of this and the heading would be a lie.
+    """
+    for primer in result.primers:
+        assert primer.sequence.endswith(primer.footprint), primer.label
+        assert len(primer.footprint) <= len(primer.sequence)
+
+    frame = primer_dataframe(result)
+    sequence = COLUMN_LABELS["sequence"]
+    footprint = COLUMN_LABELS["footprint"]
+    assert footprint in frame.columns, "the footprint is on the order sheet"
+    for _, row in frame.iterrows():
+        assert row[sequence].endswith(row[footprint])
+        # And the tail is the difference, which is what makes the two columns
+        # worth having side by side.
+        tail = row[sequence][: -len(row[footprint])]
+        assert len(tail) == row["length_nt"] - row["footprint_len"]
+
+
 def _quantity_keys(columns):
     """The wire keys that carry a dG or a temperature, engines excluded."""
     return [
@@ -1453,8 +1478,10 @@ def test_the_number_is_positional_and_the_sequence_is_the_identity(result):
     }
     assert moved, "adding a part at the front has to renumber something"
 
-    # The sequence is in the readable table, which is what makes that detectable.
-    assert "sequence" in primer_dataframe(after).columns
+    # The sequence is in the readable table, which is what makes that
+    # detectable -- under its labelled heading, taken from the label map so a
+    # rename cannot make this assertion vacuous.
+    assert COLUMN_LABELS["sequence"] in primer_dataframe(after).columns
 
 
 def test_the_pcr_table_names_primers_by_number(result):

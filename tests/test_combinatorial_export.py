@@ -515,6 +515,33 @@ def test_a_summarised_cell_and_the_table_agree_on_the_count(tmp_path):
         assert len(uses[uses["primer"] == row["primer"]]) == row["n_uses"]
 
 
+def test_every_column_of_dna_in_the_bundle_says_which_end_is_which(linear, tmp_path):
+    """A bare column of ACGT does not say which end is which.
+
+    A footprint read the wrong way round still looks like a primer, so a
+    sequence column that does not declare its orientation is a column someone
+    can order from backwards.  Driven from the DATA rather than from a list of
+    known columns: a sequence column added later is a failing test until it is
+    labelled, which a list of names would not catch.
+    """
+    import re
+
+    folder = write_bundle(linear, tmp_path / "build")
+    dna = re.compile(r"^[ACGTacgt]+$")
+    checked = 0
+    for path in sorted(folder.rglob("*.csv")):
+        frame = pd.read_csv(path, dtype=str)
+        for column in frame.columns:
+            values = frame[column].dropna()
+            if values.empty or values.str.len().max() < 12:
+                continue
+            if not values.map(lambda v: bool(dna.match(v))).all():
+                continue
+            assert "5'-3'" in column, (path.name, column)
+            checked += 1
+    assert checked >= 3, f"only {checked} sequence columns found; expected more"
+
+
 def test_the_submitted_document_is_archived_unchanged(linear, tmp_path):
     """The spec is what teemi made of the document; this is the document.
 
