@@ -1277,6 +1277,13 @@ _DECIMALS = {"price": 2}
 _WHOLE_TIES_DOWN = frozenset({"ta_from_footprints"})
 
 
+def _is_temperature(key: str) -> bool:
+    """A column of degrees, by the same convention that gives it its unit."""
+    return ("_tm" in key or key.startswith("ta_")) and not key.endswith(
+        ("_engine", "_flagged")
+    )
+
+
 def _decimals(key: str) -> Optional[int]:
     """How many decimals a column is worth, by the same key convention that
     decides whether it needs a unit.
@@ -1320,6 +1327,14 @@ def _project(rows: List[dict], columns: Sequence[str], full: bool) -> pd.DataFra
         decimals = _decimals(key)
         if decimals is not None:
             frame[key] = frame[key].round(decimals)
+        if _is_temperature(key):
+            # NEB answers in whole degrees, so its columns are integral and
+            # print 61 rather than 61.0, matching its own web form.  pydna
+            # answers in tenths, so an offline run keeps them: the column
+            # follows the engine instead of being told what to be.
+            values = frame[key].dropna()
+            if not values.empty and (values == values.round(0)).all():
+                frame[key] = frame[key].astype("Int64")
     return frame.rename(columns=COLUMN_LABELS)
 
 

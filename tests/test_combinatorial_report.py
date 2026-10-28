@@ -559,6 +559,33 @@ def test_the_tie_lands_on_the_lower_degree(exact, shown):
     assert frame[COLUMN_LABELS["ta_from_footprints"]].iloc[0] == shown
 
 
+def test_a_temperature_column_follows_the_engine_that_answered(result):
+    """NEB answers in whole degrees; pydna answers in tenths.
+
+    So the column prints 61 where NEB answered and 58.9 where pydna did,
+    instead of a column of 61.0 beside a Ta of 64.  The engine decides, not a
+    fixed format -- and ``result`` here is an offline run, so the tenths have
+    to survive.
+    """
+    frame = primer_dataframe(result)
+    column = frame[COLUMN_LABELS["footprint_tm_c"]]
+    assert {p.footprint_tm.engine for p in result.primers} == {"pydna_tm_default"}
+    assert not (
+        column == column.round(0)
+    ).all(), "an offline Tm lands on tenths and must not be shown as whole degrees"
+
+    # And where every value IS whole -- which is what NEB returns -- the column
+    # says so rather than printing a trailing zero.
+    from teemi.design.combinatorial.report import PRIMER_COLUMNS, _project
+
+    row = {key: None for key in PRIMER_COLUMNS}
+    row["footprint_tm_c"] = 61.0
+    whole = _project([row], PRIMER_COLUMNS, full=False)
+    shown = whole[COLUMN_LABELS["footprint_tm_c"]]
+    assert str(shown.dtype) == "Int64"
+    assert str(shown.iloc[0]) == "61"
+
+
 def test_a_table_does_not_print_more_precision_than_primer3_has(result):
     """``-2.367446221426836`` reads as certainty; ``-2.37`` reads as what it
     is.  primer3's dG is good to a few tenths of a kcal/mol and its Tm to about
