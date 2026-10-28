@@ -461,6 +461,11 @@ def from_flow(
     if settings.polymerase:
         # "It selects the Tm model; choosing that model is the backend's job."
         primer_design["polymerase"] = settings.polymerase
+    if settings.primer_conc_um is not None:
+        # Parsed since the schema was first mirrored and dropped on the floor
+        # ever since, which left a document asking for 0.5 uM being planned at
+        # pydna's 0.25 and every NEB number a degree under the web form.
+        primer_design["primer_conc_um"] = settings.primer_conc_um
     if junction:
         primer_design["junction"] = junction
 
@@ -519,7 +524,5 @@ def plan_flow(
     from teemi.design.combinatorial.report import plan
     from teemi.design.combinatorial.sources import SourceResolver
 
-    spec, notes = from_flow(
-        document, library=library, policy=policy, fill=fill
-    )
+    spec, notes = from_flow(document, library=library, policy=policy, fill=fill)
     return plan(spec, sources=SourceResolver(), **plan_kwargs), notes

@@ -248,6 +248,21 @@ class PrimerDesign(_Frozen):
     target_tm: float = Field(default=57.0, ge=30.0, le=80.0)
     footprint_len_min: int = Field(default=18, ge=10, le=60)
 
+    primer_conc_um: float = Field(default=0.25, gt=0.0, le=10.0)
+    """Primer concentration in micromolar, as every engine is told it.
+
+    It is a real term in the melting model, not a formality: NEB's answer for
+    the same footprint moves by 1-2 C between 0.25 and 0.5 uM, which is the
+    difference between agreeing with NEB's own web form and being a degree
+    under it.  The default is pydna's 250 nM, so an offline run still
+    reproduces pydna exactly; NEB's web form defaults to 500 nM, and FLOW
+    sends the number it means under ``assembly.primer_conc_um``.
+
+    It reaches NEB as ``conc``, pydna as ``dnac1``/``dnac2`` and primer3 as
+    ``dna_conc``, through one :class:`~teemi.design.combinatorial.tm.Conditions`
+    built in :func:`~teemi.design.combinatorial.report.plan`, so the three
+    cannot drift apart."""
+
     polymerase: str = "q5-0"
     """NEB's product code, which selects the Tm and Ta model.
 
@@ -489,9 +504,8 @@ class DesignSpec(_Frozen):
         if self.design.topology == "circular":
             edges.append((fragments[-1], fragments[0]))
         for upstream, downstream in edges:
-            if (
-                getattr(by_id.get(upstream), "no_tail_rev", False)
-                and getattr(by_id.get(downstream), "no_tail_fwd", False)
+            if getattr(by_id.get(upstream), "no_tail_rev", False) and getattr(
+                by_id.get(downstream), "no_tail_fwd", False
             ):
                 raise ValueError(
                     f"the junction {upstream!r} -> {downstream!r} has "

@@ -81,6 +81,7 @@ from teemi.design.combinatorial.sources import SourceError, SourceResolver
 from teemi.design.combinatorial.spec import ID_SEPARATOR, DesignSpec, load_spec
 from teemi.design.combinatorial.tm import (
     CONDITIONS,
+    Conditions,
     FootprintTm,
     PcrOligos,
     PcrTemperatures,
@@ -562,7 +563,11 @@ class DesignResult:
                         ("structures", "primer3"),
                     )
                     if engine
-                ),
+                )
+                # The concentration, because it is a term in every one of those
+                # models and the reason a number can sit a degree under NEB's
+                # own web form, which defaults to 500 nM.
+                + f", at {self.spec.primer_design.primer_conc_um:g} uM primer",
                 f"  {len(self.primers)} primers (longest {longest} nt), "
                 f"{len(self.pcrs)} PCRs, "
                 f"{self.price:.0f} {self.spec.objective.currency}",
@@ -639,10 +644,21 @@ def plan(
 
     layout = plan_layout(validated, records)
 
-    engine = FootprintTm(offline=offline, prodcode=validated.primer_design.polymerase)
+    # One Conditions for the whole run, so NEB's conc, pydna's dnac and
+    # primer3's dna_conc are the same number said three ways.
+    conditions = replace(
+        CONDITIONS, primer_nm=validated.primer_design.primer_conc_um * 1000.0
+    )
+    engine = FootprintTm(
+        offline=offline,
+        prodcode=validated.primer_design.polymerase,
+        conditions=conditions,
+    )
     try:
         footprints, diagnostics = design_footprints(records, validated, engine, layout)
-        junctions = junctions_for_spec(validated, records, footprints, layout)
+        junctions = junctions_for_spec(
+            validated, records, footprints, layout, conditions
+        )
     except FootprintError as exc:
         return _stopped(validated, "no_footprint", str(exc), part_id=exc.part_id)
     except JunctionError as exc:
@@ -659,14 +675,17 @@ def plan(
         for variant in library
     }
     pairs = [pair for variant_pairs in oligos.values() for pair in variant_pairs]
-    checks = check_pcrs(pairs, validated.constraints)
+    checks = check_pcrs(pairs, validated.constraints, conditions)
     temperatures, batch_failures = neb_pair_temperatures(
         [pair.oligos for pair in pairs],
         offline=offline,
+        conditions=conditions,
         prodcode=validated.primer_design.polymerase,
     )
 
-    primers, oligo_of = _primer_records(pairs, junctions, temperatures, validated)
+    primers, oligo_of = _primer_records(
+        pairs, junctions, temperatures, validated, conditions
+    )
     by_id = {primer.id: primer for primer in primers}
     pcrs = _pcr_records(pairs, checks, temperatures, records, oligo_of, by_id)
     plans, verification_diagnostics = _variant_plans(
@@ -771,6 +790,7 @@ def _primer_records(
     junctions: Mapping[Tuple[str, str], JunctionDesign],
     temperatures: Mapping[PcrOligos, PcrTemperatures],
     spec: DesignSpec,
+    conditions: Conditions = CONDITIONS,
 ) -> Tuple[Tuple[PrimerRecord, ...], Dict[str, str]]:
     """One record per distinct oligo to order, plus the name-to-oligo map.
 
@@ -845,7 +865,7 @@ def _primer_records(
             uses[sequence] = [primer.id]
             parts[sequence] = [pair.part_id]
             directions[sequence] = [direction]
-            structures = oligo_structures(sequence, CONDITIONS)
+            structures = oligo_structures(sequence, conditions)
             records[sequence] = PrimerRecord(
                 id=primer.id,
                 part_id=pair.part_id,
@@ -861,6 +881,7 @@ def _primer_records(
                     structures,
                     spec.constraints,
                     footprint,
+                    conditions,
                 ),
                 price=len(sequence) * spec.objective.price_per_base,
                 tailed=sequence in tailed,

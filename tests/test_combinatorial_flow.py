@@ -77,38 +77,50 @@ def _first_library_source(raw: dict) -> dict:
 #: ``(label, mutation)``.  ``None`` means the document unchanged.
 CASES = [
     ("unchanged", None),
-    ("both source and variants", lambda d: d["construct"][0].update(
-        {"variants": [{"id": "v1", "source": {"type": "library", "part_id": "X"}}]}
-    )),
+    (
+        "both source and variants",
+        lambda d: d["construct"][0].update(
+            {"variants": [{"id": "v1", "source": {"type": "library", "part_id": "X"}}]}
+        ),
+    ),
     ("topology against method", lambda d: d.update({"topology": "circular"})),
     ("unknown top-level key", lambda d: d.update({"surprise": 1})),
     ("unknown part key", lambda d: d["construct"][0].update({"surprise": 1})),
-    ("part type not in the vocabulary", lambda d: d["construct"][0].update(
-        {"type": "not_a_type"}
-    )),
-    ("malformed accession", lambda d: d["organism"]["genome"].update(
-        {"accession": "nope"}
-    )),
+    (
+        "part type not in the vocabulary",
+        lambda d: d["construct"][0].update({"type": "not_a_type"}),
+    ),
+    (
+        "malformed accession",
+        lambda d: d["organism"]["genome"].update({"accession": "nope"}),
+    ),
     ("organism not in the list", lambda d: d.update({"organism": {"key": "e-coli"}})),
-    ("part_id with a hyphen", lambda d: _first_library_source(d).update(
-        {"part_id": "NOT-ALLOWED"}
-    )),
+    (
+        "part_id with a hyphen",
+        lambda d: _first_library_source(d).update({"part_id": "NOT-ALLOWED"}),
+    ),
     ("empty construct", lambda d: d.update({"construct": []})),
-    ("empty variants list", lambda d: d["construct"][0].update(
-        {"source": None, "variants": []}
-    )),
-    ("inline without a format", lambda d: d["construct"][0].update(
-        {"source": {"type": "inline", "sequence": "ACGT"}}
-    )),
+    (
+        "empty variants list",
+        lambda d: d["construct"][0].update({"source": None, "variants": []}),
+    ),
+    (
+        "inline without a format",
+        lambda d: d["construct"][0].update(
+            {"source": {"type": "inline", "sequence": "ACGT"}}
+        ),
+    ),
     ("wrong schema version", lambda d: d.update({"flow_schema_version": "2.0"})),
     ("missing task", lambda d: d.pop("task")),
     ("design_count of zero", lambda d: d.update({"design_count": 0})),
-    ("primer_conc_um of zero", lambda d: d.setdefault("assembly", {}).update(
-        {"primer_conc_um": 0}
-    )),
-    ("oligo type not in the vocabulary", lambda d: d.update(
-        {"oligos": [{"id": "o1", "type": "not_an_oligo"}]}
-    )),
+    (
+        "primer_conc_um of zero",
+        lambda d: d.setdefault("assembly", {}).update({"primer_conc_um": 0}),
+    ),
+    (
+        "oligo type not in the vocabulary",
+        lambda d: d.update({"oligos": [{"id": "o1", "type": "not_an_oligo"}]}),
+    ),
 ]
 
 
@@ -165,8 +177,10 @@ def test_the_wire_name_is_construct_and_the_attribute_is_positions():
     assert "construct" in raw and "positions" not in raw
     by_wire = FlowDocument.model_validate(raw)
     by_name = FlowDocument.model_validate(
-        {**{k: v for k, v in raw.items() if k != "construct"},
-         "positions": raw["construct"]}
+        {
+            **{k: v for k, v in raw.items() if k != "construct"},
+            "positions": raw["construct"],
+        }
     )
     assert by_wire == by_name
 
@@ -194,9 +208,7 @@ def test_the_document_supplies_the_design_and_policy_the_bounds(library):
     a document with no policy at all still makes a complete spec.
     """
     gene = library["FP_MRFP1"]
-    spec, _ = from_flow(
-        document(INTEGRATION), library=library, fill={"pos4": gene}
-    )
+    spec, _ = from_flow(document(INTEGRATION), library=library, fill={"pos4": gene})
 
     # From the document.
     assert spec.design.topology == "linear"
@@ -335,8 +347,7 @@ GENE_PARTS = ("FP_GP_EGFP", "FP_MCITRINE", "FP_MRFP1", "MRK_GP_KANMX")
 @pytest.fixture()
 def genes(library) -> dict:
     return {
-        f"gene/gene-{n}": library[part]
-        for n, part in enumerate(GENE_PARTS, start=1)
+        f"gene/gene-{n}": library[part] for n, part in enumerate(GENE_PARTS, start=1)
     }
 
 
@@ -351,9 +362,7 @@ def test_fill_can_target_one_variant_rather_than_a_whole_position(library, genes
 
     gene_slot = next(p for p in spec.positions if p.id == "gene")
     assert len(gene_slot.parts) == 4
-    assert [p.id for p in gene_slot.parts] == [
-        f"gene.gene-{n}" for n in (1, 2, 3, 4)
-    ]
+    assert [p.id for p in gene_slot.parts] == [f"gene.gene-{n}" for n in (1, 2, 3, 4)]
     assert {p.source.sequence for p in gene_slot.parts} == {
         library[part] for part in GENE_PARTS
     }
@@ -405,9 +414,7 @@ def test_a_fill_key_that_matches_nothing_is_refused(library, genes):
         )
 
 
-def test_no_tail_on_the_backbone_shares_one_primer_across_the_library(
-    library, genes
-):
+def test_no_tail_on_the_backbone_shares_one_primer_across_the_library(library, genes):
     """The point of this document, and the thing worth asserting about it.
 
     ``no_tail_rev`` on the promoter and ``no_tail_fwd`` on the terminator leave
@@ -440,9 +447,9 @@ def test_no_tail_on_the_backbone_shares_one_primer_across_the_library(
     assert by_who == {"forced", "pydna"}
     forced = [j for j in result.junctions if j.designed_by == "forced"]
     assert all(len(j.profile) == 1 for j in forced)
-    assert all(j.unavoidable == () for j in forced), (
-        "one candidate proves nothing, so a pinned junction may not downgrade"
-    )
+    assert all(
+        j.unavoidable == () for j in forced
+    ), "one candidate proves nothing, so a pinned junction may not downgrade"
 
 
 def test_the_polymerase_the_document_names_reaches_the_neb_request(
@@ -504,6 +511,133 @@ def test_the_polymerase_the_document_names_reaches_the_neb_request(
     assert walked and set(walked) == {"phusion-0"}, set(walked)
     assert batched and set(batched) == {"phusion-0"}, set(batched)
     assert result.spec.primer_design.polymerase == "phusion-0"
+
+
+def test_the_primer_concentration_the_document_names_reaches_every_engine(
+    library, monkeypatch
+):
+    """It was parsed and dropped, and nobody could see where the degree went.
+
+    ``assembly.primer_conc_um`` has been on the mirrored schema since the
+    beginning and reached nothing, so a document asking for 0.5 uM was planned
+    at pydna's 0.25 and every NEB number came back a degree under NEB's own web
+    form, which defaults to 500 nM.  A concentration is a term in the melting
+    model, not a formality.
+
+    All three engines are checked, because the number means the same thing in
+    each and they would disagree if it reached only one: NEB's ``conc`` in uM,
+    pydna's ``dnac1``/``dnac2`` in nM, primer3's ``dna_conc`` in nM.
+    """
+    import requests
+
+    import teemi.design.combinatorial.tm as tm_module
+
+    spec, _ = from_flow(document(CDS_LIBRARY), library=library)
+    assert spec.primer_design.primer_conc_um == 0.5, "the document asks for 0.5"
+
+    walked, batched = [], []
+
+    def fake_tm_neb(seq, conc=0.25, prodcode="q5-0"):
+        walked.append(conc)
+        return 60.0
+
+    class FakeReply:
+        status_code = 200
+
+        def __init__(self, rows):
+            self._rows = rows
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"data": self._rows}
+
+    def fake_post(url, json=None, **kwargs):
+        batched.append(json.get("conc"))
+        return FakeReply(
+            [{"tm1": 60.0, "tm2": 60.0, "ta": 63.0} for _ in json["seqpairs"]]
+        )
+
+    tm_module.clear_tm_caches()
+    monkeypatch.setattr(tm_module, "tm_neb", fake_tm_neb)
+    monkeypatch.setattr(requests, "post", fake_post)
+    try:
+        result, _ = plan_flow(
+            document(CDS_LIBRARY),
+            library=library,
+            policy={"constraints": {"primer_len_max": 90}},
+            offline=False,
+        )
+    finally:
+        tm_module.clear_tm_caches()
+
+    # NEB is asked in micromolar, on both paths: the per-sequence walk that
+    # designs the footprints and the batch that returns the authoritative pair.
+    assert walked and set(walked) == {0.5}, set(walked)
+    assert batched and set(batched) == {0.5}, set(batched)
+    assert result.spec.primer_design.primer_conc_um == 0.5
+    # And the summary says it, so a reader comparing against NEB's web form can
+    # see which concentration the numbers belong to.
+    assert "0.5 uM primer" in result.summary()
+
+
+def test_the_same_concentration_reaches_pydna_and_primer3(library):
+    """Offline, the same number has to land in the other two models."""
+    from dataclasses import replace
+
+    from teemi.design.combinatorial.tm import CONDITIONS
+
+    spec, _ = from_flow(document(CDS_LIBRARY), library=library)
+    conditions = replace(CONDITIONS, primer_nm=spec.primer_design.primer_conc_um * 1000)
+    assert conditions.neb_conc_um == 0.5
+    assert conditions.pydna_tm_kwargs["dnac1"] == 500.0
+    assert conditions.pydna_tm_kwargs["dnac2"] == 500.0
+    assert conditions.primer3_kwargs["dna_conc"] == 500.0
+
+
+def test_a_document_that_names_no_concentration_gets_pydnas_default(library):
+    """The default stays pydna's 250 nM, so an offline run still reproduces
+    pydna exactly; only a document that asks moves it.
+
+    Every example document happens to ask for 0.5, so this one takes the key
+    back out -- the field is optional on the schema and a document is free to
+    leave the choice to the backend.
+    """
+    doc = document(INTEGRATION)
+    del doc["assembly"]["primer_conc_um"]
+    spec, _ = from_flow(doc, library=library, fill={"pos4": library["FP_MRFP1"]})
+    assert spec.primer_design.primer_conc_um == 0.25
+
+    # And the same for a spec written by hand, which is where the default lives.
+    from teemi.design.combinatorial.spec import load_spec
+
+    bare = load_spec(
+        {
+            "design": {"name": "bare", "topology": "linear"},
+            "positions": [
+                {
+                    "id": "a",
+                    "parts": [
+                        {
+                            "id": "p",
+                            "source": {"type": "inline", "sequence": "ACGT" * 40},
+                        }
+                    ],
+                },
+                {
+                    "id": "b",
+                    "parts": [
+                        {
+                            "id": "q",
+                            "source": {"type": "inline", "sequence": "ACGT" * 40},
+                        }
+                    ],
+                },
+            ],
+        }
+    )
+    assert bare.primer_design.primer_conc_um == 0.25
 
 
 def test_a_document_that_names_no_polymerase_gets_the_default(library):
@@ -588,6 +722,6 @@ def test_the_structure_tm_bound_never_crosses_two_engines(library):
             primer3.calc_tm(primer.footprint, **CONDITIONS.primer3_kwargs)
         )
         gaps.append(own - primer.footprint_tm.celsius)
-    assert max(abs(g) for g in gaps) > 0.5, (
-        "if the two engines agreed, keeping them apart would not matter"
-    )
+    assert (
+        max(abs(g) for g in gaps) > 0.5
+    ), "if the two engines agreed, keeping them apart would not matter"
