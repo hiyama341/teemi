@@ -87,6 +87,7 @@ from teemi.design.combinatorial.report import (
     pcr_dataframe,
     plan,
     primer_dataframe,
+    primer_uses_dataframe,
     variant_overview_dataframe,
 )
 from teemi.design.combinatorial.simulate import Verification
@@ -99,6 +100,7 @@ __all__ = [
     "InfeasibleDesignError",
     "variant_overview_dataframe",
     "primer_dataframe",
+    "primer_uses_dataframe",
     "pcr_dataframe",
     "write_genbank_files",
     "write_assembly_figures",

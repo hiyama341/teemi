@@ -173,6 +173,7 @@ BUNDLE_ORDER = (
                 "/analysis.csv",
                 "every column the primer table has, not just the readable ones",
             ),
+            ("/uses.csv", "which junctions each oligo serves, one row each"),
         ),
     ),
     ("pcrs", "03_pcrs", (("/pcrs.csv", "one row per reaction"),)),
@@ -338,6 +339,7 @@ def write_bundle(
     primers = root / BUNDLE_PATHS["primers"]
     _frame(result, "primer").to_csv(primers / "primers.csv", index=False)
     _frame(result, "primer", full=True).to_csv(primers / "analysis.csv", index=False)
+    _frame(result, "uses").to_csv(primers / "uses.csv", index=False)
     _frame(result, "pcr").to_csv(root / BUNDLE_PATHS["pcrs"] / "pcrs.csv", index=False)
     _parts_frame(result, part_info).to_csv(
         root / BUNDLE_PATHS["parts"] / "parts.csv", index=False
@@ -390,8 +392,14 @@ def write_bundle_zip(
 
 def _frame(result, kind: str, full: bool = False):
     """A table, imported here so :mod:`.report` can import this module freely."""
-    from teemi.design.combinatorial.report import pcr_dataframe, primer_dataframe
+    from teemi.design.combinatorial.report import (
+        pcr_dataframe,
+        primer_dataframe,
+        primer_uses_dataframe,
+    )
 
+    if kind == "uses":
+        return primer_uses_dataframe(result)
     build = primer_dataframe if kind == "primer" else pcr_dataframe
     return build(result, full=full)
 

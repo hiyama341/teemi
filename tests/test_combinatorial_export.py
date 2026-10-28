@@ -8,6 +8,7 @@ import json
 import zipfile
 from pathlib import Path
 
+import pandas as pd
 import pytest
 from Bio import SeqIO
 
@@ -335,6 +336,7 @@ PROMISED = (
     BUNDLE_PATHS["design"],
     f"{BUNDLE_PATHS['primers']}/primers.csv",
     f"{BUNDLE_PATHS['primers']}/analysis.csv",
+    f"{BUNDLE_PATHS['primers']}/uses.csv",
     f"{BUNDLE_PATHS['pcrs']}/pcrs.csv",
     f"{BUNDLE_PATHS['parts']}/parts.csv",
     f"{BUNDLE_PATHS['constructs']}/assemblies.txt",
@@ -458,6 +460,59 @@ def test_a_bundle_without_a_spec_does_not_promise_one(tmp_path):
     folder = write_bundle(nothing, tmp_path / "build")
     assert not (folder / BUNDLE_PATHS["spec"]).exists()
     assert (folder / BUNDLE_PATHS["summary"]).read_text().startswith("no design")
+
+
+@pytest.mark.parametrize("fixture", ["linear", "circular"])
+def test_the_roll_call_is_a_table_rather_than_a_cell(fixture, tmp_path, request):
+    """``used_as`` summarised past 110 characters, so the list needs a home
+    outside the result JSON: a bench does not open JSON.
+
+    One row per oligo per junction, so the file can be sorted and filtered --
+    and the row count is the number of primer slots in the library, which is
+    not the number of tubes to order.
+    """
+    result = request.getfixturevalue(fixture)
+    folder = write_bundle(result, tmp_path / "build")
+    uses = pd.read_csv(
+        folder / BUNDLE_PATHS["primers"] / "uses.csv", dtype={"primer": str}
+    )
+
+    assert len(uses) == sum(len(p.uses) for p in result.primers)
+    assert len(uses) >= len(result.primers), "a shared oligo has several rows"
+    # A junction is served by exactly one molecule, so it appears once.
+    assert uses["junction"].is_unique
+    assert set(uses["junction"]) == {u for p in result.primers for u in p.uses}
+
+    order_sheet = {p.label: p for p in result.primers}
+    assert set(uses["primer"]) <= set(order_sheet), "every row leads to a tube"
+    for label, rows in uses.groupby("primer"):
+        primer = order_sheet[label]
+        assert len(rows) == len(primer.uses) == rows["n_uses"].iloc[0]
+        assert set(rows["junction"]) == set(primer.uses)
+        assert set(rows["part_id"]) == {primer.part_id}
+        assert set(rows["direction"]) == {primer.direction}
+
+
+def test_a_summarised_cell_and_the_table_agree_on_the_count(tmp_path):
+    """The order sheet says how many junctions; this file has to hold that
+    many rows, or the summary is pointing at nothing."""
+    spec = json.loads(SPEC_A.read_text())
+    for position in spec["positions"]:
+        for part in position["parts"]:
+            part["id"] = f"{part['id']}-{'x' * 45}"
+    built = plan(spec, sources=SourceResolver(base_dir=REPO), offline=True)
+
+    folder = write_bundle(built, tmp_path / "build")
+    uses = pd.read_csv(
+        folder / BUNDLE_PATHS["primers"] / "uses.csv", dtype={"primer": str}
+    )
+    sheet = pd.read_csv(
+        folder / BUNDLE_PATHS["primers"] / "analysis.csv", dtype={"primer": str}
+    )
+    summarised = sheet[sheet["used_as"].str.contains("result JSON")]
+    assert not summarised.empty, "this library has to summarise something"
+    for _, row in summarised.iterrows():
+        assert len(uses[uses["primer"] == row["primer"]]) == row["n_uses"]
 
 
 def test_the_submitted_document_is_archived_unchanged(linear, tmp_path):
@@ -593,8 +648,6 @@ def test_the_parts_table_counts_reactions_and_constructs_separately(linear, tmp_
     """A part at a combinatorial position is amplified once per neighbour pair,
     not once per construct, and sourcing cares about the first number while
     risk cares about the second."""
-    import pandas as pd
-
     folder = write_bundle(linear, tmp_path / "build")
     parts = pd.read_csv(folder / BUNDLE_PATHS["parts"] / "parts.csv")
     assert set(parts["part_id"]) == {f.part_id for f in linear.footprints}
@@ -612,8 +665,6 @@ def test_part_provenance_comes_from_the_caller(linear, tmp_path):
     library the caller resolved the part from, so it is passed in and any keys
     become columns.
     """
-    import pandas as pd
-
     first = sorted(f.part_id for f in linear.footprints)[0]
     folder = write_bundle(
         linear,

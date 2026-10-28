@@ -1357,6 +1357,43 @@ def primer_dataframe(result: DesignResult, *, full: bool = False) -> pd.DataFram
     return _project(rows, PRIMER_COLUMNS, full)
 
 
+#: The long form of ``used_as``: one row per oligo per junction it serves.
+PRIMER_USE_COLUMNS = ("primer", "junction", "part_id", "direction", "n_uses")
+
+
+def primer_uses_dataframe(result: DesignResult) -> pd.DataFrame:
+    """Which junctions each oligo serves, one row each.
+
+    ``used_as`` on the order sheet is this table squeezed into a cell, and for
+    an oligo shared 67 ways it does not fit in one -- 1,290 characters that
+    nothing else on the row can be read beside.  The long form is what a
+    spreadsheet can sort and filter.
+
+    A junction appears exactly once, because exactly one molecule serves it.
+    An oligo appears ``n_uses`` times, so the row count is the number of primer
+    slots in the library rather than the number of tubes to order.
+
+    ``part_id`` and ``direction`` are the oligo's, not the junction's: where
+    one molecule amplifies several parts the id is their join, and splitting
+    that back out per row would mean parsing a junction name, which is how the
+    name got mangled the last time anyone tried it.
+    """
+    return pd.DataFrame(
+        [
+            {
+                "primer": primer.label,
+                "junction": use,
+                "part_id": primer.part_id,
+                "direction": primer.direction,
+                "n_uses": len(primer.uses),
+            }
+            for primer in result.primers
+            for use in primer.uses
+        ],
+        columns=list(PRIMER_USE_COLUMNS),
+    )
+
+
 def pcr_dataframe(result: DesignResult, *, full: bool = False) -> pd.DataFrame:
     """One row per distinct reaction: one template, two molecules.
 

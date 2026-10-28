@@ -84,6 +84,8 @@ def test_the_public_surface_is_small_and_complete():
             # Where each thing lands, so a reader need not hard-code it.
             "BUNDLE_PATHS",
             "bundle_layout",
+            # The long form of used_as.
+            "primer_uses_dataframe",
             "spec_json",
         ]
     )
