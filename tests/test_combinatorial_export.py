@@ -330,6 +330,7 @@ def test_a_short_shared_name_is_still_given_in_full(linear, tmp_path):
 PROMISED = (
     BUNDLE_PATHS["layout"],
     BUNDLE_PATHS["summary"],
+    BUNDLE_PATHS["request"],
     BUNDLE_PATHS["spec"],
     BUNDLE_PATHS["design"],
     f"{BUNDLE_PATHS['primers']}/primers.csv",
@@ -340,28 +341,39 @@ PROMISED = (
 )
 
 
-def test_the_bundle_writes_everything_its_own_layout_promises(linear, tmp_path):
-    """The map in the folder has to describe the folder.
+@pytest.mark.parametrize("submitted", [None, {"name": "as handed in"}])
+def test_the_bundle_writes_everything_its_own_layout_promises(
+    submitted, linear, tmp_path
+):
+    """The map in the folder has to describe the folder, in both directions.
 
     ``LAYOUT.txt`` is what a person reads to find their way around, so a file
-    it names and the bundle does not write is worse than no map at all.
+    it names and the bundle does not write is worse than no map at all -- and
+    a file written but unnamed is a file nobody looks in.  Two entries are
+    conditional, which is why the map is built from what was produced: there
+    is no submitted document unless the caller passes one.
     """
-    folder = write_bundle(linear, tmp_path / "build")
-    for relative in PROMISED:
+    folder = write_bundle(linear, tmp_path / "build", request=submitted)
+    expected = set(PROMISED)
+    if submitted is None:
+        expected.discard(BUNDLE_PATHS["request"])
+    for relative in expected:
         assert (folder / relative).is_file(), relative
 
     layout = (folder / BUNDLE_PATHS["layout"]).read_text()
-    for relative in PROMISED:
+    for relative in expected:
         if relative != BUNDLE_PATHS["layout"]:
             named = relative.split("/")[-1]
             assert named in layout or relative.replace("/", "/*") in layout, relative
+    # And nothing is named that is not there.
+    assert (BUNDLE_PATHS["request"] in layout) == (submitted is not None)
 
     written = {
         str(path.relative_to(folder)) for path in folder.rglob("*") if path.is_file()
     }
     maps = {name for name in written if name.endswith(".gb")}
     assert len(maps) == len(list(linear.designs))
-    assert written == set(PROMISED) | maps
+    assert written == expected | maps
 
 
 def test_every_map_is_named_by_its_construct_number(linear, tmp_path):
@@ -448,6 +460,47 @@ def test_a_bundle_without_a_spec_does_not_promise_one(tmp_path):
     assert (folder / BUNDLE_PATHS["summary"]).read_text().startswith("no design")
 
 
+def test_the_submitted_document_is_archived_unchanged(linear, tmp_path):
+    """The spec is what teemi made of the document; this is the document.
+
+    Validation fills in defaults, resolves sources and renames an inline
+    variant, so the two are not the same file and the difference is the
+    point: it is how someone sees that a setting they never wrote was used.
+    """
+    submitted = {
+        "name": "a FLOW document",
+        "construct": [{"id": "gene", "variants": [{"id": "x"}]}],
+        "assembly": {"method": "in_vivo", "homology_length": 30},
+    }
+    folder = write_bundle(linear, tmp_path / "build", request=submitted)
+
+    archived = json.loads((folder / BUNDLE_PATHS["request"]).read_text())
+    assert archived == submitted, "unchanged, not normalised"
+    # And beside it, the spec, which is a different document.
+    spec = json.loads((folder / BUNDLE_PATHS["spec"]).read_text())
+    assert spec != archived
+    assert "constraints" in spec and "constraints" not in archived
+
+
+def test_a_document_that_is_not_json_fails_before_the_folder_is_touched(
+    linear, tmp_path
+):
+    """A bundle missing one file is worse than a bundle that was never made.
+
+    So the document is serialized first: the failure lands before any write,
+    not after the maps are on disk and the layout promises a file that could
+    not be written.
+    """
+    target = tmp_path / "build"
+    with pytest.raises(TypeError):
+        write_bundle(linear, target, request={"when": {1, 2, 3}})
+    assert not target.exists() or not any(target.iterdir())
+
+    # And the same document, made serializable, writes fine.
+    folder = write_bundle(linear, target, request={"when": [1, 2, 3]})
+    assert (folder / BUNDLE_PATHS["request"]).is_file()
+
+
 def test_a_second_bundle_does_not_leave_the_first_behind(linear, tmp_path):
     """Half of one design and half of another, with nothing to tell them apart,
     is worse than a refusal.
@@ -478,6 +531,8 @@ def test_a_second_bundle_does_not_leave_the_first_behind(linear, tmp_path):
     maps = list((again / BUNDLE_PATHS["constructs"]).glob("*.gb"))
     assert len(maps) == len(list(linear.designs))
     for relative in PROMISED:
+        if relative == BUNDLE_PATHS["request"]:
+            continue  # no document was submitted to this bundle
         assert (again / relative).is_file(), relative
 
 

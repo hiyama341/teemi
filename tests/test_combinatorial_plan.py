@@ -83,7 +83,7 @@ def test_the_public_surface_is_small_and_complete():
             "build_summary",
             # Where each thing lands, so a reader need not hard-code it.
             "BUNDLE_PATHS",
-            "BUNDLE_LAYOUT",
+            "bundle_layout",
             "spec_json",
         ]
     )

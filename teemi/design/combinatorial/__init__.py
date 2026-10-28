@@ -72,7 +72,7 @@ from teemi.design.combinatorial.flow import (
     plan_flow,
 )
 from teemi.design.combinatorial.export import (
-    BUNDLE_LAYOUT,
+    bundle_layout,
     BUNDLE_PATHS,
     build_summary,
     spec_json,
@@ -106,7 +106,7 @@ __all__ = [
     "write_bundle_zip",
     "build_summary",
     "BUNDLE_PATHS",
-    "BUNDLE_LAYOUT",
+    "bundle_layout",
     "spec_json",
     "DesignSpec",
     "load_spec",

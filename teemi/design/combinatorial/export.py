@@ -51,7 +51,7 @@ __all__ = [
     "write_bundle",
     "write_bundle_zip",
     "build_summary",
-    "BUNDLE_LAYOUT",
+    "bundle_layout",
 ]
 
 
@@ -154,35 +154,83 @@ def _target(out_dir: Union[str, Path], stem: str, suffix: str) -> Path:
 #: What a bundle contains, and in what order a person should read it.
 #: The order to read the bundle in, which is why the entries are numbered: a
 #: folder listing is alphabetical and would otherwise open on ``constructs/``.
+#: Each entry is its key, its path, and the lines describing it -- a folder
+#: holding two files worth naming gets two.  ``00_LAYOUT.txt`` describes
+#: itself by being the map, so it has none.
 BUNDLE_ORDER = (
-    ("summary", "01_SUMMARY.txt"),
-    ("primers", "02_primers"),
-    ("pcrs", "03_pcrs"),
-    ("parts", "04_parts"),
-    ("constructs", "05_constructs"),
-    ("spec", "06_spec.json"),
-    ("design", "07_design.json"),
-    ("layout", "00_LAYOUT.txt"),
+    ("layout", "00_LAYOUT.txt", ()),
+    (
+        "summary",
+        "01_SUMMARY.txt",
+        (("", "read this first: what to order, run, look at twice"),),
+    ),
+    (
+        "primers",
+        "02_primers",
+        (
+            ("/primers.csv", "the order sheet, one row per distinct molecule"),
+            (
+                "/analysis.csv",
+                "every column the primer table has, not just the readable ones",
+            ),
+        ),
+    ),
+    ("pcrs", "03_pcrs", (("/pcrs.csv", "one row per reaction"),)),
+    (
+        "parts",
+        "04_parts",
+        (("/parts.csv", "what to source, how often each is used, and what is known"),),
+    ),
+    (
+        "constructs",
+        "05_constructs",
+        (
+            ("/NNN_*.gb", "one annotated map per verified construct, numbered"),
+            ("/assemblies.txt", "every assembly figure, in one file"),
+        ),
+    ),
+    (
+        "request",
+        "06_request.json",
+        (("", "the document as it was handed in, before validation"),),
+    ),
+    (
+        "spec",
+        "07_spec.json",
+        (("", "every setting that was used, defaults filled in; re-runs this"),),
+    ),
+    (
+        "design",
+        "08_design.json",
+        (("", "the whole result: junctions, primers, PCRs, diagnostics"),),
+    ),
 )
 
 #: Where each thing is, by the key :data:`BUNDLE_ORDER` gives it.
-BUNDLE_PATHS = dict(BUNDLE_ORDER)
+BUNDLE_PATHS = {key: path for key, path, _ in BUNDLE_ORDER}
 
 #: An entry named the way this module names them.  Used to recognise an entry
 #: from an older numbering, which no current name would match.
 _NUMBERED = re.compile(r"^\d\d_")
 
-BUNDLE_LAYOUT = f"""\
-{BUNDLE_PATHS["summary"]:<30} read this first: what to order, run, look at twice
-{BUNDLE_PATHS["primers"] + "/primers.csv":<30} the order sheet, one row per distinct molecule
-{BUNDLE_PATHS["primers"] + "/analysis.csv":<30} every column the primer table has, not just the readable ones
-{BUNDLE_PATHS["pcrs"] + "/pcrs.csv":<30} one row per reaction
-{BUNDLE_PATHS["parts"] + "/parts.csv":<30} what to source, how often each is used, and what is known
-{BUNDLE_PATHS["constructs"] + "/NNN_*.gb":<30} one annotated map per verified construct, numbered
-{BUNDLE_PATHS["constructs"] + "/assemblies.txt":<30} every assembly figure, in one file
-{BUNDLE_PATHS["spec"]:<30} every setting that was used, defaults filled in; re-runs this
-{BUNDLE_PATHS["design"]:<30} the whole result: junctions, primers, PCRs, diagnostics
-"""
+
+def bundle_layout(keys: Optional[Iterable[str]] = None) -> str:
+    """The map of the bundle, describing the entries named by ``keys``.
+
+    Built from what was actually written rather than from a fixed list,
+    because a map naming a file the bundle did not produce is worse for
+    someone finding their way around than no map at all -- and two of the
+    entries are conditional: there is no spec for a refused design and no
+    submitted document unless the caller passed one.
+    """
+    wanted = set(BUNDLE_PATHS) if keys is None else set(keys)
+    lines = [
+        f"{path + suffix:<30} {text}"
+        for key, path, described in BUNDLE_ORDER
+        if key in wanted
+        for suffix, text in described
+    ]
+    return "\n".join(lines) + "\n" if lines else ""
 
 
 def spec_json(spec) -> str:
@@ -208,6 +256,7 @@ def write_bundle(
     out_dir: Union[str, Path],
     *,
     part_info: Optional[Mapping[str, Mapping[str, object]]] = None,
+    request: Optional[Mapping[str, object]] = None,
     overwrite: bool = False,
 ) -> Path:
     """Write the whole build to one folder and return it.
@@ -217,7 +266,8 @@ def write_bundle(
     out as, and the summary that says which of it is worth looking at twice.
     The entries are numbered in that order, because a folder listing is
     alphabetical and would otherwise open on ``constructs/``.
-    :data:`BUNDLE_LAYOUT` is the map, and is written into the folder too.
+    :func:`bundle_layout` is the map, written into the folder from the entries
+    that were actually produced.
 
     ``part_info`` is provenance this package cannot know -- an Addgene number, a
     DOI, which plasmid a part came from.  The design carries sequences and ids;
@@ -234,6 +284,12 @@ def write_bundle(
     these primers had nowhere to look, and nothing in the folder could be
     re-run.
 
+    ``request`` is the document as the caller received it -- a FLOW document,
+    say -- archived unchanged.  The spec beside it is what teemi made of that
+    document, which is not the same thing: validation fills in defaults,
+    resolves sources and renames an inline variant.  Keeping both is what lets
+    someone see that a setting they never wrote was nonetheless used.
+
     A non-empty folder is refused unless ``overwrite`` says otherwise, because
     a second run writing into the first leaves both: drop a part and its maps
     stay, and someone reads half of one design and half of another with
@@ -246,6 +302,10 @@ def write_bundle(
     folder, which is the same two-runs-in-one-folder problem by another route.
     Everything not matching that convention is left alone.
     """
+    # Serialized before the folder is touched, so a document that will not
+    # turn into JSON fails here rather than halfway through a bundle.
+    request_text = None if request is None else json.dumps(request, indent=2) + "\n"
+
     root = Path(out_dir).resolve()
     if root.is_dir() and any(root.iterdir()):
         if not overwrite:
@@ -263,12 +323,17 @@ def write_bundle(
     for key in ("primers", "pcrs", "parts", "constructs"):
         (root / BUNDLE_PATHS[key]).mkdir(parents=True, exist_ok=True)
 
-    (root / BUNDLE_PATHS["layout"]).write_text(BUNDLE_LAYOUT)
+    written = {"layout", "summary", "primers", "pcrs", "parts", "constructs", "design"}
     (root / BUNDLE_PATHS["design"]).write_text(
         json.dumps(result.to_dict(), indent=2) + "\n"
     )
     if result.spec is not None:
         (root / BUNDLE_PATHS["spec"]).write_text(spec_json(result.spec) + "\n")
+        written.add("spec")
+    if request_text is not None:
+        (root / BUNDLE_PATHS["request"]).write_text(request_text)
+        written.add("request")
+    (root / BUNDLE_PATHS["layout"]).write_text(bundle_layout(written))
 
     primers = root / BUNDLE_PATHS["primers"]
     _frame(result, "primer").to_csv(primers / "primers.csv", index=False)
@@ -299,6 +364,7 @@ def write_bundle_zip(
     zip_path: Union[str, Path],
     *,
     part_info: Optional[Mapping[str, Mapping[str, object]]] = None,
+    request: Optional[Mapping[str, object]] = None,
 ) -> Path:
     """:func:`write_bundle` into a temporary folder, zipped, for handing over.
 
@@ -312,7 +378,9 @@ def write_bundle_zip(
     target.parent.mkdir(parents=True, exist_ok=True)
     stem = target.name[:-4] if target.name.endswith(".zip") else target.name
     with tempfile.TemporaryDirectory() as scratch:
-        folder = write_bundle(result, Path(scratch) / stem, part_info=part_info)
+        folder = write_bundle(
+            result, Path(scratch) / stem, part_info=part_info, request=request
+        )
         with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
             for path in sorted(folder.rglob("*")):
                 if path.is_file():
