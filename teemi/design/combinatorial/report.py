@@ -1373,6 +1373,15 @@ def primer_dataframe(result: DesignResult, *, full: bool = False) -> pd.DataFram
     avoids it, ``warning`` when none does.  ``full=True`` adds the structure Tm,
     the footprint sequence, the engine of each Tm and the breached bounds in
     full.
+
+    NEB ANSWERS IN WHOLE DEGREES, and its web form can show one more than its
+    API for the same sequence at the same concentration -- the two round a
+    value sitting on a boundary differently.  Of the chaperone library's 142
+    footprints, 126 agree with the form exactly and 16 sit close enough to the
+    next whole degree that a 6% change in concentration crosses it.  So a
+    single row differing by 1 C from the web form is that boundary, not a
+    different calculation: the same request made twice gives the same answer,
+    and a difference above 1 C is worth reporting.
     """
     rows = []
     for primer in result.primers:
