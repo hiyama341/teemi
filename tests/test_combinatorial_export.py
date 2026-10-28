@@ -251,8 +251,8 @@ def test_a_shared_oligos_note_does_not_list_every_junction(tmp_path):
     roll-call to primers.csv, which is where an oligo is looked up anyway.
     """
     from teemi.design.combinatorial.report import (
-        _NOTE_NAME_MAX,
-        _NOTE_PART_MAX,
+        _NAME_MAX,
+        _PART_MAX,
     )
 
     spec = json.loads(SPEC_A.read_text())
@@ -267,7 +267,7 @@ def test_a_shared_oligos_note_does_not_list_every_junction(tmp_path):
     )
     shared = [p for p in result.primers if len(p.uses) > 1]
     assert shared, "this library has to contain a shared oligo"
-    verbose = [p for p in shared if len(p.id) > _NOTE_NAME_MAX]
+    verbose = [p for p in shared if len(p.id) > _NAME_MAX]
     assert verbose, "the lengthened ids have to overrun the note"
 
     written = write_genbank_files(result.designs, tmp_path)
@@ -284,11 +284,11 @@ def test_a_shared_oligos_note_does_not_list_every_junction(tmp_path):
             assert primer.id not in note, "the roll-call belongs in the CSV"
             assert primer.direction in note
             assert f"shared by {len(primer.uses)} junctions" in note
-            assert "primers.csv" in note, "say where the full name is"
+            assert "order sheet" in note, "say where to find the tube"
             # Bounded whatever the ids are, which is the point: part_id is
             # itself a join here and would overrun just as the name did.
             assert len(note) < 120, (len(note), note)
-            assert primer.part_id[:_NOTE_PART_MAX] in note
+            assert primer.part_id[:_PART_MAX] in note
             checked += 1
     assert checked, "the shared oligo has to be on a map at all"
 
@@ -315,7 +315,7 @@ def test_a_short_shared_name_is_still_given_in_full(linear, tmp_path):
             note = feature.qualifiers["note"][0]
             assert primer.id.replace("+", " + ") in note
             assert f"used {len(primer.uses)}x" in note
-            assert "primers.csv" not in note, "nothing was left out"
+            assert "order sheet" not in note, "nothing was left out"
             seen += 1
     assert seen
 

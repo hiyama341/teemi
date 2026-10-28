@@ -136,6 +136,12 @@ PCR_COLUMNS = (
     "homodimer_dg_worst",
     "primer3_clamped",
     "flagged_by",
+    # Last, because they are not a verdict: they are what the verdict above was
+    # measured on, for checking a Tm against the engine that produced it.
+    "footprint_len_forward",
+    "footprint_len_reverse",
+    "primer_len_forward",
+    "primer_len_reverse",
 )
 
 #: Headings for the tables: the key a row carries -> what a reader should see.
@@ -164,6 +170,10 @@ COLUMN_LABELS = {
     "homodimer_dg_worst": "worst_primer_homodimer_deltaG (kcal/mol)",
     "primer3_clamped": "not_analysable_over_60nt",
     "hairpin_folded_at_ta": "hairpin_folded_at_Ta (%)",
+    "footprint_len_forward": "footprint_len_fwd (nt)",
+    "footprint_len_reverse": "footprint_len_rev (nt)",
+    "primer_len_forward": "primer_len_fwd (nt)",
+    "primer_len_reverse": "primer_len_rev (nt)",
     "hairpin_3prime_paired": "hairpin_blocks_3prime",
 }
 
@@ -383,6 +393,14 @@ class PcrRecord:
     #: whether either of them has its 3' end inside a stem.
     hairpin_folded_at_ta: Optional[float] = None
     hairpin_3prime_paired: bool = False
+    #: What each number here was measured on: the footprint that Ta came from,
+    #: and the whole molecule that goes in the tube.  Without them a Tm in this
+    #: row cannot be checked against the engine that produced it, because
+    #: nothing says how many bases it was given.
+    footprint_len_forward: int = 0
+    footprint_len_reverse: int = 0
+    primer_len_forward: int = 0
+    primer_len_reverse: int = 0
 
     def to_dict(self) -> dict:
         return {
@@ -397,6 +415,10 @@ class PcrRecord:
             "homodimer_dg_worst": self.homodimer_dg_worst,
             "hairpin_folded_at_ta": self.hairpin_folded_at_ta,
             "hairpin_3prime_paired": self.hairpin_3prime_paired,
+            "footprint_len_forward": self.footprint_len_forward,
+            "footprint_len_reverse": self.footprint_len_reverse,
+            "primer_len_forward": self.primer_len_forward,
+            "primer_len_reverse": self.primer_len_reverse,
             "dg_flagged": _dg_flagged(self.violations + self.primer_violations),
             "flagged_by": _violated(self.violations + self.primer_violations),
             # The pair bounds are errors: the sweep optimises each junction on
@@ -940,6 +962,10 @@ def _pcr_records(
                 primers[primer_id].structures.hairpin_3prime_paired
                 for primer_id in (forward_id, reverse_id)
             ),
+            footprint_len_forward=len(oligos.forward_footprint),
+            footprint_len_reverse=len(oligos.reverse_footprint),
+            primer_len_forward=len(oligos.forward_oligo),
+            primer_len_reverse=len(oligos.reverse_oligo),
         )
     return tuple(out.values())
 
@@ -1015,33 +1041,60 @@ def _annotate_primer_binds(
     return construct
 
 
-#: How much of a name a note will carry.  A shared oligo is named after every
-#: junction it serves, which for the terminator primer of a 67-gene library is
-#: 1,445 characters -- on each of 67 maps, two thirds of the file.  Past this
-#: the note says what the oligo is and leaves the roll-call to primers.csv,
-#: which is where someone looks an oligo up anyway.
-_NOTE_NAME_MAX = 110
+#: How long a name may be before it is summarised instead.  A shared oligo is
+#: named after every junction it serves, which for the terminator primer of a
+#: 67-gene library is 1,290 characters: two thirds of each of 67 GenBank files,
+#: and one cell of a table that nothing else on the row can be read beside.
+#: Past this, a name stops naming and starts listing, and a list belongs in the
+#: column whose job is listing -- ``used_as`` -- or in the result JSON.
+_NAME_MAX = 110
 
-#: How much of the part name the short form carries.  ``part_id`` is itself a
-#: join where one oligo amplifies several parts, so it is no more bounded than
-#: the name it stands in for; trimming it beats trading one overrun for
-#: another, and the untrimmed name is one column away.
-_NOTE_PART_MAX = 40
+#: How much of the part name a summary carries.  ``part_id`` is itself a join
+#: where one oligo amplifies several parts, so it is no more bounded than the
+#: name it stands in for; trimming it beats trading one overrun for another.
+_PART_MAX = 40
+
+
+def _summarised(primer) -> str:
+    """What to call an oligo whose own name has become a roll-call."""
+    part = primer.part_id
+    if len(part) > _PART_MAX:
+        part = part[:_PART_MAX] + "..."
+    return f"{part} {primer.direction}, shared by {len(primer.uses)} junctions"
+
+
+def display_primer_id(primer) -> str:
+    """The oligo's name for a table, summarised when the name is a roll-call.
+
+    The name itself is never lost: ``used_as`` lists the junctions one per
+    entry, and the result JSON keeps the id in full.  What is dropped is a
+    1,290-character cell in the middle of a row.
+    """
+    if len(primer.id) <= _NAME_MAX:
+        return primer.id
+    return _summarised(primer)
+
+
+def _display_uses(primer) -> str:
+    """``used_as`` for a table: the junctions, or how many there are."""
+    joined = ",".join(primer.uses)
+    if len(joined) <= _NAME_MAX:
+        return joined
+    return f"{len(primer.uses)} junctions, listed in the result JSON"
 
 
 def _note(primer) -> str:
     """What to say about an oligo on a map, beside its number."""
-    name = primer.id.replace("+", " + ")
     shared = len(primer.uses) > 1
-    if len(name) <= _NOTE_NAME_MAX:
+    if len(primer.id) <= _NAME_MAX:
+        # Spaced at the + joining the junctions, so the GenBank line wraps on
+        # a space the name already has instead of mid-token.
+        name = primer.id.replace("+", " + ")
         return f"{name} (used {len(primer.uses)}x)" if shared else name
-    part = primer.part_id
-    if len(part) > _NOTE_PART_MAX:
-        part = part[:_NOTE_PART_MAX] + "..."
-    return (
-        f"{part} {primer.direction}, shared by {len(primer.uses)} "
-        "junctions; full name in primers.csv"
-    )
+    # Not "see primers.csv": that table summarises the name too, now.  What a
+    # reader of a map wants is the tube, and the order sheet row gives it --
+    # the number, the sequence, and that it is shared 67 ways.
+    return _summarised(primer) + "; see the order sheet"
 
 
 def _logical_bounds(location, length: int) -> Tuple[int, int]:
@@ -1292,9 +1345,16 @@ def primer_dataframe(result: DesignResult, *, full: bool = False) -> pd.DataFram
     the footprint sequence, the engine of each Tm and the breached bounds in
     full.
     """
-    return _project(
-        [primer.to_dict() for primer in result.primers], PRIMER_COLUMNS, full
-    )
+    rows = []
+    for primer in result.primers:
+        row = primer.to_dict()
+        # A name that has become a roll-call is summarised for the table only;
+        # the row still carries the junctions in ``used_as``, and the result
+        # JSON the name in full.
+        row["primer_id"] = display_primer_id(primer)
+        row["used_as"] = _display_uses(primer)
+        rows.append(row)
+    return _project(rows, PRIMER_COLUMNS, full)
 
 
 def pcr_dataframe(result: DesignResult, *, full: bool = False) -> pd.DataFrame:
@@ -1309,5 +1369,19 @@ def pcr_dataframe(result: DesignResult, *, full: bool = False) -> pd.DataFrame:
     ``worst_primer_homodimer_deltaG (kcal/mol)``, which is the worse of the two
     primers' own homodimers.  That last one is why a reaction holding a flagged
     oligo cannot read as unflagged here while the order sheet flags it.
+
+    The last four columns are the lengths each number was measured on: the
+    footprint Ta came from, and the whole molecule that goes in the tube.  A Tm
+    cannot be checked against the engine that produced it without knowing how
+    many bases the engine was given, and the two differ by the tail.
     """
-    return _project([pcr.to_dict() for pcr in result.pcrs], PCR_COLUMNS, full)
+    by_id = {primer.id: primer for primer in result.primers}
+    rows = []
+    for pcr in result.pcrs:
+        row = pcr.to_dict()
+        for key in ("forward_primer_id", "reverse_primer_id"):
+            primer = by_id.get(row[key])
+            if primer is not None:
+                row[key] = display_primer_id(primer)
+        rows.append(row)
+    return _project(rows, PCR_COLUMNS, full)

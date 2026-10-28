@@ -552,6 +552,87 @@ def test_the_folded_fraction_is_shown_as_the_percentage_it_is(result):
         assert shown == pytest.approx(round(fraction * 100, 1))
 
 
+def test_a_pcr_row_carries_the_lengths_its_temperatures_were_taken_on(result):
+    """A Tm cannot be checked against the engine that produced it unless the
+    row says how many bases the engine was given.
+
+    NEB is asked about the **footprint**, not the molecule that goes in the
+    tube, and the two differ by the tail -- so a row showing only
+    ``Ta_from_footprints`` leaves no way to re-run the call it came from.
+    """
+    frame = pcr_dataframe(result)
+    assert list(frame.columns)[-4:] == [
+        "footprint_len_fwd (nt)",
+        "footprint_len_rev (nt)",
+        "primer_len_fwd (nt)",
+        "primer_len_rev (nt)",
+    ], "the lengths go last: they are not a verdict"
+
+    # And they are the lengths of the molecules the row names, not some other
+    # pair: the order sheet has to agree, column for column.
+    primers = primer_dataframe(result, full=True).set_index("primer")
+    for _, row in frame.iterrows():
+        for side, column in (("fwd", "forward_primer"), ("rev", "reverse_primer")):
+            primer = primers.loc[row[column]]
+            assert row[f"footprint_len_{side} (nt)"] == primer["footprint_len"]
+            assert row[f"primer_len_{side} (nt)"] == primer["length_nt"]
+            # The tail is the difference, so one is never above the other.
+            assert row[f"footprint_len_{side} (nt)"] <= row[f"primer_len_{side} (nt)"]
+
+
+def test_a_name_that_became_a_roll_call_is_summarised_in_the_tables(tmp_path):
+    """One cell was 1,290 characters wide and nothing on its row could be read.
+
+    A shared oligo is named after every junction it serves, so at 67 genes the
+    terminator primer's name is a roll-call.  The tables summarise it; the
+    result keeps it, because that is what a machine reads.
+    """
+    from teemi.design.combinatorial.report import _NAME_MAX, display_primer_id
+
+    spec = raw(SPEC_A)
+    for position in spec["positions"]:
+        for part in position["parts"]:
+            part["id"] = f"{part['id']}-{'x' * 45}"
+    built = plan(spec, sources=SourceResolver(base_dir=REPO), offline=True)
+
+    verbose = [p for p in built.primers if len(p.id) > _NAME_MAX]
+    assert verbose, "the lengthened ids have to produce a roll-call"
+
+    for frame in (primer_dataframe(built), primer_dataframe(built, full=True)):
+        assert frame["primer_id"].str.len().max() <= _NAME_MAX
+    full = primer_dataframe(built, full=True).set_index("primer")
+    for primer in verbose:
+        row = full.loc[primer.label]
+        assert primer.id not in row["primer_id"]
+        assert f"shared by {len(primer.uses)} junctions" in row["primer_id"]
+        # The row still says how many, and where the list is.
+        assert row["n_uses"] == len(primer.uses)
+        assert "result JSON" in row["used_as"]
+
+    # And nothing is lost: the result carries the name and the junctions whole.
+    payload = {p["primer"]: p for p in built.to_dict()["primers"]}
+    for primer in verbose:
+        assert payload[primer.label]["primer_id"] == primer.id
+        assert payload[primer.label]["used_as"] == ",".join(primer.uses)
+        assert display_primer_id(primer) != primer.id
+
+
+def test_the_pcr_table_summarises_a_roll_call_name_too():
+    """The same cell, in the other table: ``full=True`` carries the primer ids."""
+    from teemi.design.combinatorial.report import _NAME_MAX
+
+    spec = raw(SPEC_A)
+    for position in spec["positions"]:
+        for part in position["parts"]:
+            part["id"] = f"{part['id']}-{'x' * 45}"
+    built = plan(spec, sources=SourceResolver(base_dir=REPO), offline=True)
+    assert any(len(p.id) > _NAME_MAX for p in built.primers)
+
+    frame = pcr_dataframe(built, full=True)
+    for column in ("forward_primer_id", "reverse_primer_id"):
+        assert frame[column].str.len().max() <= _NAME_MAX, column
+
+
 def _quantity_keys(columns):
     """The wire keys that carry a dG or a temperature, engines excluded."""
     return [
