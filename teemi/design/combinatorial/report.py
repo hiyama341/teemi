@@ -45,6 +45,7 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass, replace
+from math import ceil
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
 import pandas as pd
@@ -1263,6 +1264,18 @@ _PERCENT = frozenset({"hairpin_folded_at_ta"})
 #: so a threshold is never compared against a rounded number.
 _DECIMALS = {"price": 2}
 
+#: Columns shown as whole degrees, with a tie going to the LOWER degree.
+#:
+#: An annealing temperature is dialled into a machine, and NEB's web form --
+#: which is what anyone checks against -- shows whole degrees.  That form is
+#: not the API this gets its numbers from: it computes in the browser and
+#: rounds with JavaScript's ``Math.round``, so its own value and the API's
+#: differ by a hair, and a .5 from the API landed a degree above what the form
+#: showed.  Ties go down because that matched the form on every pair tested,
+#: and because it is the safe direction: an anneal set a degree low still
+#: amplifies, one set a degree high may give nothing.
+_WHOLE_TIES_DOWN = frozenset({"ta_from_footprints"})
+
 
 def _decimals(key: str) -> Optional[int]:
     """How many decimals a column is worth, by the same key convention that
@@ -1292,6 +1305,15 @@ def _project(rows: List[dict], columns: Sequence[str], full: bool) -> pd.DataFra
         frame = frame[list(columns)]
     for key in frame.columns:
         if not pd.api.types.is_numeric_dtype(frame[key]):
+            continue
+        if key in _WHOLE_TIES_DOWN:
+            # A nullable integer, so the column prints 63 rather than 63.0 and
+            # a reaction with no temperature at all is still representable.
+            frame[key] = (
+                frame[key]
+                .map(lambda value: value if pd.isna(value) else ceil(value - 0.5))
+                .astype("Int64")
+            )
             continue
         if key in _PERCENT:
             frame[key] = frame[key] * 100

@@ -10,6 +10,8 @@ import json
 import random
 from pathlib import Path
 
+from math import ceil
+
 import pandas as pd
 import pytest
 
@@ -490,6 +492,71 @@ def test_the_pcr_table_is_readable_by_default(result):
     assert list(frame.columns) == headings(PCR_COLUMNS)
     assert len(frame.columns) <= 18
     assert len(frame) == len(result.pcrs)
+
+
+def test_ta_is_shown_as_a_whole_degree_with_the_tie_going_down(result):
+    """An annealing temperature is dialled into a machine, and NEB's web form
+    shows whole degrees.
+
+    That form is a different implementation from the API these numbers come
+    from -- it computes in the browser with ``Math.round`` on its own value --
+    so an API .5 showed a degree above what the form displayed.  The tie goes
+    down, which matched the form on every pair tested and is the safe
+    direction: an anneal a degree low still amplifies, a degree high may give
+    nothing.
+    """
+    from teemi.design.combinatorial.report import _WHOLE_TIES_DOWN
+
+    assert "ta_from_footprints" in _WHOLE_TIES_DOWN
+    column = COLUMN_LABELS["ta_from_footprints"]
+    shown = pcr_dataframe(result)[column]
+    assert (shown == shown.round(0)).all(), "whole degrees, not tenths"
+
+    by_pair = {
+        (p.forward_label, p.reverse_label): p.temperatures.ta_from_footprints.celsius
+        for p in result.pcrs
+    }
+    frame = pcr_dataframe(result)
+    for _, row in frame.iterrows():
+        exact = by_pair[(row["forward_primer"], row["reverse_primer"])]
+        assert row[column] == ceil(exact - 0.5), (exact, row[column])
+
+    # The record keeps the exact value: the rounding is for the table, so a
+    # structure compared against Ta is not compared against a rounded number.
+    assert any(
+        p.temperatures.ta_from_footprints.celsius
+        != ceil(p.temperatures.ta_from_footprints.celsius - 0.5)
+        for p in result.pcrs
+    ) or all(
+        float(p.temperatures.ta_from_footprints.celsius).is_integer()
+        for p in result.pcrs
+    )
+
+
+@pytest.mark.parametrize(
+    "exact,shown",
+    [
+        (62.9, 63.0),
+        (63.0, 63.0),
+        (63.4, 63.0),
+        (63.5, 63.0),
+        (63.6, 64.0),
+        (64.5, 64.0),
+    ],
+)
+def test_the_tie_lands_on_the_lower_degree(exact, shown):
+    """The boundary itself, through the projection that renders the table.
+
+    Only the .5 distinguishes this from ordinary rounding, and no fixture
+    happens to produce one -- so the row is built here.  Asserting
+    ``ceil(x - 0.5)`` against itself would pass whatever the table did.
+    """
+    from teemi.design.combinatorial.report import PCR_COLUMNS, _project
+
+    row = {key: None for key in PCR_COLUMNS}
+    row["ta_from_footprints"] = exact
+    frame = _project([row], PCR_COLUMNS, full=False)
+    assert frame[COLUMN_LABELS["ta_from_footprints"]].iloc[0] == shown
 
 
 def test_a_table_does_not_print_more_precision_than_primer3_has(result):
