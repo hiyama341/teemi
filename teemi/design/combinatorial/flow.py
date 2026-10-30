@@ -44,10 +44,9 @@ schema is explicit that the sequence comes from the id and never from the name
 
 from __future__ import annotations
 
-from typing import Dict, Literal, Mapping, Optional, Tuple, Union
+from typing import Annotated, Dict, Literal, Mapping, Optional, Tuple, Union
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
-from typing_extensions import Annotated
 
 from teemi.design.combinatorial.spec import DesignSpec, load_spec
 
