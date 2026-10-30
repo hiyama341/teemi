@@ -34,7 +34,7 @@ extra_requirements = {
 setup(
     author="Lucas Levassor",
     author_email="lucaslevassor@gmail.com",
-    python_requires=">=3.10",
+    python_requires=">=3.11",
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
@@ -43,7 +43,6 @@ setup(
         "Natural Language :: English",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",

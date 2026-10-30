@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta:__legacy__"
 name = "teemi"
 dynamic = ["version", "readme"]
 description = "A Python package for constructing microbial strains"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [{name = "Lucas Levassor", email = "lucaslevassor@gmail.com"}]
 license = {text = "MIT license"}
 keywords = ["teemi"]
@@ -18,7 +18,6 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
