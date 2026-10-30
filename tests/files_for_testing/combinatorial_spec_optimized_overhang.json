@@ -1,0 +1,105 @@
+{
+  "design": {
+    "name": "CASE B - overhang optimized",
+    "topology": "linear",
+    "description": "Same parts and the same 35 bases of homology, but WHERE the split falls is searched. order=exhaustive + accept=argmin scores all 36 splits per junction and keeps the cheapest feasible one. order=outward_from_balanced + accept=first_feasible is the fast default: it starts balanced and steps outward only until something passes."
+  },
+  "positions": [
+    {
+      "id": "promoter",
+      "name": "Promoter",
+      "parts": [
+        {
+          "id": "pMLS1",
+          "source": {
+            "type": "file",
+            "format": "fasta",
+            "path": "tests/files_for_testing/promoter_test_data.fasta",
+            "record_id": "MLS1"
+          }
+        },
+        {
+          "id": "pURA1",
+          "source": {
+            "type": "file",
+            "format": "fasta",
+            "path": "tests/files_for_testing/promoter_test_data.fasta",
+            "record_id": "URA1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cds",
+      "name": "CDS",
+      "parts": [
+        {
+          "id": "AKF02530",
+          "source": {
+            "type": "file",
+            "format": "fasta",
+            "path": "tests/files_for_testing/CDS_test_data.fasta",
+            "record_id": "AKF02530"
+          }
+        },
+        {
+          "id": "AAA17732",
+          "source": {
+            "type": "file",
+            "format": "fasta",
+            "path": "tests/files_for_testing/CDS_test_data.fasta",
+            "record_id": "AAA17732"
+          }
+        }
+      ]
+    },
+    {
+      "id": "terminator",
+      "name": "Terminator",
+      "parts": [
+        {
+          "id": "tADH1",
+          "source": {
+            "type": "file",
+            "format": "fasta",
+            "path": "tests/files_for_testing/terminator_test_data.fasta",
+            "record_id": "ADH1"
+          }
+        },
+        {
+          "id": "tCYC1",
+          "source": {
+            "type": "file",
+            "format": "fasta",
+            "path": "tests/files_for_testing/terminator_test_data.fasta",
+            "record_id": "CYC1"
+          }
+        }
+      ]
+    }
+  ],
+  "primer_design": {
+    "target_tm": 60,
+    "footprint_len_min": 16,
+    "junction": {
+      "homology_length": 35,
+      "tune_overhangs": true,
+      "split_search": {
+        "order": "exhaustive",
+        "accept": "argmin"
+      }
+    }
+  },
+  "constraints": {
+    "footprint_tm_window": {
+      "min": 52.0,
+      "max": 72.0
+    },
+    "gc_fraction_min": 0.15,
+    "three_prime_dimer_dg_min": -9.0
+  },
+  "objective": {
+    "price_per_base": 1.8,
+    "currency": "DKK"
+  }
+}

@@ -1742,6 +1742,42 @@ wheels = [
 ]
 
 [[package]]
+name = "primer3-py"
+version = "2.4.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/55/9b/781a3cb7f3a0b96ef710e380812f1972e5a2bb99bcee072f3ba3881ffc56/primer3_py-2.4.0.tar.gz", hash = "sha256:5df4440dbe73ae1b51d4f12a8a7208a8e5e215e95ac081209ee6330e24c465c6", size = 719239, upload-time = "2026-10-21T23:22:09.732Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a9/1e/91421590c9730c7dd6d6a3046f80536c3b18ffc1bfa4a81cb62d1de8a557/primer3_py-2.4.0-cp311-cp311-macosx_10_14_x86_64.whl", hash = "sha256:c7ba05a7924fdd6c890570bdc09bf409204f816ff0c1003a490c56b7d88688b4", size = 1387375, upload-time = "2026-10-21T23:21:21.087Z" },
+    { url = "https://files.pythonhosted.org/packages/cc/f8/92614787629b1eeac05e47d31cfa1962059b7d0f15f349cd2441c54bd856/primer3_py-2.4.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:9c02d97730c30cfc2eeef91a5d58eb81e96742d11a7df07054c0cb2a94097865", size = 1365193, upload-time = "2026-10-21T23:21:22.416Z" },
+    { url = "https://files.pythonhosted.org/packages/e4/d2/362a8d368afbc74121be42d4b410ff3942ebc7b27b59726d20e0f05b94c0/primer3_py-2.4.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:05547f74760028f19926ae772d847876409c6ce244bc92d5d285ecfb596608b4", size = 3165838, upload-time = "2026-10-21T23:21:24.003Z" },
+    { url = "https://files.pythonhosted.org/packages/09/0c/f2b5b413937624439b01e83a392e3a7ab402187ce3d997aeef7ef01c9d3a/primer3_py-2.4.0-cp311-cp311-win_amd64.whl", hash = "sha256:9b9e8e67efb92177dce8f722ca94ee5964daf7ed2fcaaa3ecbebc2ffdbc428ba", size = 1632899, upload-time = "2026-10-21T23:21:25.444Z" },
+    { url = "https://files.pythonhosted.org/packages/74/85/f147eb3c73b6cd61aa14248c4d66b0607124c1e1e0aee832ea7fe6541bea/primer3_py-2.4.0-cp312-cp312-macosx_10_14_x86_64.whl", hash = "sha256:5a4068c35344fc18a753a863ca1374f437e138ddc0bcab0871f553bea4d650e8", size = 1385569, upload-time = "2026-10-21T23:21:27.104Z" },
+    { url = "https://files.pythonhosted.org/packages/4b/43/100da87e614ee91a602489e36b490a7d37e8c75dfb31ff46f79b64ccd040/primer3_py-2.4.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:58d1a8dd467f6db33b3e41f6a4c7088799e31ff8dbc39d102352aba9b4e5b3dd", size = 1365200, upload-time = "2026-10-21T23:21:28.57Z" },
+    { url = "https://files.pythonhosted.org/packages/89/1d/601ac79d5203e175bc5eb619210111fd05c6e8b25b3980cfa9aaedb4351c/primer3_py-2.4.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:2c81b6738bbaadbec692f5f5ec32858fe8fb0633596d685c9e3737cd32718aaa", size = 3179189, upload-time = "2026-10-21T23:21:29.867Z" },
+    { url = "https://files.pythonhosted.org/packages/6a/52/3d1163b2d1c9beacbac36f700bcd257d3ac6cf0d38851a50ed0d2b323c0b/primer3_py-2.4.0-cp312-cp312-win_amd64.whl", hash = "sha256:6fee0f7266f8d02c251dae79ba9cdbf89a19a9e8892c5c222ca9c349bf203129", size = 1626844, upload-time = "2026-10-21T23:21:31.255Z" },
+    { url = "https://files.pythonhosted.org/packages/d4/d7/3800a83a3ded252eea1ed7dfaf20fafec59896f8116f5ccd479ef563392b/primer3_py-2.4.0-cp313-cp313-macosx_10_14_x86_64.whl", hash = "sha256:eef7efda2f36432da3a15d450c9b67399a63c52191bcf19611beebe08248b9cf", size = 1385514, upload-time = "2026-10-21T23:21:32.451Z" },
+    { url = "https://files.pythonhosted.org/packages/86/e2/8bba6e11e0ec1fab2055f736e80af1779f80a4528f047e0fbb2cc3bd505c/primer3_py-2.4.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:d54ff462d917f47cfbb0e8d85cd88287b922829ef57bceea1b258eed921e04d1", size = 1364678, upload-time = "2026-10-21T23:21:34.051Z" },
+    { url = "https://files.pythonhosted.org/packages/06/2c/08ead729a48b905d89049d9552506cebc2ed7e4e0cb40f842f9a776d85c2/primer3_py-2.4.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:7d0c4cef3f6318d5ec1ffba9e549dc42b456ce0ff652457741975b2b5e587830", size = 3165858, upload-time = "2026-10-21T23:21:35.461Z" },
+    { url = "https://files.pythonhosted.org/packages/ca/c4/7c416d291783f935ad061368c4e8df42840778209dcf4686e563977937f1/primer3_py-2.4.0-cp313-cp313-win_amd64.whl", hash = "sha256:c889258137ed460915d7a66800fca5037a13330c3c99a40fb25bdecaac0c1bec", size = 1625788, upload-time = "2026-10-21T23:21:37.108Z" },
+    { url = "https://files.pythonhosted.org/packages/39/45/3b50f781478de4fb723a72aaa7edcccff58e4f335bb11a3141087249ce9d/primer3_py-2.4.0-cp314-cp314-macosx_10_15_x86_64.whl", hash = "sha256:a26594850bc9e0f067538f136368b264c5de4cd7f7a9ecda9d9e34a9d82e0e2f", size = 1392557, upload-time = "2026-10-21T23:21:38.553Z" },
+    { url = "https://files.pythonhosted.org/packages/04/b2/9882273caf6013bda7c39db2e744ac07a91291dfe14c7b44f691f729c7ee/primer3_py-2.4.0-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:0e95f0aa01266d6d51dcdf05ce96e27ce231576728b0c35ef239d283beb6c011", size = 1371857, upload-time = "2026-10-21T23:21:39.874Z" },
+    { url = "https://files.pythonhosted.org/packages/1b/ac/8a2dbbdd8ea5e52949a2eb57616ad254a2e49492a25b4ec68d93c2c0e6fd/primer3_py-2.4.0-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:fbe2940fd9da9fe6dee3b57c17d27f2e3f1921d26d3b6d3926da69e211d65958", size = 3165135, upload-time = "2026-10-21T23:21:41.3Z" },
+    { url = "https://files.pythonhosted.org/packages/4b/67/93b1b80b18d00ef8dccde6a8c9aad7e72b354e737ea9d7460f5952a15d47/primer3_py-2.4.0-cp314-cp314-win_amd64.whl", hash = "sha256:6d377cb3aed363beda4a8bf29f95017147e513059bfba11dfca58a469f42780a", size = 1653999, upload-time = "2026-10-21T23:21:42.739Z" },
+    { url = "https://files.pythonhosted.org/packages/c2/27/c997b2821fe52de9ad451f25fc5ce6c00a19b72396943b13b0eeb7fa187f/primer3_py-2.4.0-cp314-cp314t-macosx_10_15_x86_64.whl", hash = "sha256:fc8ede134eb9501facc5cd6f370d52d1a2cbe0517150ba587db55eba7fdce871", size = 1404296, upload-time = "2026-10-21T23:21:44.086Z" },
+    { url = "https://files.pythonhosted.org/packages/71/b9/e7d4d8c022f08d13fc4ae1d6a5993af1c88a57364f212e3ecba845527775/primer3_py-2.4.0-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:f07852a80245b640c3a83866c2c8456117e9362f57015872bd1e58a6f3ba29df", size = 1386161, upload-time = "2026-10-21T23:21:47.238Z" },
+    { url = "https://files.pythonhosted.org/packages/a9/c5/753b12ce3768051cb2596e8bc1e3efc50daef6fd47283db886e43826a66a/primer3_py-2.4.0-cp314-cp314t-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:b76c0a9276a23eda21560e30398322d9fb2a01894fe9ebbdbeb999358b2adfb9", size = 3203823, upload-time = "2026-10-21T23:21:48.716Z" },
+    { url = "https://files.pythonhosted.org/packages/06/01/9896e5577ae190a84a2b45d0dc83d6b262188821572f5979dd8e682b1762/primer3_py-2.4.0-cp314-cp314t-win_amd64.whl", hash = "sha256:90e4567a24d0170201831fbe65a7e3e46f8ccae70e7bb87b34fd4e0937beba3f", size = 1677476, upload-time = "2026-10-21T23:21:50.07Z" },
+    { url = "https://files.pythonhosted.org/packages/f9/78/57aa1047848ab7ab40f0aba41c2180c67bbe716925cb4a75a41ec116315d/primer3_py-2.4.0-cp315-cp315-macosx_10_15_x86_64.whl", hash = "sha256:7fd5c4ff7ee639e654f3d74b5346dc4521983d8a3c24dd7660c0f73d6b43d0dc", size = 1392264, upload-time = "2026-10-21T23:21:51.356Z" },
+    { url = "https://files.pythonhosted.org/packages/d4/5c/f1731afb13617ac55718b88cf3dfa8400f0c09a8ba4958e86ed9d9c7e862/primer3_py-2.4.0-cp315-cp315-macosx_11_0_arm64.whl", hash = "sha256:efcba94ce20138d71a5d387e1799536e518e006b8bad248ae3867d9f1d2782c2", size = 1371313, upload-time = "2026-10-21T23:21:52.668Z" },
+    { url = "https://files.pythonhosted.org/packages/eb/14/d49f0874bbe9dac3e0d6a7aba2d76aa7840f46932b49238db12b8e377551/primer3_py-2.4.0-cp315-cp315-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:9e37b36c628bcf950e2b14a2fa61236332cd282b1886bfb46be5d131bb5b99b3", size = 3172687, upload-time = "2026-10-21T23:21:54.714Z" },
+    { url = "https://files.pythonhosted.org/packages/37/3e/113d2ecc547316dc4a30c1f50d8f6d2fdbc2c37bf35dcc53f305b62b2efa/primer3_py-2.4.0-cp315-cp315-win_amd64.whl", hash = "sha256:8b3426738f4ca98aa65905eb05715db10e6a0a4ad4df18932a3ecf0565ac274f", size = 1653893, upload-time = "2026-10-21T23:21:56.39Z" },
+    { url = "https://files.pythonhosted.org/packages/84/a1/41fa61226cef8560ee330c8cbb88b4964b22847b5c9cbdce838910aed035/primer3_py-2.4.0-cp315-cp315t-macosx_10_15_x86_64.whl", hash = "sha256:9eb534b7ee59ebcc3399283e774f2597bbe16385569c145b7988199b7d6b43ee", size = 1403318, upload-time = "2026-10-21T23:21:57.952Z" },
+    { url = "https://files.pythonhosted.org/packages/ac/64/ccb09f8add6bb1828eddc8095471a788b1f78cd3622c69701be6de1cd368/primer3_py-2.4.0-cp315-cp315t-macosx_11_0_arm64.whl", hash = "sha256:4368a2a13d3575fe27084934eccf794e339dc86266bcdd5929b49d06d2f69797", size = 1385368, upload-time = "2026-10-21T23:21:59.329Z" },
+    { url = "https://files.pythonhosted.org/packages/60/3b/7c99e2002bc931005ff40ed6829caab6bde8407c0cc0656079f4d2629160/primer3_py-2.4.0-cp315-cp315t-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:d26ff1b02f1d49bd0a5fbb8554fcf9a0723452634b786723cb6f9026fd495ff6", size = 3202278, upload-time = "2026-10-21T23:22:00.927Z" },
+    { url = "https://files.pythonhosted.org/packages/15/61/29a533c8c438c4ce2f7729264b1049bd8fe8964efdcb1428bf6767f246c7/primer3_py-2.4.0-cp315-cp315t-win_amd64.whl", hash = "sha256:6903790b56d6e5c6d659c63f21a2e0ef42aafd5106ee61a68c4dde063c6b69ea", size = 1676105, upload-time = "2026-10-21T23:22:02.546Z" },
+]
+
+[[package]]
 name = "proglog"
 version = "0.1.12"
 source = { registry = "https://pypi.org/simple" }
@@ -2738,6 +2774,8 @@ dependencies = [
     { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "openpyxl" },
     { name = "pandas" },
+    { name = "primer3-py" },
+    { name = "pydantic" },
     { name = "pydna" },
     { name = "python-dotenv" },
     { name = "requests" },
@@ -2776,6 +2814,8 @@ requires-dist = [
     { name = "numpy", specifier = ">=2.2.6" },
     { name = "openpyxl", specifier = ">=3.1.0" },
     { name = "pandas", specifier = ">=2.3.3" },
+    { name = "primer3-py", specifier = ">=2.3.1" },
+    { name = "pydantic", specifier = ">=2.14.1" },
     { name = "pydata-sphinx-theme", marker = "extra == 'docs'" },
     { name = "pydna", specifier = ">=5.5.16" },
     { name = "pylint", marker = "extra == 'dev'", specifier = ">=2.13.9" },

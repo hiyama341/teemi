@@ -1,0 +1,142 @@
+{
+  "design": {
+    "name": "G8H-CPR promoter x CDS x terminator library",
+    "topology": "circular",
+    "description": "Three-position combinatorial library (2 promoters x 3 CDS x 2 terminators = 12 variants) flanked by two constant vector-homology pads and closed into a circle. File paths are relative to the resolver's base_dir, which for the test suite is the repository root."
+  },
+  "positions": [
+    {
+      "id": "promoter",
+      "name": "Promoter",
+      "parts": [
+        {
+          "id": "pMLS1",
+          "name": "MLS1 promoter",
+          "source": {
+            "type": "file",
+            "path": "tests/files_for_testing/promoter_test_data.fasta",
+            "format": "fasta",
+            "record_id": "MLS1"
+          }
+        },
+        {
+          "id": "pURA1",
+          "name": "URA1 promoter",
+          "source": {
+            "type": "file",
+            "path": "tests/files_for_testing/promoter_test_data.fasta",
+            "format": "fasta",
+            "record_id": "URA1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cds",
+      "name": "Coding sequence",
+      "parts": [
+        {
+          "id": "AKF02530",
+          "name": "secologanin synthase-like protein 4",
+          "source": {
+            "type": "file",
+            "path": "tests/files_for_testing/CDS_test_data.fasta",
+            "format": "fasta",
+            "record_id": "AKF02530"
+          }
+        },
+        {
+          "id": "AAA17732",
+          "name": "cytochrome P450",
+          "source": {
+            "type": "file",
+            "path": "tests/files_for_testing/CDS_test_data.fasta",
+            "format": "fasta",
+            "record_id": "AAA17732"
+          }
+        },
+        {
+          "id": "CrCPR",
+          "name": "secologanin synthase-like protein (Amsonia hubrichtii)",
+          "source": {
+            "type": "file",
+            "path": "tests/files_for_testing/CDS_test_data.fasta",
+            "format": "fasta",
+            "record_id": "AGX93046"
+          }
+        }
+      ]
+    },
+    {
+      "id": "terminator",
+      "name": "Terminator",
+      "parts": [
+        {
+          "id": "tADH1",
+          "name": "ADH1 terminator",
+          "source": {
+            "type": "file",
+            "path": "tests/files_for_testing/terminator_test_data.fasta",
+            "format": "fasta",
+            "record_id": "ADH1"
+          }
+        },
+        {
+          "id": "tCYC1",
+          "name": "CYC1 terminator",
+          "source": {
+            "type": "file",
+            "path": "tests/files_for_testing/terminator_test_data.fasta",
+            "format": "fasta",
+            "record_id": "CYC1"
+          }
+        }
+      ]
+    }
+  ],
+  "pads": [
+    {
+      "id": "pad_up",
+      "name": "Upstream pad (vector homology)",
+      "before_position": "promoter",
+      "source": {
+        "type": "inline",
+        "sequence": "GGCGTATGGACCTGTCTAGGCTTAACGTCAGGTCCATACGCCTTAGGACTAGCTGATCCGTTAGCATCGATCAGGTTACCGATCGTTAGCCATGGTCAAG"
+      }
+    },
+    {
+      "id": "pad_down",
+      "name": "Downstream pad (vector homology)",
+      "after_position": "terminator",
+      "source": {
+        "type": "inline",
+        "sequence": "TGCCCATTCGATAAGGCATCGATTCCGGTAACGTTAGCCTAGGTTCGATCCATGGCATTAGCGGATCCGTTAACGCATTCCGATAGGCTTAAGCGTACCA"
+      }
+    }
+  ],
+  "primer_design": {
+    "target_tm": 57.0,
+    "footprint_len_min": 18,
+    "junction": {
+      "homology_length": 35,
+      "tune_overhangs": true,
+      "split_search": {
+        "order": "outward_from_balanced",
+        "accept": "first_feasible"
+      }
+    }
+  },
+  "constraints": {
+    "footprint_tm_window": {
+      "min": 52.0,
+      "max": 72.0
+    },
+    "primer_len_max": 60,
+    "gc_fraction_min": 0.25,
+    "gc_fraction_max": 0.75
+  },
+  "objective": {
+    "price_per_base": 1.8,
+    "currency": "DKK"
+  }
+}
