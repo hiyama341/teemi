@@ -1,0 +1,79 @@
+[build-system]
+requires = ["setuptools>=64", "wheel>=0.38.1"]
+build-backend = "setuptools.build_meta:__legacy__"
+
+[project]
+name = "teemi"
+dynamic = ["version", "readme"]
+description = "A Python package for constructing microbial strains"
+requires-python = ">=3.11"
+authors = [{name = "Lucas Levassor", email = "lucaslevassor@gmail.com"}]
+license = {text = "MIT license"}
+keywords = ["teemi"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+dependencies = [
+    # Keep these floors satisfiable together; pydna also constrains numpy.
+    "pydna>=5.5.16",
+    "pandas>=2.3.3",
+    "numpy>=2.2.6",
+    "biopython>=1.87",
+    "dnachisel>=3.2.16",
+    "benchlingapi>=2.1.12",
+    "openpyxl>=3.1.0",
+    "python-dotenv>=1.2.2",
+    "requests>=2.32.0",
+    "matplotlib>=3.10.9",
+    "seaborn>=0.13.2",
+    "scipy>=1.13",
+    # benchlingapi imports distutils, removed from Python in 3.12.
+    "setuptools>=83; python_version >= '3.12'",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.3",  # CVE-2025-71176: tmpdir handling
+    "pylint>=2.13.9",
+    "black>=26.3.1",  # CVE-2024-21503, CVE-2026-32274, CVE-2026-31900
+    "pytest-cov>=7.1.0",
+]
+docs = ["sphinx", "pydata-sphinx-theme", "myst-parser"]
+# Only needed for the LEARN notebooks; H2O requires a JVM-backed server.
+learn = ["h2o>=3.38"]
+
+[project.urls]
+Homepage = "https://github.com/hiyama341/teemi"
+Documentation = "https://teemi.readthedocs.io"
+Source = "https://github.com/hiyama341/teemi"
+Paper = "https://doi.org/10.1371/journal.pcbi.1011929"
+
+[tool.setuptools]
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.packages.find]
+include = ["teemi", "teemi.*"]
+namespaces = false
+
+[tool.setuptools.dynamic]
+readme = {file = ["README.rst", "HISTORY.rst"], content-type = "text/x-rst"}
+
+[tool.uv]
+cache-keys = [
+    {file = "pyproject.toml"},
+    {file = "setup.py"},
+    {file = "setup.cfg"},
+    {git = {commit = true, tags = true}},
+]

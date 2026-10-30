@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
 
     # Define job steps
     steps:
@@ -19,12 +19,18 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-          cache: "pip"
 
       - name: Check-out repository
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.3.3
+        with:
+          version: "0.11.2"
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
 
       - name: Install dependencies
         run: |
@@ -34,10 +40,10 @@ jobs:
 
       - name: Test with pytest
         run: |
-          pytest --cov --cov-report=xml
+          uv run --locked --extra dev pytest tests --cov --cov-report=xml
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
 
       - name: Build package
-        run: python setup.py sdist bdist_wheel
+        run: uv build

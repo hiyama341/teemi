@@ -31,11 +31,10 @@ extra_requirements = {
     "learn": ["h2o>=3.38"],
 }
 
-# Main setup scripts
 setup(
     author="Lucas Levassor",
     author_email="lucaslevassor@gmail.com",
-    python_requires=">=3.10",
+    python_requires=">=3.11",
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
@@ -44,7 +43,6 @@ setup(
         "Natural Language :: English",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
@@ -71,5 +69,4 @@ setup(
     # First time making a package, then comment this section and write: version= "0.0.1"
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
-    zip_safe=False,
 )

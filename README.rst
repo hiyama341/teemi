@@ -672,21 +672,26 @@ Use pip to install teemi from `PyPI <https://pypi.org/project/teemi/>`__.
     $ pip install teemi
 
 
-If you want to develop or if you cloned the repository from our `GitHub <https://github.com/hiyama341/teemi/>`__
-you can install teemi in the following way.
+For development, clone the `GitHub repository <https://github.com/hiyama341/teemi/>`__
+and install `uv <https://docs.astral.sh/uv/getting-started/installation/>`__.
+From the repository root:
 
 ::
 
-    $ pip install -e <path-to-teemi-repo>  
+    $ uv sync --locked --extra dev
+    $ uv run --locked --extra dev pytest tests
 
-Or if you are in the teemi repository:
+uv manages the local ``.venv`` and installs Teemi in editable mode using
+``uv.lock``. Use ``uv run python`` to run Python in that environment. For a
+runtime-only installation, use ``uv sync --locked``. Optional documentation
+and LEARN dependencies are available with ``--extra docs`` and ``--extra learn``.
 
-::
+Dependencies are declared in ``pyproject.toml``. Use ``uv add <package>`` to add a
+runtime dependency, or ``uv add --optional dev <package>`` for a development tool.
+After editing dependency constraints manually, run ``uv lock`` and commit both
+``pyproject.toml`` and ``uv.lock``. Build release distributions with ``uv build``.
 
-    $ pip install -e .
-
-
-For those who want to contribute or develop further, you can install the development version with:
+If you prefer pip, an editable installation remains supported:
 
 ::
 
@@ -699,8 +704,6 @@ Or directly from PyPI:
     $ pip install 'teemi[dev]'
 
 
-You might need to run these commands with administrative
-privileges if you're not using a virtual environment (using ``sudo`` for example).
 Please check the `documentation <https://teemi.readthedocs.io/en/latest/installation.html#>`__
 for further details.
 
