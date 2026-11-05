@@ -19,6 +19,30 @@ Unreleased
   test-only ``pytest-cov`` pin from the runtime requirements.
 - Corrected dependency floors that could not be satisfied together: ``pydna``
   requires ``numpy>1.26``, and ``pandas`` requires ``openpyxl>=3.1.0``.
+- Fixed CRISPR base editing on minus-strand genes. ``process_base_editing``
+  read ``sgrna_strand`` on its own, but it and ``gene_strand`` are both
+  genome-relative, so a guide reads along the CDS only when the two agree.
+  Every minus-strand edit was placed on the wrong residue.
+- Fixed the Cas9 off-target seed register. ``find_off_target_hits`` took the
+  seed as the bases ending at the PAM match, but the ``(?=GG)`` pattern matches
+  at the first G of NGG, so the seed included the PAM's N and dropped the
+  protospacer's last base, one base out of step with the slice the finders look
+  the count up by. Cas9 and CRISPRi off-target counts therefore change, and the
+  ``off_target_upper`` filter admits a different set of guides.
+- Changed the default C-to-T editing window in ``identify_base_editing_sites``
+  from 3-10 to 4-10, the window measured for CRISPR-cBEST. Position 3 has no
+  reported conversion; pass ``editing_window_start=3`` for the old behaviour.
+- ``process_base_editing`` now requires the ``gene_strand`` and ``sgrna``
+  columns, and raises instead of printing a warning when a protospacer is not
+  at its stated offset or an edited position is not a cytosine.
+- ``find_off_target_hits`` accepts ``dcas9`` as an alias for ``cas9`` and names
+  an unknown ``cas_type`` instead of raising ``KeyError``; ``SgRNAargs``
+  rejects an ``off_target_seed`` outside ``1..protospacer_len``; and
+  ``filter_guides`` builds its GC and off-target masks from the frame being
+  filtered, fixing an ``IndexError`` on a multi-contig guide table.
+- Added ``tests/test_crispr_validation.py``, which checks guide finding and
+  base editing against CRISPy-web output and a hand curation of a minus-strand
+  gene.
 
 1.0.5 (2026-03-15)
 ~~~~~~~~~~~~~~~~~~

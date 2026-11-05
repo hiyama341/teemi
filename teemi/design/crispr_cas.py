@@ -37,13 +37,16 @@ class SgRNAargs:
     locus_tag : list of str
         List of locus tags (i.e., genes) to be analyzed.
     cas_type : str
-        The type of the CRISPR-Cas system used ('cas9', 'cas12a', or 'cas13').
+        The type of the CRISPR-Cas system used ('cas9', 'dcas9', 'cas12a' or
+        'cas3'). 'dcas9' is treated as 'cas9'.
     step : list of str, optional
         Pipeline components to execute (default is ['find', 'filter']).
     downstream : int, optional
         Number of downstream nucleotides to consider when filtering sgRNAs (default is 15).
     off_target_seed : int, optional
-        How many PAM-adjacent bases to use as seed-sequence for off-target hits (default is 9).
+        How many PAM-adjacent bases to use as seed-sequence for off-target hits
+        (default is 13). Must be between 1 and ``protospacer_len``, because the
+        finders look the seed up as a slice of the protospacer.
     pam_remove : list of str, optional
         List of PAM sequences to filter (default is None).
     downstream_remove : list of str, optional
@@ -190,7 +193,8 @@ def find_off_target_hits(
     off_target_seed : int
         The length of the off-target seed sequence to match.
     cas_type : str
-        The type of the CRISPR-Cas system used ('cas9', 'cas12a', or 'cas3').
+        The type of the CRISPR-Cas system used ('cas9', 'dcas9', 'cas12a' or
+        'cas3'). 'dcas9' is treated as 'cas9'.
 
     Returns
     -------
