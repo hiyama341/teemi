@@ -23,6 +23,7 @@ import pandas as pd
 import pytest
 from Bio import SeqIO
 from Bio.Seq import Seq
+from Bio.SeqFeature import CompoundLocation, SeqFeature, SimpleLocation
 from pydna.dseqrecord import Dseqrecord
 
 from teemi.design.crispr_best import (
@@ -193,3 +194,104 @@ def test_cas9_finds_every_guide_crispy_web_reports(coelicolor):
     assert len(merged) == len(expected)
     mismatched = merged[merged["pam"] != merged["PAM"]]
     assert mismatched.empty, f"PAM differs for {list(mismatched['sgrna'])}"
+
+
+# ---------------------------------------------------------------------------
+# Every reported guide must exist on the molecule
+# ---------------------------------------------------------------------------
+
+
+def _full_site(row, cas_type):
+    """The protospacer and PAM in the order they occur on the DNA."""
+    return row.sgrna + row.pam if cas_type == "cas9" else row.pam + row.sgrna
+
+
+@pytest.mark.parametrize("cas_type", ["cas9", "cas12a", "cas3"])
+def test_guides_on_a_compound_cds_exist_on_the_molecule(coelicolor, cas_type):
+    """A guide the molecule does not carry cannot be targeted.
+
+    ``feature.extract()`` concatenates the parts of a compound location, so a
+    window spanning two of them reads a sequence that exists only in the
+    concatenation. SCO7048 and SCO5087 cannot catch this -- both are one-part
+    CDSs -- but SCO0022 is ``join(22156..22299, 22290..22430, 22624..>22761)``,
+    whose first two parts overlap by 10 bp and whose second and third are 193 bp
+    apart. It is the one compound CDS in this genome, and before the finders
+    skipped these windows it yielded 10 cas9 and 2 cas3 guides that occur
+    nowhere in the chromosome on either strand.
+
+    This is the assertion no coordinate convention can substitute for: it reads
+    the sequence back out of the record and is therefore independent of how the
+    annotation describes the gene.
+    """
+    guides = extract_sgRNAs(
+        SgRNAargs(
+            dseqrecord=coelicolor,
+            locus_tag=["SCO0022"],
+            cas_type=cas_type,
+            step=["find"],
+            off_target_seed=13,
+        )
+    )
+    assert not guides.empty, f"no {cas_type} guides found for SCO0022"
+
+    genome = str(coelicolor.seq)
+    reverse = str(Seq(genome).reverse_complement())
+    absent = [
+        _full_site(row, cas_type)
+        for row in guides.itertuples()
+        if _full_site(row, cas_type) not in genome
+        and _full_site(row, cas_type) not in reverse
+    ]
+    assert not absent, (
+        f"{len(absent)} of {len(guides)} {cas_type} guides are absent from the "
+        f"chromosome on both strands: {absent}"
+    )
+
+
+def test_a_cds_crossing_the_origin_of_a_circular_record_keeps_its_guides():
+    """Adjacent parts are not an intron, even though the location is compound.
+
+    A CDS running across the origin of a circular molecule is a two-part
+    location whose parts *are* contiguous on the DNA, so ``extract()``'s
+    concatenation is the real sequence and every window in it is targetable.
+    Skipping windows per part rather than per contiguous run would silently
+    drop them, which is why ``_scan_breaks`` tests for adjacency instead of
+    assuming a compound location means splicing.
+    """
+    length = 400
+    bases = list("".join("ACGT"[(i * 7 + i // 4) % 4] for i in range(length)))
+    for position in (0, 1, 4, 5, 10, 11):
+        bases[position] = "G"  # put NGG PAMs just past the origin
+    sequence = "".join(bases)
+
+    feature = SeqFeature(
+        CompoundLocation([SimpleLocation(379, length, 1), SimpleLocation(0, 40, 1)]),
+        type="CDS",
+        qualifiers={"locus_tag": ["WRAP1"]},
+    )
+
+    def guides_for(circular):
+        record = Dseqrecord(sequence, circular=circular)
+        record.features = [feature]
+        return extract_sgRNAs(
+            SgRNAargs(
+                dseqrecord=record,
+                locus_tag=["WRAP1"],
+                cas_type="cas9",
+                step=["find"],
+                off_target_seed=13,
+            )
+        )
+
+    circular = guides_for(True)
+    twice = sequence + sequence
+    for row in circular.itertuples():
+        site = row.sgrna + row.pam
+        assert (
+            site in twice or str(Seq(site).reverse_complement()) in twice
+        ), f"{site} was reported but does not occur on the circular molecule"
+
+    # The same parts on a linear record genuinely are not contiguous, so almost
+    # every window really is unreadable there -- the guard is reading topology,
+    # not just counting parts.
+    assert len(circular) > len(guides_for(False))

@@ -153,6 +153,49 @@ def _extract_feature_sequence_as_str(feature, record: Dseqrecord) -> str:
     return str(feature.extract(Seq(str(record.seq))))
 
 
+def _scan_breaks(feature, record: Dseqrecord, coding_sequence: str) -> dict:
+    """Offsets a guide window must not cross, per scanned strand.
+
+    ``feature.extract()`` concatenates the parts of a compound location, so a
+    window spanning two parts reads a sequence the molecule does not carry, and
+    a protospacer or PAM assembled across an intron cannot be targeted. Parts
+    that *are* adjacent on the DNA are not boundaries -- a CDS running across
+    the origin of a circular record is a compound location whose concatenation
+    is the real sequence -- so adjacency is tested, not assumed.
+
+    Keyed by the flag the finders scan under: ``-1`` for the coding sequence and
+    ``1`` for its reverse complement, which is the whole sequence reversed, so
+    an offset in it is measured from the other end. Mapping the offsets rather
+    than slicing each run keeps the finders scanning, and the position formulas
+    reading, exactly the strings they always have. Both lists are empty for a
+    one-part location, which is every CDS in a bacterial genome.
+    """
+    parts = list(feature.location.parts)
+    record_len = len(record.seq)
+    circular = bool(getattr(record, "circular", False))
+
+    offsets, offset = [], 0
+    for previous, part in zip(parts, parts[1:]):
+        offset += len(previous)
+        if part.strand != previous.strand:
+            offsets.append(offset)
+            continue
+        if part.strand == -1:
+            # The parts of a minus-strand feature run from high coordinates down.
+            adjacent = int(part.end) == int(previous.start)
+            wraps = int(previous.start) == 0 and int(part.end) == record_len
+        else:
+            adjacent = int(part.start) == int(previous.end)
+            wraps = int(previous.end) == record_len and int(part.start) == 0
+        if not (adjacent or (circular and wraps)):
+            offsets.append(offset)
+
+    return {
+        -1: offsets,
+        1: [len(coding_sequence) - offset for offset in offsets],
+    }
+
+
 def parse_genbank_record(dseqrecord: SeqRecord) -> Tuple[List[str], pd.DataFrame]:
     """
     Parse a Dseqrecord and extract gene information and sequences.
@@ -301,6 +344,7 @@ def find_sgrna_hits_cas9(
                 # Extract the sequence of the coding sequence
                 coding_sequence = _extract_feature_sequence_as_str(feature, record)
                 coding_sequence_revcomp = revcomp(coding_sequence)
+                breaks = _scan_breaks(feature, record, coding_sequence)
 
                 # Extract location of the feature
                 location = feature.location
@@ -319,6 +363,16 @@ def find_sgrna_hits_cas9(
                     # Increment gene counter
                     gene_counter = gene_counter + 1
                     for match in re.finditer(pam_pattern, sequence[1]):
+                        # A window spanning two genomically disjoint
+                        # runs is not a targetable site; skipping it here
+                        # leaves every reported guide computed as before.
+                        window_end = match.start() + protospacer_len + pam_len
+                        if any(
+                            match.start() < offset < window_end
+                            for offset in breaks[sequence[0]]
+                        ):
+                            continue
+
                         sgrna_pam = str(
                             sequence[1][
                                 match.start() : (
@@ -464,6 +518,7 @@ def find_sgrna_hits_cas12a(
                 # Extract the sequence of the coding sequence
                 coding_sequence = _extract_feature_sequence_as_str(feature, record)
                 coding_sequence_revcomp = revcomp(coding_sequence)
+                breaks = _scan_breaks(feature, record, coding_sequence)
 
                 # Extract location of the feature
                 location = feature.location
@@ -486,6 +541,16 @@ def find_sgrna_hits_cas12a(
                     gene_counter = gene_counter + 1
 
                     for match in re.finditer(pam_pattern, sequence[1]):
+                        # A window spanning two genomically disjoint
+                        # runs is not a targetable site; skipping it here
+                        # leaves every reported guide computed as before.
+                        window_end = match.start() + protospacer_len + pam_len
+                        if any(
+                            match.start() < offset < window_end
+                            for offset in breaks[sequence[0]]
+                        ):
+                            continue
+
                         # Increment sgRNA counter
                         sgrna_counter = sgrna_counter + 1
 
@@ -628,6 +693,7 @@ def find_sgrna_hits_cas3(
                 # Extract the sequence of the coding sequence
                 coding_sequence = _extract_feature_sequence_as_str(feature, record)
                 coding_sequence_revcomp = revcomp(coding_sequence)
+                breaks = _scan_breaks(feature, record, coding_sequence)
 
                 # Extract location of the feature
                 location = feature.location
@@ -650,6 +716,16 @@ def find_sgrna_hits_cas3(
                     gene_counter = gene_counter + 1
 
                     for match in re.finditer(pam_pattern, sequence[1]):
+                        # A window spanning two genomically disjoint
+                        # runs is not a targetable site; skipping it here
+                        # leaves every reported guide computed as before.
+                        window_end = match.start() + protospacer_len + pam_len
+                        if any(
+                            match.start() < offset < window_end
+                            for offset in breaks[sequence[0]]
+                        ):
+                            continue
+
                         # Increment sgRNA counter
                         sgrna_counter = sgrna_counter + 1
 

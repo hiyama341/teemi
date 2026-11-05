@@ -43,6 +43,19 @@ Unreleased
 - Added ``tests/test_crispr_validation.py``, which checks guide finding and
   base editing against CRISPy-web output and a hand curation of a minus-strand
   gene.
+- Stopped the sgRNA finders reporting guides that the molecule does not carry.
+  ``feature.extract()`` concatenates the parts of a compound location, so a
+  window spanning two of them read a protospacer and PAM assembled across the
+  gap -- across an intron on a spliced eukaryotic gene, or across the 10 bp
+  overlap in ``SCO0022``, the one compound CDS in the *S. coelicolor*
+  chromosome teemi validates against, which alone yielded 10 cas9 and 2 cas3
+  guides occurring nowhere in the genome on either strand. Such guides also
+  scored ``off_target_count`` 0, ranking them above real ones. The finders now
+  skip windows that span a genomic discontinuity; parts that are *adjacent* on
+  the DNA, such as a CDS crossing the origin of a circular record, are
+  unaffected. Guide counts drop for spliced genes (2.95% to 0% phantoms on
+  *A. oryzae* chromosome 1); one-part CDSs, which is every CDS in a bacterial
+  genome bar the above, are untouched.
 
 1.0.5 (2026-03-15)
 ~~~~~~~~~~~~~~~~~~
