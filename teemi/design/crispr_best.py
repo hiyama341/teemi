@@ -16,19 +16,22 @@ import pandas as pd
 from Bio.Seq import Seq
 
 
-def identify_base_editing_sites(sgrna_df: pd.DataFrame, editing_window_start: int = 3, editing_window_end: int = 10) -> pd.DataFrame:
+def identify_base_editing_sites(sgrna_df: pd.DataFrame, editing_window_start: int = 4, editing_window_end: int = 10) -> pd.DataFrame:
     """
     Identify potential base editing sites for C-to-T substitutions in sgRNAs.
-    
+
     Parameters
     ----------
     sgrna_df : pd.DataFrame
         DataFrame containing sgRNA information.
     editing_window_start : int, optional
-        Start position of the editing window (1-based index), by default 3.
+        Start position of the editing window (1-based index), by default 4.
+        Positions are counted from the PAM-distal end of the protospacer, so
+        the default window 4-10 is the one reported for CRISPR-cBEST; position
+        3 is outside it and has no measured conversion.
     editing_window_end : int, optional
         End position of the editing window (1-based index), by default 10.
-        
+
     Returns
     -------
     pd.DataFrame
@@ -55,8 +58,10 @@ def identify_base_editing_sites(sgrna_df: pd.DataFrame, editing_window_start: in
         sequence_context_bases = []
         for i in range(editing_window_start - 1, editing_window_end):
             if i < len(sgrna) and sgrna[i] == 'C':
-                # editing context
-                if i < len(sgrna) and sgrna[i-1] == 'G':
+                # editing context: a G immediately 5' of the C. Guard i > 0 so
+                # a window starting at position 1 cannot read sgrna[-1], the
+                # base at the far end of the guide.
+                if i > 0 and sgrna[i-1] == 'G':
                     sequence_context_bases.append(1)
                 else: 
                     sequence_context_bases.append(0)
@@ -97,12 +102,18 @@ def process_base_editing(df: pd.DataFrame, gene_sequences: dict,
                          only_stop_codons: bool = False, 
                          editing_context: bool = True) -> pd.DataFrame:
     """
-    Process the DataFrame to apply C-to-T (or C-to-A if sgrna_strand is -1) mutations at specified positions and identify amino acid changes.
-    
+    Process the DataFrame to apply C-to-T mutations at specified positions and identify amino acid changes.
+
+    The deaminated cytosine is a C in the gene sequence when the guide reads
+    along the CDS, and a G there when it reads against it, so the edit shows up
+    as C-to-T or G-to-A respectively.
+
     Parameters
     ----------
     df : pd.DataFrame
-        DataFrame containing sgRNA information with editable cytosines.
+        DataFrame containing sgRNA information with editable cytosines. Needs
+        the ``locus_tag``, ``sgrna``, ``sgrna_loc``, ``sgrna_strand``,
+        ``gene_strand`` and ``editable_cytosines`` columns.
     gene_sequences : dict
         Dictionary mapping locus tags to gene sequences.
     only_stop_codons : bool
@@ -116,30 +127,53 @@ def process_base_editing(df: pd.DataFrame, gene_sequences: dict,
     """
     
     def mutate_sequence(row):
-        gene_seq = gene_sequences[row['locus_tag']]
-        sgrna_start = row['sgrna_loc'] - 20  # Calculate the start of the sgRNA
-        
-        # Create a mutable list of the gene sequence
-        mutated_seq = list(str(gene_seq))
-        gene_length = len(mutated_seq)
-        
-        # Mutate the editable cytosines in the sgRNA
+        gene_seq = str(gene_sequences[row['locus_tag']])
+        sgrna = row['sgrna']
+
+        # ``sgrna_strand`` and ``gene_strand`` are both genome-relative, so the
+        # guide reads along the CDS exactly when the two agree. Comparing them
+        # rather than testing sgrna_strand alone is what keeps minus-strand
+        # genes right.
+        sense_to_cds = row['sgrna_strand'] == row['gene_strand']
+        protospacer = sgrna if sense_to_cds else str(Seq(sgrna).reverse_complement())
+
+        # ``sgrna_loc`` minus the protospacer length is the protospacer's offset
+        # in the CDS, for both of the finder's scan branches and both gene
+        # strands. Searching for the protospacer instead would read the wrong
+        # copy inside a tandem repeat, where the same 20-mer occurs at several
+        # overlapping offsets and only this coordinate says which one the guide
+        # came from. Checking the sequence at the offset keeps that honest: a
+        # guide table that does not belong to this gene fails loudly rather
+        # than editing an arbitrary position.
+        start_idx = row['sgrna_loc'] - len(sgrna)
+        if start_idx < 0 or gene_seq[start_idx : start_idx + len(sgrna)] != protospacer:
+            raise RuntimeError(
+                f"protospacer {protospacer} is not at offset {start_idx} of "
+                f"{row['locus_tag']}: the guide table and gene_sequences do not "
+                "describe the same gene"
+            )
+
+        mutated_seq = list(gene_seq)
         for pos in map(int, row['editable_cytosines'].split(',')):
-            if row['sgrna_strand'] == -1:
-                genome_pos = sgrna_start - pos + 20
-                if 0 <= genome_pos < gene_length:  # Boundary check
-                    if mutated_seq[genome_pos] == 'G':
-                        mutated_seq[genome_pos] = 'A'
-                else:
-                    print(f"Warning: genome_pos {genome_pos} out of range for gene length {gene_length}")
+            if sense_to_cds:
+                genome_pos = start_idx + pos - 1
             else:
-                genome_pos = sgrna_start + pos - 1
-                if 0 <= genome_pos < gene_length:  # Boundary check
-                    if mutated_seq[genome_pos] == 'C':
-                        mutated_seq[genome_pos] = 'T'
-                else:
-                    print(f"Warning: genome_pos {genome_pos} out of range for gene length {gene_length}")
-    
+                # The protospacer was reverse-complemented to match gene_seq, so
+                # position pos from the guide's 5' end lands len(sgrna) - pos
+                # along it.
+                genome_pos = start_idx + len(sgrna) - pos
+            # The protospacer was checked against gene_seq above, so a genuine
+            # editable cytosine is a C here when the guide reads along the CDS
+            # and a G when it reads against it. Anything else means the position
+            # did not come from identify_base_editing_sites.
+            base = mutated_seq[genome_pos]
+            if base not in ('C', 'G'):
+                raise RuntimeError(
+                    f"position {pos} of {sgrna} is {base!r} in "
+                    f"{row['locus_tag']}, not an editable cytosine"
+                )
+            mutated_seq[genome_pos] = 'T' if base == 'C' else 'A'
+
         # Return the mutated sequence as a string
         return ''.join(mutated_seq)
     
@@ -168,6 +202,17 @@ def process_base_editing(df: pd.DataFrame, gene_sequences: dict,
         first_mutation = mutations.split(',')[0]
         return int(''.join(filter(str.isdigit, first_mutation)))
     
+    required = {
+        "locus_tag", "sgrna", "sgrna_loc", "sgrna_strand", "gene_strand",
+        "editable_cytosines",
+    }
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(
+            f"process_base_editing needs the column(s) {sorted(missing)}; pass a "
+            "guide table from the sgRNA finders through identify_base_editing_sites"
+        )
+
     # Use .loc to avoid SettingWithCopyWarning
     df = df.copy()
     df.loc[:, 'mutated_sequence'] = df.apply(mutate_sequence, axis=1)

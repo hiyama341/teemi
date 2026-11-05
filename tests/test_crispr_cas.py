@@ -15,6 +15,7 @@ from teemi.design.crispr_cas import (
     find_sgrna_hits_cas3,
     find_sgrna_hits_cas9,
     find_sgrna_hits_cas12a,
+    parse_genbank_record,
     revcomp,
 )
 
@@ -220,8 +221,53 @@ def test_find_off_target_hits_skips_seeds_truncated_by_the_contig_end():
 def test_find_off_target_hits_cas9_takes_the_seed_upstream_of_the_pam():
     counter = find_off_target_hits(["AAAAAGG" + "TTTTTGG"], off_target_seed=5, cas_type="cas9")
 
-    # GG at index 5 is preceded by "AAAAA"; GG at index 12 by "TTTTT".
-    assert counter == Counter({"AAAAA": 1, "TTTTT": 1})
+    # The PAM is NGG, so the protospacer stops one base before the matched GG.
+    # For the GG at index 12 the PAM is "TGG" at 11..13 and the 5 bases ending
+    # at index 10 are "GTTTT". The GG at index 5 has only 4 bases of sequence
+    # before its "AGG", so it yields no seed of the requested length.
+    assert counter == Counter({"GTTTT": 1})
+
+
+def test_find_off_target_hits_cas9_skips_a_pam_with_too_little_sequence_before_it():
+    # (?=GG) matches at index 0 here, so the PAM's N would be at -1. Clamping the
+    # slice to 0 instead of skipping produced a seed containing the PAM itself,
+    # and at exactly off_target_seed + 1 bases long it passed the length check.
+    assert find_off_target_hits(["GG" + "A" * 12], off_target_seed=13, cas_type="cas9") == Counter()
+
+    # The same sequence with room for a real seed still yields one.
+    counter = find_off_target_hits(
+        ["T" * 14 + "AGG"], off_target_seed=13, cas_type="cas9"
+    )
+    assert counter == Counter({"T" * 13: 1})
+
+
+def test_find_off_target_hits_cas9_seed_is_the_register_the_finder_looks_up():
+    """A guide's own seed must appear in the genome-wide counter.
+
+    ``find_sgrna_hits_cas9`` reads the seed off the guide as
+    ``sgrna[protospacer_len - off_target_seed : protospacer_len]`` and then uses
+    it as a key into this counter, so the two have to slice the same bases. If
+    they disagree, every lookup misses, ``off_target_count`` is zero for every
+    guide and ``off_target_upper`` silently stops filtering anything.
+    """
+    genome = _single_cds_genome(
+        "CCA" + "GTCGACTTGCAACGTACGTT" + "AAACCGGTTACGTAGCATCG" * 3,
+        "TEST_LOCUS_SEED",
+        1,
+        "seed_register",
+    )
+    sequences = parse_genbank_record(genome)
+    counter = find_off_target_hits(sequences, off_target_seed=13, cas_type="cas9")
+
+    df = find_sgrna_hits_cas9(
+        genome, genome.id, ["TEST_LOCUS_SEED"], counter, 13, revcomp
+    )
+
+    assert not df.empty
+    missing = [s for s in df["sgrna_seed_sequence"] if s not in counter]
+    assert missing == [], f"{len(missing)}/{len(df)} guide seeds absent from the counter"
+    # And the count is therefore a real number rather than zero by construction.
+    assert (df["off_target_count"] >= 0).all()
 
 
 # ---------------------------------------------------------------------------
@@ -393,6 +439,65 @@ def test_filter_guides_keeps_everything_when_no_patterns_are_given():
     filtered = filter_guides(args, hitframe)
 
     assert list(filtered.index) == [0, 1]
+
+
+def test_filter_guides_says_which_column_it_cannot_filter_on():
+    # No finder emits a "downstream" column, so asking to filter on it used to
+    # fail with a bare KeyError.
+    hitframe = pd.DataFrame(
+        {"pam": ["AGG"], "sgrna": ["AAA"], "gc": [0.5], "off_target_count": [0]}
+    )
+    args = SgRNAargs(
+        Dseqrecord("ATGCGG"), ["TEST_LOCUS"], downstream_remove=["CCCC"]
+    )
+
+    with pytest.raises(ValueError, match="cannot filter on 'downstream'"):
+        filter_guides(args, hitframe)
+
+
+def test_filter_guides_handles_the_duplicate_index_of_a_multi_contig_table():
+    # pd.concat of per-contig guide tables repeats the index, which used to make
+    # the gc/off-target filters raise IndexError.
+    contig = pd.DataFrame(
+        {
+            "pam": ["AGG", "TGG"],
+            "sgrna": ["AAA", "GGGG"],
+            "gc": [0.5, 0.95],
+            "off_target_count": [0, 0],
+        }
+    )
+    hitframe = pd.concat([contig, contig])
+    assert not hitframe.index.is_unique
+
+    args = SgRNAargs(
+        Dseqrecord("ATGCGG"), ["TEST_LOCUS"], gc_lower=0.2, gc_upper=0.8
+    )
+
+    filtered = filter_guides(args, hitframe)
+
+    # The 0.95 rows are gone from both copies; the 0.5 rows survive from both.
+    assert list(filtered["gc"]) == [0.5, 0.5]
+
+
+def test_sgrnaargs_rejects_a_seed_longer_than_the_protospacer():
+    # The finders slice the seed out of the protospacer, so a longer seed would
+    # index from the wrong end and report no off-targets at all.
+    with pytest.raises(ValueError, match=r"off_target_seed must be between 1 and"):
+        SgRNAargs(Dseqrecord("ATGCGG"), ["TEST_LOCUS"], off_target_seed=21)
+
+
+def test_find_off_target_hits_accepts_dcas9_as_cas9():
+    # dCas9 is the CRISPRi enzyme: catalytically dead, same PAM and geometry.
+    sequence = ["AAAAAGG" + "TTTTTGG"]
+
+    assert find_off_target_hits(
+        sequence, off_target_seed=5, cas_type="dcas9"
+    ) == find_off_target_hits(sequence, off_target_seed=5, cas_type="cas9")
+
+
+def test_find_off_target_hits_rejects_an_unknown_cas_type():
+    with pytest.raises(ValueError, match="unknown cas_type 'cas13'"):
+        find_off_target_hits(["ATGCGG"], off_target_seed=3, cas_type="cas13")
 
 
 def test_extract_sgrnas_predict_step_is_a_placeholder(capsys):

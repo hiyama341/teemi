@@ -90,6 +90,15 @@ class SgRNAargs:
     ):
         if not isinstance(dseqrecord, Dseqrecord):
             raise ValueError("Input must be an instance of Dseqrecord.")
+        if not 1 <= off_target_seed <= protospacer_len:
+            # The finders look the seed up as a slice of the protospacer, so a
+            # seed longer than the protospacer indexes from the wrong end and
+            # silently reports no off-targets at all.
+            raise ValueError(
+                f"off_target_seed must be between 1 and protospacer_len "
+                f"({protospacer_len}), got {off_target_seed}. The Cas3 finder "
+                f"uses a 34 nt protospacer, so pass protospacer_len=34 for it."
+            )
 
         self.dseqrecord = dseqrecord
         self.locus_tag = locus_tag if isinstance(locus_tag, list) else [locus_tag]
@@ -194,6 +203,14 @@ def find_off_target_hits(
     # Define PAM pattern based on cas_type
     pam_patterns = {"cas3": r"TTC", "cas9": r"(?=GG)", "cas12a": r"TTT[ACG]"}
 
+    # dCas9 is catalytically dead Cas9: same PAM, same protospacer geometry.
+    cas_type = "cas9" if cas_type == "dcas9" else cas_type
+    if cas_type not in pam_patterns:
+        raise ValueError(
+            f"unknown cas_type {cas_type!r}; expected one of "
+            f"{sorted(pam_patterns)}, or 'dcas9' for CRISPRi"
+        )
+
     # Find all potential off-target hits in both strands
     for contig in sequences:
         for match in re.finditer(pam_patterns[cas_type], contig):
@@ -204,7 +221,18 @@ def find_off_target_hits(
                 # For Cas3, the seed sequence is immediately downstream of the PAM
                 seed_sequence = contig[match.end() : (match.end() + off_target_seed)]
             else:  # CAS9
-                seed_sequence = contig[(match.start() - off_target_seed) : match.start()]
+                # (?=GG) matches at the first G of NGG, so the PAM's N sits at
+                # match.start() - 1 and the protospacer's last base just before
+                # it. The seed is the off_target_seed bases ending there, which
+                # is the register the finder looks up as
+                # sgrna[protospacer_len - off_target_seed : protospacer_len].
+                pam_n = match.start() - 1
+                seed_start = pam_n - off_target_seed
+                if seed_start < 0:
+                    # Not enough sequence 5' of the PAM. Clamping to 0 here would
+                    # invent a seed that runs into the PAM itself.
+                    continue
+                seed_sequence = contig[seed_start:pam_n]
             if len(seed_sequence) != off_target_seed:
                 continue
             # Count the frequency of each off-target hit
@@ -730,18 +758,27 @@ def filter_guides(args: SgRNAargs, hitframe: pd.DataFrame) -> pd.DataFrame:
         """Exclude rows from frame where frame[column] contains any of the provided patterns"""
         if not patterns:
             return frame
+        if column not in frame.columns:
+            raise ValueError(
+                f"cannot filter on {column!r}: the sgRNA hit finders do not "
+                f"produce a {column!r} column"
+            )
         mask = frame[column].apply(
             lambda x: not any(pattern in x for pattern in patterns)
         )
         return frame[mask]
 
+    # Each mask is built from the frame being filtered rather than from
+    # ``hitframe``, so the chain still works once earlier steps have dropped
+    # rows, and on the duplicate index that pd.concat gives a multi-contig
+    # guide table.
     return (
         hitframe.pipe(exclude_rows_based_on_patterns, "pam", args.pam_remove)
         .pipe(exclude_rows_based_on_patterns, "sgrna", args.sgrna_remove)
         .pipe(exclude_rows_based_on_patterns, "downstream", args.downstream_remove)
-        .loc[hitframe.gc >= args.gc_lower]
-        .loc[hitframe.gc <= args.gc_upper]
-        .loc[hitframe.off_target_count <= args.off_target_upper]
+        .loc[lambda frame: frame.gc >= args.gc_lower]
+        .loc[lambda frame: frame.gc <= args.gc_upper]
+        .loc[lambda frame: frame.off_target_count <= args.off_target_upper]
     )
 
 
