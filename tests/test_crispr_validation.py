@@ -31,7 +31,7 @@ from teemi.design.crispr_best import (
     identify_base_editing_sites,
     process_base_editing,
 )
-from teemi.design.crispr_cas import SgRNAargs, extract_sgRNAs
+from teemi.design.crispr_cas import SgRNAargs, _scan_breaks, extract_sgRNAs
 
 GENOME = "tests/files_for_testing/gibson/Streptomyces_coelicolor_A3_chromosome.gb"
 CRISPY_DIR = "tests/files_for_testing/crispy_web"
@@ -295,3 +295,141 @@ def test_a_cds_crossing_the_origin_of_a_circular_record_keeps_its_guides():
     # every window really is unreadable there -- the guard is reading topology,
     # not just counting parts.
     assert len(circular) > len(guides_for(False))
+
+
+def _spliced_record():
+    """A two-exon CDS whose only cas12a PAM sits where the window must cross.
+
+    The filler is a fixed-seed LCG rather than a literal so the sequence is both
+    reproducible and non-repetitive: a periodic filler makes the chimeric window
+    occur elsewhere in the record by chance, which would make the assertion below
+    pass for the wrong reason.
+    """
+    exon, intron = 40, 60
+
+    bases, state = [], 12345
+    for _ in range(exon + intron + exon):
+        state = (1103515245 * state + 12345) % (2**31)
+        bases.append("ACGT"[(state >> 16) & 3])
+    # Scrub accidental TTT runs so the only forward cas12a PAM is the placed one.
+    for i in range(len(bases) - 2):
+        if bases[i] == bases[i + 1] == bases[i + 2] == "T":
+            bases[i + 2] = "A"
+    # A PAM at CDS offset 30 puts the 24 nt window at [30, 54), across the
+    # junction at 40. Cas12a reads its protospacer 3' of a 4 nt PAM, and
+    # SgRNAargs' default protospacer_len of 20 is what extract_sgRNAs passes.
+    bases[30:34] = list("TTTA")
+    sequence = "".join(bases)
+
+    feature = SeqFeature(
+        CompoundLocation(
+            [
+                SimpleLocation(0, exon, 1),
+                SimpleLocation(exon + intron, exon + intron + exon, 1),
+            ]
+        ),
+        type="CDS",
+        qualifiers={"locus_tag": ["SPLICED1"]},
+    )
+    record = Dseqrecord(sequence, circular=False)
+    record.features = [feature]
+    return record, feature, sequence, exon
+
+
+def test_a_cas12a_window_spanning_an_intron_is_not_reported():
+    """The Cas12a guard needs its own case: SCO0022 never exercises it.
+
+    SCO0022 is the only compound CDS in the Streptomyces fixture and no Cas12a
+    window happens to cross one of its boundaries, so the parametrised test
+    above passes without the Cas12a skip ever running. A wrong window length
+    there would go unnoticed, hence this record, built so that a crossing window
+    must exist.
+    """
+    record, feature, sequence, exon = _spliced_record()
+    coding = str(feature.extract(Seq(sequence)))
+    reverse = str(Seq(sequence).reverse_complement())
+
+    # The window the finder must refuse, and the premise that makes it a test:
+    # it is a chimera, present nowhere on the molecule.
+    chimera = coding[30:54]
+    assert chimera.startswith("TTTA")
+    assert chimera not in sequence and chimera not in reverse
+
+    guides = extract_sgRNAs(
+        SgRNAargs(
+            dseqrecord=record,
+            locus_tag=["SPLICED1"],
+            cas_type="cas12a",
+            step=["find"],
+            off_target_seed=13,
+        )
+    )
+    assert chimera[4:] not in set(guides["sgrna"])
+    for row in guides.itertuples():
+        site = row.pam + row.sgrna
+        assert site in sequence or site in reverse, f"{site} is not on the molecule"
+
+
+def test_parts_on_opposite_strands_are_a_break():
+    """A strand change between parts is a discontinuity, whatever the coordinates.
+
+    ``extract()`` reverse-complements each part according to its own strand, so
+    the join of a plus part and a minus part is not a walk along either strand
+    and no window may span it. The branch is unreachable from the repository's
+    fixtures, so it is asserted directly.
+    """
+    record = Dseqrecord("A" * 200, circular=False)
+    feature = SeqFeature(
+        CompoundLocation([SimpleLocation(0, 40, 1), SimpleLocation(40, 80, -1)]),
+        type="CDS",
+        qualifiers={"locus_tag": ["TRANS1"]},
+    )
+    coding = str(feature.extract(Seq(str(record.seq))))
+
+    breaks = _scan_breaks(feature, record, coding)
+    assert breaks[-1] == [40]
+    assert breaks[1] == [len(coding) - 40]
+
+
+# Guides whose window sits flush against one of SCO0022's genomic breaks: the
+# first begins on the first base of a part, the other two end on the last base
+# of one. All three are wholly inside a single part and present on the
+# chromosome, so all three must survive the skip.
+SCO0022_BOUNDARY_GUIDES = [
+    ("GAGCGAACGCCGCACTGCTC", "GGG"),  # window starts at a break
+    ("AACCTGGCCCCACTCGCTGA", "AGG"),  # window ends at a break
+    ("GTTCTCGTGGCCGACGAGGT", "CGG"),  # window ends at a break
+]
+
+
+def test_the_skip_does_not_discard_guides_that_merely_touch_a_break(coelicolor):
+    """Pin both ends of the crossing test, which are otherwise unpinned.
+
+    ``test_guides_on_a_compound_cds_exist_on_the_molecule`` is one-sided: it
+    asserts that every guide reported is real, never that a real guide was not
+    thrown away. Loosening either bound of ``match.start() < offset <
+    window_end`` to ``<=`` therefore passes the whole suite while silently
+    dropping targetable guides -- 68 to 67 for the lower bound and 68 to 66 for
+    the upper. A window that merely touches a break at one end lies entirely
+    within one part, and only a strict comparison keeps it.
+    """
+    guides = extract_sgRNAs(
+        SgRNAargs(
+            dseqrecord=coelicolor,
+            locus_tag=["SCO0022"],
+            cas_type="cas9",
+            step=["find"],
+            off_target_seed=13,
+        )
+    )
+
+    found = set(zip(guides["sgrna"], guides["pam"]))
+    missing = [g for g in SCO0022_BOUNDARY_GUIDES if g not in found]
+    assert not missing, (
+        f"guides flush against a break were discarded: {missing}; the crossing "
+        "test must compare strictly at both ends"
+    )
+    # The count pins the other direction: a skip that fires too rarely would
+    # readmit the chimeras the strand-aware test above rejects.
+    assert len(guides) == 68, f"expected 68 cas9 guides for SCO0022, got {len(guides)}"
+

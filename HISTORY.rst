@@ -56,6 +56,49 @@ Unreleased
   unaffected. Guide counts drop for spliced genes (2.95% to 0% phantoms on
   *A. oryzae* chromosome 1); one-part CDSs, which is every CDS in a bacterial
   genome bar the above, are untouched.
+- Collapsed the three sgRNA finders into one scan. ``find_sgrna_hits_cas9``,
+  ``find_sgrna_hits_cas12a`` and ``find_sgrna_hits_cas3`` were near-copies of
+  one another -- the cas12a and cas3 bodies were 96% byte-identical, differing
+  only in two constants and whether a ``print`` was commented out -- so a fix
+  had to be made three times and in practice was not: a mutation audit found
+  that 6 of 8 deliberate defects in the cas12a copy went undetected by the test
+  suite, against 1 of 6 in cas3, which has golden-row tests. The three now
+  delegate to one implementation driven by a ``_Nuclease`` record of everything
+  that differs: PAM pattern and length, protospacer length, which side of the
+  protospacer the PAM sits on, the strand sign, and the diagnostic messages.
+  Their names, signatures and argument order are unchanged, since ``crispri``
+  and the tests call them positionally.
+- No change in what the finders return. Verified byte-identical over 43,663
+  guide rows in 14 configurations: the *S. coelicolor* chromosome across 134
+  loci for all three nucleases, two cas12a protospacer lengths, the ``filter``
+  step, and synthetic circular, spliced and opposite-strand records. Preserved
+  deliberately, because this change is not the place to alter them: the printed
+  messages, including which nucleases stay silent; the cas12a and cas3
+  ``sgrna_loc``, which the position formula misplaces; and the ``TypeError``
+  raised on a CDS whose parts lie on opposite
+  strands, which Biopython gives ``strand=None``.
+- A differential search over 2.95 million inputs -- truncated windows and
+  each guard path, every compound-location arrangement, degenerate sequence
+  content, parameter extremes, printed output, and every CDS of the
+  *S. coelicolor* and *A. oryzae* genomes -- found three edge paths where the
+  collapse had shifted behaviour, all since restored: an empty protospacer
+  prints cas9's out-of-border message again, that nuclease having had no
+  empty branch of its own; the window arithmetic stays inside the match loop,
+  so a ``protospacer_len`` it cannot add still fails at the first match
+  rather than at the call; and the strand multiplication stays ahead of the
+  seed slice, which decides which ``TypeError`` a strandless CDS raises.
+- One deliberate difference: ``find_sgrna_hits_cas9`` calls its ``revcomp``
+  argument once per candidate window rather than twice, taking the guide and
+  its PAM from one reverse complement instead of two. Any pure ``revcomp``,
+  the module's own included, yields the same rows; only one that counts, logs
+  or caches its calls can tell the difference.
+- Dropped, in the course of that collapse: ``gene_counter`` and
+  ``sgrna_counter``, incremented in three functions and never read; three
+  commented-out ``print`` statements; and a docstring documenting a ``filepath``
+  parameter the function did not take. The scan-flag branch was an ``if``/``elif``
+  with no ``else``, leaving three names reachable-unbound, and is now an
+  ``if``/``else``. The module goes from 941 lines to 699, and from 246 statements
+  to 176.
 
 1.0.5 (2026-03-15)
 ~~~~~~~~~~~~~~~~~~
