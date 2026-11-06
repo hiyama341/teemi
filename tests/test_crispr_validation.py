@@ -433,3 +433,60 @@ def test_the_skip_does_not_discard_guides_that_merely_touch_a_break(coelicolor):
     # readmit the chimeras the strand-aware test above rejects.
     assert len(guides) == 68, f"expected 68 cas9 guides for SCO0022, got {len(guides)}"
 
+
+POSITION_LOCI = ["SCO5087", "SCO7048", "SCO0022"]
+
+
+@pytest.mark.parametrize("cas_type", ["cas9", "cas12a", "cas3"])
+def test_sgrna_loc_locates_the_guide_in_the_coding_sequence(coelicolor, cas_type):
+    """``sgrna_loc`` has to say where the guide actually is.
+
+    The column is one past the protospacer's end in coordinates of the CDS as
+    extracted 5'->3', which is how ``crispr_best.mutate_sequence`` finds a
+    guide: it slices ``[sgrna_loc - len(sgrna) : sgrna_loc]``. A value out by
+    even one base therefore edits the wrong residue.
+
+    Reading that slice back out of the CDS checks the number against the
+    sequence rather than against the formula that produced it. Nothing checked
+    the cas12a or cas3 positions that way before, and both were wrong while
+    every cas9 position was right.
+
+    The two scans are covered by requiring both readings to occur: a guide
+    found on the coding scan of a 5' PAM lies along the CDS, and one found on
+    the reverse-complement scan lies against it, so a test that saw only one
+    orientation would be exercising only one of the two position formulas.
+    """
+    guides = extract_sgRNAs(
+        SgRNAargs(
+            dseqrecord=coelicolor,
+            locus_tag=POSITION_LOCI,
+            cas_type=cas_type,
+            step=["find"],
+            off_target_seed=13,
+        )
+    )
+    assert not guides.empty, f"no {cas_type} guides found"
+
+    coding = _gene_sequences(coelicolor, POSITION_LOCI)
+    along = against = 0
+    misplaced = []
+    for row in guides.itertuples():
+        cds = coding[row.locus_tag]
+        start = row.sgrna_loc - len(row.sgrna)
+        found = cds[start : row.sgrna_loc] if start >= 0 else ""
+        if row.sgrna == found:
+            along += 1
+        elif row.sgrna == str(Seq(found).reverse_complement()):
+            against += 1
+        else:
+            misplaced.append((row.locus_tag, row.sgrna_loc, row.sgrna))
+
+    assert not misplaced, (
+        f"{len(misplaced)} of {len(guides)} {cas_type} guides are not at the "
+        f"sgrna_loc they report, e.g. {misplaced[:3]}"
+    )
+    assert along and against, (
+        f"{cas_type} guides were all read in one orientation "
+        f"(along={along}, against={against}), so only one of the two "
+        f"position formulas was exercised"
+    )

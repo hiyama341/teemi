@@ -451,15 +451,18 @@ def _find_sgrna_hits(
 
                 gc_content = len([b for b in sgrna if b in ("C", "G")]) / len(sgrna)
 
-                # The guide's position within the extracted CDS. This is
-                # misplaced for the nucleases whose PAM is 5' of the
-                # protospacer, and is left exactly as it was: this change
-                # exists to collapse the three finders without altering what
-                # they return, and correcting it moves published values.
+                # One past the protospacer's end, in coordinates of the CDS
+                # as extracted 5'->3': the guide occupies
+                # ``coding_sequence[position_sgrna - protospacer_len :
+                # position_sgrna]``, read forwards or reverse complemented
+                # according to which strand it lies on. The PAM sits at the
+                # start of the matched window on the scanned strand whichever
+                # side of the protospacer it is on, so the protospacer starts
+                # ``pam_len`` into that window either way.
                 if flag == 1:
-                    position_sgrna = len(scanned) - match.start() - 3
+                    position_sgrna = len(scanned) - match.start() - pam_len
                 else:
-                    position_sgrna = match.end() + protospacer_len + 3
+                    position_sgrna = match.start() + pam_len + protospacer_len
 
                 strand_sgrna = nuclease.strand_sign * flag * gene_strand
 
@@ -520,6 +523,8 @@ def find_sgrna_hits_cas9(
     -------
     pd.DataFrame
         One row per guide, with the columns listed in ``_HIT_COLUMNS``.
+        ``sgrna_loc`` is one past the protospacer's end, in coordinates of the
+        CDS as extracted 5'->3'.
     """
     return _find_sgrna_hits(
         record,

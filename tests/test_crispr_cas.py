@@ -334,9 +334,9 @@ def test_extract_sgrnas_cas3_forward_strand_guide():
     assert row["gene_loc"] == 1
     assert row["gene_strand"] == 1
     assert row["sgrna_strand"] == 1
-    # match.end() + protospacer_len + pam_len == 3 + 34 + 3; the same as the
-    # mirror-image minus-strand genome in the next test
-    assert row["sgrna_loc"] == 40
+    # The protospacer occupies CDS[3:37], so one past its end is 37; the same
+    # as the mirror-image minus-strand genome in the next test
+    assert row["sgrna_loc"] == 37
     assert row["sgrna_seed_sequence"] == "A" * 13
     # The seed occurs once in the genome, which is this guide itself.
     assert row["off_target_count"] == 0
@@ -358,8 +358,8 @@ def test_extract_sgrnas_cas3_reverse_strand_guide():
     assert row["sgrna"] == "A" * 34
     assert row["gene_strand"] == -1
     assert row["sgrna_strand"] == -1
-    # match.end() + protospacer_len + pam_len == 3 + 34 + 3
-    assert row["sgrna_loc"] == 40
+    # The protospacer occupies CDS[3:37], so one past its end is 37
+    assert row["sgrna_loc"] == 37
     assert row["off_target_count"] == 0
 
 

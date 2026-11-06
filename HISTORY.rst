@@ -74,8 +74,8 @@ Unreleased
   step, and synthetic circular, spliced and opposite-strand records. Preserved
   deliberately, because this change is not the place to alter them: the printed
   messages, including which nucleases stay silent; the cas12a and cas3
-  ``sgrna_loc``, which the position formula misplaces; and the ``TypeError``
-  raised on a CDS whose parts lie on opposite
+  ``sgrna_loc``, which the position formula misplaces (fixed separately,
+  below); and the ``TypeError`` raised on a CDS whose parts lie on opposite
   strands, which Biopython gives ``strand=None``.
 - A differential search over 2.95 million inputs -- truncated windows and
   each guard path, every compound-location arrangement, degenerate sequence
@@ -99,6 +99,40 @@ Unreleased
   with no ``else``, leaving three names reachable-unbound, and is now an
   ``if``/``else``. The module goes from 941 lines to 699, and from 246 statements
   to 176.
+
+- Fixed ``sgrna_loc`` for Cas12a and Cas3. The column is one past the
+  protospacer's end, in coordinates of the CDS as extracted 5'->3'. It is how
+  ``crispr_best.process_base_editing`` finds a guide, by slicing
+  ``[sgrna_loc - len(sgrna) : sgrna_loc]``, so a value out by one base edits the
+  wrong residue. Two errors with separate causes were both inert for Cas9 and so
+  went unseen. The forward scan added a literal 3 to ``match.end()``, which for a
+  5' PAM already covers the PAM -- Cas9's PAM pattern is a zero-width lookahead,
+  so there the 3 supplies the PAM length rather than duplicating it -- and the
+  reverse scan subtracted that same literal 3 where the nuclease's own
+  ``pam_len`` belonged. Cas12a positions were therefore 3 nt out on the forward
+  scan and 1 nt out on the reverse, and Cas3's 3 nt out on the forward scan only,
+  its PAM being 3 nt. Base editing a Cas3 guide table raised ``RuntimeError`` in
+  consequence -- the offset guard in ``process_base_editing`` catching the
+  protospacer not being where the table said -- and now completes. A Cas12a
+  table still fails there, but for an unrelated reason that this change does not
+  touch: on SCO5087 it yields no editable guides at all, and
+  ``process_base_editing`` raises ``ValueError`` on an empty frame rather than
+  returning one.
+- Checked by reading the slice back out of the CDS over the whole
+  *S. coelicolor* chromosome: all 1,725,388 Cas9 guides already sat where they
+  claimed, against none of the 8,124 Cas12a guides and none of the 75,555
+  forward-scan Cas3 guides. Every guide of all three now does, and Cas9's eleven
+  columns are unchanged across those 1,725,388 rows, so only the Cas12a and Cas3
+  ``sgrna_loc`` moves. ``tests/test_crispr_validation.py`` asserts this per
+  nuclease and requires both scan directions to occur, so that neither position
+  formula can go unexercised.
+- This is a point where teemi departs from StreptoCAD, which its guide finders
+  were ported from. StreptoCAD computes the same two expressions, but every
+  nuclease it supports has a 3 nt PAM -- its Cas12a is experimental and uses a
+  3 nt ``TTN`` -- so the hardcoded 3 is never wrong on its reverse scan. teemi
+  brought that half of the defect to light by adopting Cas12a's 4 nt ``TTTV``
+  PAM. The forward-scan error is present in both, and misplaces Cas3 guides
+  there as it did here.
 
 1.0.5 (2026-03-15)
 ~~~~~~~~~~~~~~~~~~
