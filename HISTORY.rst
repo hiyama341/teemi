@@ -147,12 +147,63 @@ Unreleased
   the subtype comes from the system being modelled, while canonical Type I-E
   takes ``AAG`` instead. And Type I-C cuts bi-directionally from the target
   site, so the extent of a Cas3 deletion cannot be predicted to run one way.
-- Left unpinned deliberately, both because they change what the finders return.
-  ``off_target_seed`` defaults to 13 for all three nucleases, which is a Cas9
-  figure, where Whitford et al. 2025 score Cas3 off-targets on the PAM plus the
-  8 PAM-proximal bases. And ``SgRNAargs.protospacer_len`` defaults to 20 and is
-  forwarded only to the cas12a finder, so Cas12a guides are 23 nt when that
-  finder is called directly and 20 nt on the default ``extract_sgRNAs`` path.
+- Fixed Cas12a guides coming back 20 nt long from ``extract_sgRNAs``. Each
+  parameter set carries the spacer length its enzyme was measured for, but
+  ``SgRNAargs.protospacer_len`` defaulted to 20 and was forwarded to the cas12a
+  finder alone, so the default path overrode the As/LbCas12a 23 with a Cas9
+  number while cas9 and cas3 kept their own. ``protospacer_len`` now defaults to
+  ``None``, meaning whatever the chosen ``cas_type`` was measured for, and an
+  explicit value applies to whichever nuclease is in use rather than to cas12a
+  only. Over 40 *S. coelicolor* CDSs this moves Cas12a from 89 guides of 20 nt
+  to 88 of 23 nt, which is what calling the finder directly already returned.
+  Notebook 10 had been passing ``protospacer_len=23`` by hand to get it.
+- Fixed the ``off_target_seed`` ceiling refusing legal values. It was checked
+  against ``protospacer_len``, which was 20 whatever the nuclease, so
+  ``cas_type="cas3", off_target_seed=25`` was rejected although Cas3's
+  protospacer is 34 nt long and the seed is sliced out of it. The ceiling is now
+  the protospacer length the ``cas_type`` resolves to, and the message names the
+  nuclease that set it.
+- Replaced the three substring guards in ``extract_sgRNAs`` with one lookup in
+  the parameter table. ``if "cas9" in args.cas_type`` is what had made ``dcas9``
+  work, it matched a nuclease named anywhere in the string, and a ``cas_type``
+  none of the three recognised fell through all of them and left ``sgrna_df``
+  unbound. An unknown ``cas_type`` is now rejected when ``SgRNAargs`` is
+  constructed, since resolving the protospacer length is what validates it.
+- Moved the off-target scan's PAM patterns into that same table as
+  ``off_target_pam_pattern``. They were a second dictionary holding Cas9's PAM
+  in the opposite orientation -- ``(?=GG)`` against ``(?=CC)`` -- with nothing
+  recording that the two scans read their seed off different strands and so need
+  the PAM in different senses. Both scans read both strands, so the seeds
+  collected were always the same; the counters are unchanged, verified identical
+  across four ``cas_type`` values and four seed lengths over both strands of the
+  chromosome and a set of degenerate short inputs.
+- Settled ``off_target_seed`` by leaving all three nucleases on 13. It is not a
+  stray Cas9 constant: it is CRISPy-web's own window, and Blin et al. 2020 sort
+  candidates by off-target hits "with 0, 1, or 2 mismatches in the 13 bp seed
+  region right upstream of the PAM". CRISPy-web holds that 13 fixed and varies
+  only the PAM between nucleases, so one seed length for all three is upstream's
+  design rather than something overlooked here. Whitford et al. 2025's Cas3
+  figure is real and ``off_target_seed=8`` reproduces it exactly, but as a
+  default it costs more than it buys: over the first 500 CDSs of NC_003888.3,
+  Cas3 at 13 keeps all 8712 candidate guides under the default
+  ``off_target_upper=10`` with a median count of 0, while at 8 it keeps 54.2%,
+  the median count is 9, the 90th percentile is 32 and three genes are left with
+  no guide at all. The seed and that cutoff are a coupled pair, and Whitford's
+  script applies no numeric cutoff, so moving one of the two alone does not
+  reproduce their method. The parameter stays overridable and its provenance is
+  now recorded beside the table.
+- Recorded the gap that matters more than the seed length. ``off_target_count``
+  counts exact matches, where CRISPy-web counts near-misses in the same window.
+  This repository's own fixture carries both: guide CY00000196 of SCO5087 has 0
+  off-targets at 0 mismatches, 30 at one and 591 at two, and teemi reproduces
+  the first of those three columns only. So ``off_target_upper`` rejects almost
+  nothing at the shipped defaults -- 0.2% of Cas9 candidates over those 500
+  CDSs -- and a guide reported as unique may have hundreds of near-misses.
+  Nothing in the test suite guards the default either, since every call site
+  passes ``off_target_seed`` explicitly.
+- Corrected the ``off_target_upper`` docstring, which called it a "maximum
+  number of seed nucleotides" where ``filter_guides`` compares it against a
+  guide's count of off-target sites.
 
 1.0.5 (2026-03-15)
 ~~~~~~~~~~~~~~~~~~

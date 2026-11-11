@@ -31,7 +31,12 @@ from teemi.design.crispr_best import (
     identify_base_editing_sites,
     process_base_editing,
 )
-from teemi.design.crispr_cas import SgRNAargs, _scan_breaks, extract_sgRNAs
+from teemi.design.crispr_cas import (
+    _NUCLEASES,
+    SgRNAargs,
+    _scan_breaks,
+    extract_sgRNAs,
+)
 
 GENOME = "tests/files_for_testing/gibson/Streptomyces_coelicolor_A3_chromosome.gb"
 CRISPY_DIR = "tests/files_for_testing/crispy_web"
@@ -157,8 +162,10 @@ def test_base_editing_matches_crispy_web_on_a_plus_strand_gene(sco5087_stops):
         .sort_values("sgrna")
         .reset_index(drop=True)
     )
-    actual = sco5087_stops[["sgrna", "mutations"]].sort_values("sgrna").reset_index(
-        drop=True
+    actual = (
+        sco5087_stops[["sgrna", "mutations"]]
+        .sort_values("sgrna")
+        .reset_index(drop=True)
     )
 
     assert list(actual["sgrna"]) == list(expected["sgrna"])
@@ -315,9 +322,9 @@ def _spliced_record():
     for i in range(len(bases) - 2):
         if bases[i] == bases[i + 1] == bases[i + 2] == "T":
             bases[i + 2] = "A"
-    # A PAM at CDS offset 30 puts the 24 nt window at [30, 54), across the
-    # junction at 40. Cas12a reads its protospacer 3' of a 4 nt PAM, and
-    # SgRNAargs' default protospacer_len of 20 is what extract_sgRNAs passes.
+    # A PAM at CDS offset 30 puts the 27 nt window at [30, 57), across the
+    # junction at 40. Cas12a reads its protospacer 3' of a 4 nt PAM, and a
+    # default SgRNAargs now resolves protospacer_len to the As/LbCas12a 23.
     bases[30:34] = list("TTTA")
     sequence = "".join(bases)
 
@@ -350,8 +357,12 @@ def test_a_cas12a_window_spanning_an_intron_is_not_reported():
     reverse = str(Seq(sequence).reverse_complement())
 
     # The window the finder must refuse, and the premise that makes it a test:
-    # it is a chimera, present nowhere on the molecule.
-    chimera = coding[30:54]
+    # it is a chimera, present nowhere on the molecule. Its length has to track
+    # the protospacer the finder actually scans for, or the assertion below
+    # compares a 20-mer against 23-mers and passes without testing anything.
+    window = 4 + _NUCLEASES["cas12a"].protospacer_len
+    chimera = coding[30 : 30 + window]
+    assert len(chimera) == 27
     assert chimera.startswith("TTTA")
     assert chimera not in sequence and chimera not in reverse
 

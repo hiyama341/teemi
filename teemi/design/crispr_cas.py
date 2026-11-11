@@ -50,8 +50,12 @@ class SgRNAargs:
         Number of downstream nucleotides to consider when filtering sgRNAs (default is 15).
     off_target_seed : int, optional
         How many PAM-adjacent bases to use as seed-sequence for off-target hits
-        (default is 13). Must be between 1 and ``protospacer_len``, because the
-        finders look the seed up as a slice of the protospacer.
+        (default is 13). Must be between 1 and the protospacer length that
+        ``cas_type`` resolves to, because the finders look the seed up as a
+        slice of the protospacer. The 13 is CRISPy-web's window and applies to
+        all three nucleases; the resulting count is of exact matches only, where
+        CRISPy-web counts near-misses too. Both are discussed with the parameter
+        table in this module.
     pam_remove : list of str, optional
         List of PAM sequences to filter (default is None).
     downstream_remove : list of str, optional
@@ -63,7 +67,9 @@ class SgRNAargs:
     gc_lower : float, optional
         GC cutoff filter (minimum-value) (default is 0).
     off_target_upper : int, optional
-        Maximum number of seed nucleotides allowed for off-target (default is 10).
+        Maximum ``off_target_count`` a guide may have and still be kept by
+        ``filter_guides`` (default is 10). It is a number of off-target sites,
+        not a number of nucleotides.
     extension_to_promoter_region : int, optional
         Additional parameter to extend the promoter region (default is 0).
     upstream_tss : int, optional
@@ -72,6 +78,10 @@ class SgRNAargs:
         Number of downstream nucleotides to consider from the TSS (default is 100).
     target_non_template_strand : bool, optional
         Whether to target the non-template strand (default is True).
+    protospacer_len : int, optional
+        Spacer length to scan for. ``None``, the default, means the length the
+        chosen ``cas_type`` was measured for -- 20 nt for 'cas9' and 'dcas9',
+        23 for 'cas12a', 34 for 'cas3'. Pass a number only to override that.
     strain_name : str
         Strain name extracted from the Dseqrecord.
     """
@@ -94,18 +104,25 @@ class SgRNAargs:
         upstream_tss: int = 100,
         dwstream_tss: int = 100,
         target_non_template_strand=True,
-        protospacer_len=20,
+        protospacer_len: Optional[int] = None,
     ):
         if not isinstance(dseqrecord, Dseqrecord):
             raise ValueError("Input must be an instance of Dseqrecord.")
+        # Resolving the length here is also what validates ``cas_type``, so an
+        # unknown one is rejected on construction rather than part-way through
+        # ``extract_sgRNAs``.
+        nuclease = _nuclease_for(cas_type)
+        if protospacer_len is None:
+            protospacer_len = nuclease.protospacer_len
         if not 1 <= off_target_seed <= protospacer_len:
             # The finders look the seed up as a slice of the protospacer, so a
             # seed longer than the protospacer indexes from the wrong end and
             # silently reports no off-targets at all.
             raise ValueError(
                 f"off_target_seed must be between 1 and protospacer_len "
-                f"({protospacer_len}), got {off_target_seed}. The Cas3 finder "
-                f"uses a 34 nt protospacer, so pass protospacer_len=34 for it."
+                f"({protospacer_len}), got {off_target_seed}. That ceiling is "
+                f"the protospacer length for cas_type={cas_type!r}; pass "
+                f"protospacer_len to scan for a different length."
             )
 
         self.dseqrecord = dseqrecord
@@ -257,27 +274,18 @@ def find_off_target_hits(
     """
     # Initialize list to store off-target hits
     off_target_hits = list()
-    # Define PAM pattern based on cas_type
-    pam_patterns = {"cas3": r"TTC", "cas9": r"(?=GG)", "cas12a": r"TTT[ACG]"}
-
-    # dCas9 is catalytically dead Cas9: same PAM, same protospacer geometry.
-    cas_type = "cas9" if cas_type == "dcas9" else cas_type
-    if cas_type not in pam_patterns:
-        raise ValueError(
-            f"unknown cas_type {cas_type!r}; expected one of "
-            f"{sorted(pam_patterns)}, or 'dcas9' for CRISPRi"
-        )
+    # The PAM and its side both come from the one parameter table, so this scan
+    # and the finders cannot drift apart. ``dcas9`` resolves to ``cas9`` there.
+    nuclease = _nuclease_for(cas_type)
 
     # Find all potential off-target hits in both strands
     for contig in sequences:
-        for match in re.finditer(pam_patterns[cas_type], contig):
-            if cas_type == "cas12a":
-                # For Cas12a, the seed sequence is immediately downstream of the PAM
+        for match in re.finditer(nuclease.off_target_pam_pattern, contig):
+            if not nuclease.pam_is_3_prime:
+                # A 5' PAM puts the seed immediately downstream of it, which is
+                # the register the finder looks up as sgrna[:off_target_seed].
                 seed_sequence = contig[match.end() : (match.end() + off_target_seed)]
-            elif cas_type == "cas3":
-                # For Cas3, the seed sequence is immediately downstream of the PAM
-                seed_sequence = contig[match.end() : (match.end() + off_target_seed)]
-            else:  # CAS9
+            else:
                 # (?=GG) matches at the first G of NGG, so the PAM's N sits at
                 # match.start() - 1 and the protospacer's last base just before
                 # it. The seed is the off_target_seed bases ending there, which
@@ -320,6 +328,15 @@ class _Nuclease(NamedTuple):
     the one being scanned; cas12a and cas3 match their PAM directly, so a match
     means the guide lies on the scanned strand.
 
+    ``off_target_pam_pattern`` is the same PAM written for the other scan.
+    :func:`find_off_target_hits` reads its seed off the strand it is scanning, so
+    it needs Cas9's PAM in the same sense as that seed -- ``(?=GG)`` rather than
+    ``(?=CC)``. The two differ for Cas9 alone, and because both scans read both
+    strands they collect the same seeds either way. The field exists so that one
+    table holds every per-nuclease constant: the two were separate dictionaries
+    before, with Cas9's entry written in opposite orientations and nothing
+    saying why.
+
     The messages are preserved verbatim, including which nucleases stay silent:
     two tests assert them on stdout. Printing from a library is a defect in its
     own right and wants replacing with ``warnings``, but not in a change whose
@@ -327,6 +344,7 @@ class _Nuclease(NamedTuple):
     """
 
     pam_pattern: str
+    off_target_pam_pattern: str
     protospacer_len: int
     pam_len: int
     pam_is_3_prime: bool
@@ -386,17 +404,51 @@ _CAS9_SHORT_SGRNA_MESSAGE = (
 # I-C cuts bi-directionally from the target site (Csorgo et al. 2020), not
 # unidirectionally.
 #
-# Two numbers deliberately left unpinned, both to be settled separately because
-# both change what the finders return. ``off_target_seed`` defaults to 13 for
-# all three nucleases, which is a Cas9 figure -- Whitford et al. 2025 score Cas3
-# off-targets on "the PAM and the PAM proximal first 8 nt". And
-# ``SgRNAargs.protospacer_len`` defaults to 20 and is forwarded only to the
-# cas12a finder, so the 23 below is the value when that finder is called
-# directly and 20 on the default ``extract_sgRNAs`` path.
+# ``off_target_seed`` stays one number for all three nucleases, and 13 is a
+# CRISPy-web figure rather than a measured property of any enzyme. Blin et al.
+# 2020 (Synth Syst Biotechnol 5:99, doi:10.1016/j.synbio.2020.05.005) give the
+# window: candidate sgRNAs are sorted by off-target hits "with 0, 1, or 2
+# mismatches in the 13 bp seed region right upstream of the PAM". CRISPy-web
+# holds that 13 fixed and varies only the PAM when it changes nuclease, so one
+# seed length for every enzyme is upstream's design and not an omission here.
+# The number predates that paper: CRISPy-web 2016 (Blin et al.,
+# doi:10.1016/j.synbio.2016.01.003) counts "direct off-target hits for sequences
+# with the same 13 bp core sequence upstream of the PAM", and attributes the
+# algorithm to Ronda et al. 2014 (Biotechnol Bioeng 111:1604) -- the origin as
+# the 2016 paper gives it, not as a paper read here.
+#
+# Biophysically there is no one number to pin it to. Hsu et al. 2013
+# (doi:10.1038/nbt.2647) report the opposite of a fixed seed: "most bases within
+# the 20-bp target site provide varying degrees of specificity". 13 should not be
+# defended as a measured Cas9 seed, and it does not need to be -- it is the
+# search window of the tool this module's Cas9 output is checked against.
+#
+# Whitford et al. 2025 do state a Cas3 figure -- "the seed off-target search
+# considers the PAM and the PAM proximal first 8 nt", counted "only if a PAM
+# site is present", which is exactly what the scan below does, so
+# ``off_target_seed=8`` reproduces their metric (8 and not 11: the TTC is
+# matched separately, and counting it again would specify 14 bases). It is
+# deliberately not the default. Over the first 500 CDSs of NC_003888.3, Cas3 at
+# 13 keeps all 8712 candidate guides under the default ``off_target_upper=10``
+# with a median count of 0; at 8 it keeps 54.2%, the median count is 9, the 90th
+# percentile is 32, and three genes are left with no guide at all. The seed and
+# that cutoff are a coupled pair -- Cas9 at seed 10 keeps 51.6%, with a median
+# of exactly 10 -- and Whitford's script applies no numeric cutoff, so moving
+# one of the two alone does not reproduce their method. Their paper calls the
+# seed length an adjustable parameter, which is what it stays here.
+#
+# The larger gap is in what the count means. CRISPy-web searches its 13 bp
+# window allowing up to two or three mismatches; this module counts exact
+# 13-mers. ``tests/files_for_testing/crispy_web/cas9_SCO5087_0_mismatches.csv``
+# carries the difference in its own columns: guide CY00000196 has 0 off-targets
+# at 0 mismatches, 30 at one and 591 at two. ``off_target_count`` is the first
+# of those three numbers, so at the shipped defaults ``off_target_upper`` rejects
+# almost nothing, and a guide this module reports as unique may not be.
 _NUCLEASES: Dict[str, _Nuclease] = {
     "cas9": _Nuclease(
         # SpCas9: 3' NGG, 20 nt spacer. Jinek 2012, 10.1126/science.1225829.
         pam_pattern=r"(?=CC)",
+        off_target_pam_pattern=r"(?=GG)",
         protospacer_len=20,
         pam_len=3,
         pam_is_3_prime=True,
@@ -414,6 +466,7 @@ _NUCLEASES: Dict[str, _Nuclease] = {
         # As/LbCas12a: 5' TTTV. Toth 2018, 10.1093/nar/gky815. 23 nt spacer is
         # the Cpf1 convention (Zetsche 2015, Tu 2017), not a measured optimum.
         pam_pattern=r"TTT[ACG]",
+        off_target_pam_pattern=r"TTT[ACG]",
         protospacer_len=23,
         pam_len=4,
         pam_is_3_prime=False,
@@ -423,6 +476,7 @@ _NUCLEASES: Dict[str, _Nuclease] = {
         # Type I-C CASCADE-Cas3: 5' TTC, 34 nt spacer, both from the
         # pCRISPR-Cas3 paper. Whitford 2025, 10.1093/nar/gkaf214.
         pam_pattern=r"TTC",
+        off_target_pam_pattern=r"TTC",
         protospacer_len=34,
         pam_len=3,
         pam_is_3_prime=False,
@@ -432,6 +486,22 @@ _NUCLEASES: Dict[str, _Nuclease] = {
         ),
     ),
 }
+
+
+def _nuclease_for(cas_type: str) -> _Nuclease:
+    """Look up the parameter set for a ``cas_type``.
+
+    ``dcas9`` is an alias for ``cas9``: catalytically dead Cas9 has the same PAM
+    and the same protospacer geometry, it just does not cut.
+    """
+    key = "cas9" if cas_type == "dcas9" else cas_type
+    if key not in _NUCLEASES:
+        raise ValueError(
+            f"unknown cas_type {cas_type!r}; expected one of "
+            f"{sorted(_NUCLEASES)}, or 'dcas9' for CRISPRi"
+        )
+    return _NUCLEASES[key]
+
 
 _HIT_COLUMNS = [
     "strain_name",
@@ -616,9 +686,9 @@ def find_sgrna_hits_cas12a(
     """Find Cas12a guides (5' TTTV PAM) in the given CDSs.
 
     Takes the same arguments as :func:`find_sgrna_hits_cas9`, plus
-    ``protospacer_len``, which is the one nuclease whose protospacer length
-    ``extract_sgRNAs`` forwards from ``SgRNAargs`` (whose default is 20, not the
-    23 in this signature).
+    ``protospacer_len``, kept because callers of this function may pass it. The
+    23 here is the measured As/LbCas12a convention and matches what a default
+    ``SgRNAargs`` now resolves to.
     """
     return _find_sgrna_hits(
         record,
@@ -730,39 +800,22 @@ def extract_sgRNAs(args: SgRNAargs) -> Tuple[pd.DataFrame, Counter, pd.DataFrame
             sequences, args.off_target_seed, cas_type=args.cas_type
         )
 
-        if "cas3" in args.cas_type:
-            # Find all potential sgRNA hits
-            sgrna_df = find_sgrna_hits_cas3(
-                args.dseqrecord,
-                args.strain_name,
-                args.locus_tag,
-                off_target_counter,
-                args.off_target_seed,
-                revcomp=revcomp,
-            )
-
-        if "cas9" in args.cas_type:
-            # Find all potential sgRNA hits
-            sgrna_df = find_sgrna_hits_cas9(
-                args.dseqrecord,
-                args.strain_name,
-                args.locus_tag,
-                off_target_counter,
-                args.off_target_seed,
-                revcomp=revcomp,
-            )
-
-        if "cas12a" in args.cas_type:
-            # Find all potential sgRNA hits
-            sgrna_df = find_sgrna_hits_cas12a(
-                args.dseqrecord,
-                args.strain_name,
-                args.locus_tag,
-                off_target_counter,
-                args.off_target_seed,
-                revcomp,
-                protospacer_len=args.protospacer_len,
-            )
+        # One lookup, where there were three independent substring guards.
+        # Those relied on ``"cas9" in "dcas9"`` for the CRISPRi alias, matched a
+        # nuclease anywhere in the string, and left ``sgrna_df`` unbound for
+        # anything they did not recognise. They also forwarded
+        # ``protospacer_len`` to the cas12a finder alone, which is why a default
+        # ``SgRNAargs`` scanned for 23 nt Cas12a spacers everywhere except here,
+        # where it scanned for 20.
+        sgrna_df = _find_sgrna_hits(
+            args.dseqrecord,
+            args.strain_name,
+            args.locus_tag,
+            off_target_counter,
+            args.off_target_seed,
+            revcomp,
+            _nuclease_for(args.cas_type)._replace(protospacer_len=args.protospacer_len),
+        )
 
         # Sort sgrna_df by 'off-targets' in ascending order
         sgrna_df.sort_values(by="off_target_count", ascending=True, inplace=True)
