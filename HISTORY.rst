@@ -133,6 +133,26 @@ Unreleased
   brought that half of the defect to light by adopting Cas12a's 4 nt ``TTTV``
   PAM. The forward-scan error is present in both, and misplaces Cas3 guides
   there as it did here.
+- Pinned each nuclease's PAM and spacer length to the enzyme it was measured
+  for. The three parameter sets were bare literals, so nothing in the module
+  recorded which enzyme ``cas_type="cas3"`` meant, or where a 34 nt spacer and a
+  ``TTC`` PAM had come from. Each entry now names its enzyme and cites a source
+  that states both of its constants: ``cas9`` is SpCas9 (Jinek et al. 2012),
+  ``cas12a`` is As/LbCas12a (Toth et al. 2018), and ``cas3`` is the minimal
+  Type I-C CASCADE-Cas3 of pCRISPR-Cas3 (Whitford et al. 2025), which is this
+  group's own system rather than a guess at one. All six constants were checked
+  against the primary literature and none of them changed.
+- Two things that surfaced in doing so, both worth recording. Cas3's subtype is
+  I-C, and that does not follow from its PAM: Type I-B uses ``TTC`` as well, so
+  the subtype comes from the system being modelled, while canonical Type I-E
+  takes ``AAG`` instead. And Type I-C cuts bi-directionally from the target
+  site, so the extent of a Cas3 deletion cannot be predicted to run one way.
+- Left unpinned deliberately, both because they change what the finders return.
+  ``off_target_seed`` defaults to 13 for all three nucleases, which is a Cas9
+  figure, where Whitford et al. 2025 score Cas3 off-targets on the PAM plus the
+  8 PAM-proximal bases. And ``SgRNAargs.protospacer_len`` defaults to 20 and is
+  forwarded only to the cas12a finder, so Cas12a guides are 23 nt when that
+  finder is called directly and 20 nt on the default ``extract_sgRNAs`` path.
 
 1.0.5 (2026-03-15)
 ~~~~~~~~~~~~~~~~~~

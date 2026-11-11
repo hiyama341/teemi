@@ -38,7 +38,12 @@ class SgRNAargs:
         List of locus tags (i.e., genes) to be analyzed.
     cas_type : str
         The type of the CRISPR-Cas system used ('cas9', 'dcas9', 'cas12a' or
-        'cas3'). 'dcas9' is treated as 'cas9'.
+        'cas3'). 'dcas9' is treated as 'cas9'. Each names one enzyme rather than
+        a family, since a PAM and a spacer length only mean anything together
+        with the enzyme they were measured for: 'cas9' and 'dcas9' are SpCas9
+        (3' NGG, 20 nt), 'cas12a' is As/LbCas12a (5' TTTV, 23 nt) and 'cas3' is
+        the Type I-C CASCADE-Cas3 of pCRISPR-Cas3 (5' TTC, 34 nt). The sources
+        for each are given with the parameter table in this module.
     step : list of str, optional
         Pipeline components to execute (default is ['find', 'filter']).
     downstream : int, optional
@@ -237,7 +242,12 @@ def find_off_target_hits(
         The length of the off-target seed sequence to match.
     cas_type : str
         The type of the CRISPR-Cas system used ('cas9', 'dcas9', 'cas12a' or
-        'cas3'). 'dcas9' is treated as 'cas9'.
+        'cas3'). 'dcas9' is treated as 'cas9'. Each names one enzyme rather than
+        a family, since a PAM and a spacer length only mean anything together
+        with the enzyme they were measured for: 'cas9' and 'dcas9' are SpCas9
+        (3' NGG, 20 nt), 'cas12a' is As/LbCas12a (5' TTTV, 23 nt) and 'cas3' is
+        the Type I-C CASCADE-Cas3 of pCRISPR-Cas3 (5' TTC, 34 nt). The sources
+        for each are given with the parameter table in this module.
 
     Returns
     -------
@@ -331,8 +341,61 @@ _CAS9_SHORT_SGRNA_MESSAGE = (
     "To incorporate this extent borders. Skipping to next locus tag."
 )
 
+# Where these numbers come from.
+#
+# Each entry is one named enzyme, not a family: a PAM and a spacer length mean
+# nothing apart from the ortholog or subtype they were measured for. Each is
+# cited to a source that states both constants for that enzyme, so a reader can
+# check a number without taking this table's word for it.
+#
+# ``cas9`` is SpCas9, Streptococcus pyogenes Cas9 (Type II-A). Jinek et al. 2012
+# (Science 337:816, doi:10.1126/science.1225829) gives both constants: the PAM
+# "conforms to an NGG consensus sequence", and the 5'-terminal 20 nt of the
+# crRNA are available for target binding. Anders et al. 2014 (Nature 513:569,
+# doi:10.1038/nature13579) is the structural read-out of those two G:C pairs.
+# NGG is not unique to SpCas9 -- several orthologs recognise NGG or a PAM that
+# subsumes it -- so what fixes this entry is NGG paired with a 20 nt spacer,
+# plus the fact that the Streptomyces vectors teemi targets carry a
+# codon-optimised spCas9 (Tong et al. 2015, ACS Synth Biol 4:1020,
+# doi:10.1021/acssynbio.5b00038). ``dcas9`` is the same protein with both
+# nuclease domains mutated, for CRISPRi: same PAM, same spacer, no cleavage, and
+# the PAM still "indispensible for silencing" (Qi et al. 2013, Cell 152:1173,
+# doi:10.1016/j.cell.2013.02.022). Cite Tong et al. 2015, not Qi et al., for the
+# D10A/H840A pair -- a 2021 correction records Qi's own second mutation as H841A.
+#
+# ``cas12a`` is AsCas12a / LbCas12a (Type V-A), from Acidaminococcus sp. BV3L6
+# and Lachnospiraceae bacterium ND2006. The 5' TTTV PAM is Toth et al. 2018
+# (NAR, doi:10.1093/nar/gky815): "the consensus sequences of the PAM requirement
+# of As- and LbCpf1 is TTTV (V: all but T)". Excluding TTTT is deliberate, which
+# is why the pattern is ``TTT[ACG]`` and not ``TTT.``. The 23 nt spacer is a
+# convention, not a measured optimum: Zetsche et al. 2015 measured the native
+# Francisella spacer at 23-25 nt and Tu et al. 2017 call 23-25 nt "commonly used
+# as spacer sequence for Cpf1". The one published titration preferred 21 nt, but
+# in FnCpf1, not in either ortholog above.
+#
+# ``cas3`` is the minimal Type I-C CASCADE-Cas3 system, four genes from
+# Pseudomonas aeruginosa codon-optimised for streptomycetes as pCRISPR-Cas3
+# (Addgene #209427) by Whitford et al. 2025 (NAR 53:gkaf214,
+# doi:10.1093/nar/gkaf214) -- the same group as CRISPy-web and teemi itself, and
+# the system both constants are taken from. That paper states the PAM ("The
+# system recognizes a T-rich 5'-TTC-3' PAM sequence, making it an attractive
+# system to use in high GC organisms"), searches spacers as ``5'-TTC-N1-N8-3'``,
+# and specifies "the desired 34 nt spacer sequence". TTC does not by itself
+# identify I-C, since Type I-B uses it too, so the subtype here is the one being
+# modelled rather than one inferred from the PAM. For anyone extending this:
+# I-C cuts bi-directionally from the target site (Csorgo et al. 2020), not
+# unidirectionally.
+#
+# Two numbers deliberately left unpinned, both to be settled separately because
+# both change what the finders return. ``off_target_seed`` defaults to 13 for
+# all three nucleases, which is a Cas9 figure -- Whitford et al. 2025 score Cas3
+# off-targets on "the PAM and the PAM proximal first 8 nt". And
+# ``SgRNAargs.protospacer_len`` defaults to 20 and is forwarded only to the
+# cas12a finder, so the 23 below is the value when that finder is called
+# directly and 20 on the default ``extract_sgRNAs`` path.
 _NUCLEASES: Dict[str, _Nuclease] = {
     "cas9": _Nuclease(
+        # SpCas9: 3' NGG, 20 nt spacer. Jinek 2012, 10.1126/science.1225829.
         pam_pattern=r"(?=CC)",
         protospacer_len=20,
         pam_len=3,
@@ -348,6 +411,8 @@ _NUCLEASES: Dict[str, _Nuclease] = {
         ),
     ),
     "cas12a": _Nuclease(
+        # As/LbCas12a: 5' TTTV. Toth 2018, 10.1093/nar/gky815. 23 nt spacer is
+        # the Cpf1 convention (Zetsche 2015, Tu 2017), not a measured optimum.
         pam_pattern=r"TTT[ACG]",
         protospacer_len=23,
         pam_len=4,
@@ -355,6 +420,8 @@ _NUCLEASES: Dict[str, _Nuclease] = {
         strand_sign=-1,
     ),
     "cas3": _Nuclease(
+        # Type I-C CASCADE-Cas3: 5' TTC, 34 nt spacer, both from the
+        # pCRISPR-Cas3 paper. Whitford 2025, 10.1093/nar/gkaf214.
         pam_pattern=r"TTC",
         protospacer_len=34,
         pam_len=3,
