@@ -222,6 +222,31 @@ Unreleased
   over this repository's chromosome it finds 7,996 sites where an overlapping
   scan finds 9,338, and over the two yeast genes it loses 14 of the guides
   GenScript reports.
+- Added the first external reference for Cas3. No design service offers
+  Type I-C: GenScript has no Type I system, and CRISPy-web 3.0 added CRISPRi
+  and TnpB but is still Cas9-only among the cutters. The authors of
+  pCRISPR-Cas3 hit the same wall -- "the majority of existing computational
+  tools do not support type I/type I-C CRISPR systems" -- and published the
+  notebook they picked their own spacers with, `NBChub/Type1_Protospacers
+  <https://github.com/NBChub/Type1_Protospacers>`_. That makes it the
+  reference implementation of the system modelled here, and the same source
+  ``TTC`` and ``34`` are taken from. Over SCO5087 (plus strand) and SCO7048
+  (minus strand) it reports 31 spacers each and teemi reports exactly the same
+  sets -- same sequence, same chromosome coordinate and same strand, guide for
+  guide, with equality rather than containment because the notebook ranks but
+  does not truncate. Over the first 400 single-part CDSs of NC_003888.3 all
+  6,924 guides agree on both. It is the same laboratory as teemi and as
+  CRISPy-web, so it does not make the biology independent; what it pins
+  independently is the mechanics, which side of the protospacer the PAM sits
+  on, how far the spacer runs, how the reverse strand is reached and where the
+  result lands -- the four things that were wrong for cas12a and cas3 before.
+- Confirmed the ``off_target_seed=8`` claim against that notebook rather than
+  against its paper's prose. teemi's ``off_target_count`` at 8 is the
+  notebook's seed count minus one for every guide of both genes, up to counts
+  of 53. The offset is the on-target site, which teemi subtracts and the
+  notebook leaves in, as its README says: "a match count of 1 indicates that
+  no off-target sites were found". A count that reached only one strand, or
+  anchored the seed a base out, would diverge by more than a constant.
 
 1.0.5 (2026-03-15)
 ~~~~~~~~~~~~~~~~~~

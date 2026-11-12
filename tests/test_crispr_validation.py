@@ -2,8 +2,8 @@
 """Validate the CRISPR modules against references produced outside teemi.
 
 The unit tests elsewhere check that the code does what it is written to do.
-These check that what it is written to do is right, against two references that
-teemi had no hand in making:
+These check that what it is written to do is right, against references produced
+outside this code base:
 
 * **CRISPy-web** output for *Streptomyces coelicolor* A3(2) SCO5087, exported
   from the web tool (``tests/files_for_testing/crispy_web/``). CRISPy-web is a
@@ -22,6 +22,18 @@ teemi had no hand in making:
   rich that SCO5087, the gene the Cas9 reference covers, carries no TTTV site
   on either strand. These two genes were picked instead because they are on
   opposite strands, so between them they exercise both position formulas.
+
+* **The spacer-finding notebook published with pCRISPR-Cas3**
+  (``tests/files_for_testing/type1_protospacers/``). Whitford et al. 2025 wrote
+  their own script for this, because "the majority of existing computational
+  tools do not support type I/type I-C CRISPR systems", and released it as
+  `NBChub/Type1_Protospacers <https://github.com/NBChub/Type1_Protospacers>`_.
+  It is the reference implementation of the system teemi models as ``cas3``,
+  and no vendor tool offers Type I-C at all. Unlike the three above it is the
+  same laboratory as teemi, so what it settles is the mechanics rather than the
+  biology. Its rows here were transcribed from the notebook's search loop
+  (commit ``d1c2aab``) rather than exported from a service, which is why each
+  one is re-derived from the chromosome before it is compared.
 
 The genome file is the same one StreptoCAD validates against, byte for byte.
 """
@@ -57,6 +69,15 @@ GENSCRIPT_CAS12A = [
     ("CAN1", "YEL063C", "CAN1_YEL063C.gb", "cas12a_CAN1_lbcas12a.csv", 31599, 81),
     ("LYP1", "YNL268W", "LYP1_YNL268W.gb", "cas12a_LYP1_lbcas12a.csv", 138449, 67),
 ]
+
+TYPE1_DIR = "tests/files_for_testing/type1_protospacers"
+TYPE1_CAS3 = [
+    # locus tag, reference extract, spacers
+    ("SCO5087", "cas3_SCO5087.csv", 31),
+    ("SCO7048", "cas3_SCO7048.csv", 31),
+]
+# The seed length the notebook ships, and the one its off-target column counts.
+TYPE1_SEED = 8
 
 # Hand-curated base-editing results for SCO7048, a minus-strand CDS: the guide
 # and the amino-acid changes its C-to-T edits produce.
@@ -598,4 +619,185 @@ def test_sgrna_loc_locates_the_guide_in_the_coding_sequence(coelicolor, cas_type
         f"{cas_type} guides were all read in one orientation "
         f"(along={along}, against={against}), so only one of the two "
         f"position formulas was exercised"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Cas3 against the notebook published with pCRISPR-Cas3
+# ---------------------------------------------------------------------------
+
+
+def _type1_footprint(row):
+    """0-based half-open span of PAM+protospacer for one reference row.
+
+    The notebook writes its coordinates 1-based on the forward strand
+    (``hits["Start"].append(match.span()[1]+1)``) and 0-based on the reverse
+    (``hits["Start"].append(match.span()[0]-spacer_length)``). That asymmetry
+    is theirs; normalising it here is what lets one number cover both strands.
+    """
+    pam_len = _NUCLEASES["cas3"].pam_len
+    if row.Strand == "Forward":
+        return row.Start - 1 - pam_len, row.End
+    return row.Start, row.End + pam_len
+
+
+def _type1_expected(expected, genome, lo, hi, locus_tag):
+    """Read every reference row back out of the chromosome.
+
+    Returns the set of ``(0-based protospacer start, spacer, strand)`` the
+    notebook reports, with its ``Forward``/``Reverse`` read as the chromosome's
+    plus/minus. The fixture was produced by transcribing the notebook's search
+    loop rather than by executing the notebook, so each row is re-derived here
+    from the genome: a mis-transcribed offset has to show up as a window that
+    does not carry TTC, or whose slice is not the spacer, instead of quietly
+    agreeing with teemi.
+    """
+    pam_len = _NUCLEASES["cas3"].pam_len
+    want = set()
+    for row in expected.itertuples():
+        start, stop = _type1_footprint(row)
+        assert (
+            lo <= start and stop <= hi
+        ), f"{locus_tag}: reference window {start}-{stop} leaves the CDS"
+        site = genome[start:stop]
+        if row.Strand == "Forward":
+            assert (
+                site[:pam_len] == "TTC"
+            ), f"{locus_tag}: {site[:pam_len]} is not a PAM"
+            assert site[pam_len:] == row.Spacer
+            want.add((start + pam_len, row.Spacer, 1))
+        else:
+            assert (
+                site[-pam_len:] == "GAA"
+            ), f"{locus_tag}: {site[-pam_len:]} is not a PAM"
+            assert str(Seq(site[:-pam_len]).reverse_complement()) == row.Spacer
+            want.add((start, row.Spacer, -1))
+    return want
+
+
+def _type1_cds(record, locus_tag):
+    return next(
+        f
+        for f in record.features
+        if f.type == "CDS" and f.qualifiers.get("locus_tag", [""])[0] == locus_tag
+    )
+
+
+@pytest.mark.parametrize("locus_tag, export, total", TYPE1_CAS3)
+def test_cas3_finds_exactly_the_spacers_the_reference_notebook_reports(
+    coelicolor, locus_tag, export, total
+):
+    """Cas3 had no external reference at all until this one.
+
+    CRISPy-web is Cas9 and, as of version 3, Cas9/CRISPRi/TnpB -- still no
+    Type I. GenScript has no Type I-C either. The only implementation of this
+    system is the one its authors published alongside the plasmid, and it is
+    the same source teemi takes ``TTC`` and ``34`` from, so agreeing with it
+    checks both constants in ``_NUCLEASES["cas3"]`` against the code that
+    designed the spacers the paper actually cloned.
+
+    What it does not do is make the biology independent: it is the same lab as
+    teemi and the same lab as CRISPy-web. What it pins independently is the
+    mechanics -- which side of the protospacer the PAM sits on, how far the
+    spacer runs, how the reverse strand is reached, and where on the
+    chromosome the result lands. Those are exactly where the cas12a and cas3
+    positions were wrong before.
+
+    Equality holds here rather than containment: the notebook ranks but does
+    not truncate, so for a given region it reports every site, as teemi does.
+    Both genes are covered because SCO5087 is on the plus strand and SCO7048
+    on the minus, and ``sgrna_strand`` is read against the chromosome rather
+    than against the gene -- for SCO7048 the 20 guides teemi puts on the minus
+    strand are the notebook's 20 ``Reverse`` rows, not its 11 ``Forward`` ones.
+    The strand is part of the compared key for that reason: with only the
+    counts checked, flipping ``_NUCLEASES["cas3"].strand_sign`` still leaves
+    both signs present and the test passes while every guide is mislabelled.
+    """
+    expected = pd.read_csv(f"{TYPE1_DIR}/{export}")
+    cds = _type1_cds(coelicolor, locus_tag)
+    lo, hi = int(cds.location.start), int(cds.location.end)
+    want = _type1_expected(expected, str(coelicolor.seq).upper(), lo, hi, locus_tag)
+
+    guides = extract_sgRNAs(
+        SgRNAargs(
+            dseqrecord=coelicolor,
+            locus_tag=[locus_tag],
+            cas_type="cas3",
+            step=["find"],
+            off_target_seed=13,
+        )
+    )
+    assert len(guides) == total
+    assert guides["sgrna"].is_unique
+
+    on_plus = cds.location.strand == 1
+    got = {
+        (
+            lo + row.sgrna_loc - len(row.sgrna) if on_plus else hi - row.sgrna_loc,
+            row.sgrna,
+            int(row.sgrna_strand),
+        )
+        for row in guides.itertuples()
+    }
+    assert got == want, (
+        f"{locus_tag}: {len(want - got)} spacers only in the reference, "
+        f"{len(got - want)} only in teemi; e.g. {sorted(want - got)[:2]} "
+        f"vs {sorted(got - want)[:2]}"
+    )
+
+    # The two constants this reference is here to check.
+    assert set(guides["pam"]) == {"TTC"}
+    assert set(guides["sgrna"].str.len()) == {_NUCLEASES["cas3"].protospacer_len}
+    # Both formulas have to be exercised, or half of the comparison above is
+    # vacuous. Which guide is on which strand is pinned by ``got == want``.
+    assert set(guides["sgrna_strand"]) == {1, -1}
+
+
+@pytest.mark.parametrize("locus_tag, export, total", TYPE1_CAS3)
+def test_cas3_off_target_count_reproduces_the_reference_seed_metric(
+    coelicolor, locus_tag, export, total
+):
+    """``off_target_seed=8`` is the notebook's own metric, to the hit.
+
+    The module's notes claim that 8 reproduces what the paper describes as
+    "the seed off-target search considers the PAM and the PAM proximal first
+    8 nt", counted "only if a PAM site is present". This is that claim as a
+    test rather than as prose. The notebook builds one string of
+    ``seed_length+3`` bases -- PAM included -- and counts it with
+    ``count_overlap`` on both strands; teemi matches the PAM separately and
+    counts the 8 bases after it, over a sequence list that already holds both
+    strands, which comes to the same set of sites.
+
+    The one difference is the on-target site. teemi subtracts it
+    (``max(off_target_counter[sgrna_seed] - 1, 0)``) while the notebook leaves
+    it in, which is why its README says "a match count of 1 indicates that no
+    off-target sites were found". So the reference count is teemi's plus one,
+    exactly, and that offset is the assertion: were teemi counting one strand,
+    or anchoring the seed in the wrong register, the two columns would diverge
+    by far more than a constant.
+    """
+    expected = pd.read_csv(f"{TYPE1_DIR}/{export}")
+    assert expected["Spacer"].is_unique
+    reference = dict(zip(expected["Spacer"], expected["Seed 0 nt matches"]))
+
+    guides = extract_sgRNAs(
+        SgRNAargs(
+            dseqrecord=coelicolor,
+            locus_tag=[locus_tag],
+            cas_type="cas3",
+            step=["find"],
+            off_target_seed=TYPE1_SEED,
+        )
+    )
+    assert len(guides) == total
+    assert set(guides["sgrna_seed_sequence"].str.len()) == {TYPE1_SEED}
+
+    wrong = [
+        (row.sgrna, row.off_target_count, reference[row.sgrna])
+        for row in guides.itertuples()
+        if row.off_target_count != reference[row.sgrna] - 1
+    ]
+    assert not wrong, (
+        f"{locus_tag}: {len(wrong)} of {len(guides)} seed counts are not the "
+        f"reference count minus one, e.g. {wrong[:3]}"
     )
