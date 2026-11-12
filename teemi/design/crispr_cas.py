@@ -410,6 +410,25 @@ _CAS9_SHORT_SGRNA_MESSAGE = (
 # I-C cuts bi-directionally from the target site (Csorgo et al. 2020), not
 # unidirectionally.
 #
+# Both constants also have a source outside that group, which matters because
+# Whitford et al. are teemi's own authors. The PAM was determined in the
+# system's native host by Leon et al. 2021 (NAR 49:2114,
+# doi:10.1093/nar/gkab006), by the laboratory that built this compact I-C
+# system rather than the one that ported it: "Alignments of 3163 protospacers
+# with upstream and downstream regions revealed the consensus PAM ... to be
+# 5'-TTC-3'". The same paper puts 34 inside a measured range rather than at an
+# optimum -- "Because Type I-C spacer length ranges from 32-37 nt, contrary to
+# Type I-F spacers consistently measuring 32 nt" -- so 34 is the pCRISPR-Cas3
+# cloning convention chosen within a functional window, not a length measured
+# as best. The authors' notebook credits Csorgo et al. 2020 for its defaults;
+# that paper introduced the system, and the PAM determination for it is Leon.
+#
+# One number in Whitford et al. does not reproduce here, and is deliberately
+# not used as a test oracle: they report "158 341 5'-TTC-3' PAM sequences" in
+# S. coelicolor, "averaging one PAM for every 54.7 bp", where scanning
+# NC_003888.3 on both strands finds 162,382 and collapsing identical spacers
+# gives 159,792. Neither is their figure and the 2.5% gap is undocumented.
+#
 # ``off_target_seed`` stays one number for all three nucleases, and 13 is a
 # CRISPy-web figure rather than a measured property of any enzyme. Blin et al.
 # 2020 (Synth Syst Biotechnol 5:99, doi:10.1016/j.synbio.2020.05.005) give the

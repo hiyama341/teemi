@@ -78,6 +78,8 @@ TYPE1_CAS3 = [
 ]
 # The seed length the notebook ships, and the one its off-target column counts.
 TYPE1_SEED = 8
+# The spacers the paper reports cloning, as opposed to ones a scan proposes.
+TYPE1_CLONED = "cas3_cloned_spacers.csv"
 
 # Hand-curated base-editing results for SCO7048, a minus-strand CDS: the guide
 # and the amino-acid changes its C-to-T edits produce.
@@ -800,4 +802,101 @@ def test_cas3_off_target_count_reproduces_the_reference_seed_metric(
     assert not wrong, (
         f"{locus_tag}: {len(wrong)} of {len(guides)} seed counts are not the "
         f"reference count minus one, e.g. {wrong[:3]}"
+    )
+
+
+def test_cas3_finds_the_spacers_pcrispr_cas3_was_cloned_with(coelicolor):
+    """The guides that actually cut, rather than guides a scan proposes.
+
+    Every other reference here is a list of candidates. These ten are the
+    protospacers the pCRISPR-Cas3 paper reports building into plasmids and
+    conjugating into *Streptomyces*, taken from the supplementary overview
+    workbook of its data record (DTU Data, doi:10.11583/DTU.22786157). They
+    are not merely proposed, then: each was ordered and cloned. Not each
+    produced a clean deletion -- the paper calls one of the region 21-23
+    outcomes "fully unspecific" -- so what is asserted here is that teemi
+    finds the guides that were actually made, not that every one worked.
+
+    Three of the workbook's plasmid identifiers appear in the paper's own text
+    and tie to the same targets ("Targeting of regions 1-3 using p245",
+    "targeting regions 21-23 with plasmid p246", and p253 for the
+    undecylprodigiosin BGC), which is what corroborates the workbook against
+    the publication. Each row's spacer and coordinate are re-derived from this
+    chromosome below regardless.
+
+    It cannot validate ``TTC`` or ``34`` and is not written as though it does.
+    The paper chose these spacers by searching for that PAM at that length, so
+    conformance is its design rule restated, not evidence for it; the
+    independent source for the PAM is Leon et al. 2021, cited beside the
+    parameter table. What it does validate is the scanner, over a far wider
+    stretch of the chromosome than two genes reach -- 92 kb to 7.4 Mb, six
+    genes, four protospacers on the minus strand and three on the plus.
+
+    Seven of the ten lie inside a single-part CDS and are therefore reachable
+    by a locus tag. The other three are intergenic: Cas3 deletes processively
+    from its target, so the paper also aims it between genes, which
+    ``extract_sgRNAs`` cannot do because it takes locus tags and nothing else.
+    That split is asserted rather than described, so re-annotation cannot
+    quietly shrink what this test covers.
+    """
+    expected = pd.read_csv(f"{TYPE1_DIR}/{TYPE1_CLONED}", keep_default_na=False)
+    genome = str(coelicolor.seq).upper()
+    pam_len = _NUCLEASES["cas3"].pam_len
+    spacer_len = _NUCLEASES["cas3"].protospacer_len
+
+    # Re-derive every published spacer from this chromosome before comparing
+    # anything, so a wrong coordinate in the fixture cannot pass as a match.
+    for row in expected.itertuples():
+        begin = row.Start - 1
+        end = begin + spacer_len
+        assert len(row.Spacer) == spacer_len, f"{row.Name} is not {spacer_len} nt"
+        assert row.End == end, f"{row.Name}: End disagrees with Start + length"
+        if row.Strand == 1:
+            assert genome[begin - pam_len : begin] == "TTC", f"{row.Name}: no PAM"
+            assert genome[begin:end] == row.Spacer, f"{row.Name}: not at Start"
+        else:
+            assert genome[end : end + pam_len] == "GAA", f"{row.Name}: no PAM"
+            assert (
+                str(Seq(genome[begin:end]).reverse_complement()) == row.Spacer
+            ), f"{row.Name}: not at Start"
+
+    assert len(expected) == 10
+    reachable = expected[expected.LocusTag != ""]
+    assert len(reachable) == 7, "the CDS/intergenic split has moved"
+
+    spans = {
+        f.qualifiers["locus_tag"][0]: f
+        for f in coelicolor.features
+        if f.type == "CDS"
+        and f.qualifiers.get("locus_tag", [""])[0] in set(reachable.LocusTag)
+    }
+    guides = extract_sgRNAs(
+        SgRNAargs(
+            dseqrecord=coelicolor,
+            locus_tag=sorted(spans),
+            cas_type="cas3",
+            step=["find"],
+            off_target_seed=13,
+        )
+    )
+    found = set()
+    for row in guides.itertuples():
+        cds = spans[row.locus_tag]
+        lo, hi = int(cds.location.start), int(cds.location.end)
+        begin = (
+            lo + row.sgrna_loc - len(row.sgrna)
+            if cds.location.strand == 1
+            else hi - row.sgrna_loc
+        )
+        found.add((begin + 1, row.sgrna, int(row.sgrna_strand)))
+
+    missing = [
+        row.Name
+        for row in reachable.itertuples()
+        if (row.Start, row.Spacer, row.Strand) not in found
+    ]
+    assert not missing, (
+        f"teemi does not report {len(missing)} of {len(reachable)} published "
+        f"pCRISPR-Cas3 spacers at the coordinate and strand the paper gives: "
+        f"{missing}"
     )

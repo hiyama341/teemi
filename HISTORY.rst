@@ -247,6 +247,37 @@ Unreleased
   notebook leaves in, as its README says: "a match count of 1 indicates that
   no off-target sites were found". A count that reached only one strand, or
   anchored the seed a base out, would diverge by more than a constant.
+- Added the spacers pCRISPR-Cas3 was actually cloned with, which is the only
+  CRISPR reference here made of guides known to cut rather than guides a scan
+  proposed. The paper's data record (DTU Data, doi:10.11583/DTU.22786157)
+  lists ten protospacers targeting this chromosome; seven lie inside a
+  single-part CDS and so are reachable by a locus tag, and teemi reports every
+  one of them at the coordinate and strand the record gives, across six genes
+  from 92 kb to 7.4 Mb, four on the minus strand and three on the plus. The
+  other three are intergenic, which ``extract_sgRNAs`` cannot reach because it
+  takes locus tags and nothing else -- Cas3 deletes processively, so the paper
+  also aims it between genes. This cannot validate ``TTC`` or ``34``, since
+  those spacers were chosen by searching for that PAM at that length, and the
+  test says so; what it validates is the scanner, over far more of the
+  chromosome than two genes reach.
+- Recorded a source for the Cas3 PAM from outside teemi's own authors, which
+  the parameter table had been missing. Leon et al. 2021 (NAR 49:2114,
+  doi:10.1093/nar/gkab006) determined it in the system's native host and by
+  the laboratory that built this compact I-C system rather than the one that
+  ported it: "Alignments of 3163 protospacers with upstream and downstream
+  regions revealed the consensus PAM ... to be 5'-TTC-3'". The same paper puts
+  34 nt inside a measured range instead of at an optimum -- "Because Type I-C
+  spacer length ranges from 32-37 nt, contrary to Type I-F spacers
+  consistently measuring 32 nt" -- so 34 is the pCRISPR-Cas3 cloning
+  convention chosen within a functional window. The notebook credits Csorgo
+  et al. 2020 for its defaults; that paper introduced the system, and the PAM
+  determination for it is Leon.
+- Noted one published number that does not reproduce, so that it is not
+  mistaken for an oracle later. Whitford et al. report "158 341 5'-TTC-3' PAM
+  sequences" in *S. coelicolor*, "averaging one PAM for every 54.7 bp", where
+  scanning NC_003888.3 on both strands finds 162,382 and collapsing identical
+  spacers gives 159,792. Neither is their figure and the 2.5% gap is
+  undocumented.
 
 1.0.5 (2026-03-15)
 ~~~~~~~~~~~~~~~~~~
