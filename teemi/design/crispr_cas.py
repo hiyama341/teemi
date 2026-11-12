@@ -385,7 +385,13 @@ _CAS9_SHORT_SGRNA_MESSAGE = (
 # and Lachnospiraceae bacterium ND2006. The 5' TTTV PAM is Toth et al. 2018
 # (NAR, doi:10.1093/nar/gky815): "the consensus sequences of the PAM requirement
 # of As- and LbCpf1 is TTTV (V: all but T)". Excluding TTTT is deliberate, which
-# is why the pattern is ``TTT[ACG]`` and not ``TTT.``. The 23 nt spacer is a
+# is why the pattern is ``TTT[ACG]`` and not ``TTT.``, and it is load-bearing
+# twice over: the scans use non-overlapping ``re.finditer``, and no two TTTV
+# sites can start within 4 nt of each other, so none is ever skipped. Widen the
+# pattern to TTTN and that stops holding -- over the chromosome in
+# ``tests/files_for_testing`` a TTTN scan reaches 7,996 sites where an
+# overlapping one finds 9,338, and it loses 14 of the guides GenScript reports
+# for the two yeast genes in ``tests/test_crispr_validation.py``. The 23 nt spacer is a
 # convention, not a measured optimum: Zetsche et al. 2015 measured the native
 # Francisella spacer at 23-25 nt and Tu et al. 2017 call 23-25 nt "commonly used
 # as spacer sequence for Cpf1". The one published titration preferred 21 nt, but

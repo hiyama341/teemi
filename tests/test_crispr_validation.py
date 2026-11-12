@@ -16,6 +16,13 @@ teemi had no hand in making:
   ``process_base_editing`` exists to get right, and reading ``sgrna_strand``
   on its own puts every one of these mutations on the wrong residue.
 
+* **GenScript's gRNA design tool** run with LbCas12a over two *S. cerevisiae*
+  genes (``tests/files_for_testing/genscript/``). Cas12a had no external
+  reference at all: CRISPy-web's export is Cas9, and *S. coelicolor* is so GC
+  rich that SCO5087, the gene the Cas9 reference covers, carries no TTTV site
+  on either strand. These two genes were picked instead because they are on
+  opposite strands, so between them they exercise both position formulas.
+
 The genome file is the same one StreptoCAD validates against, byte for byte.
 """
 
@@ -40,6 +47,16 @@ from teemi.design.crispr_cas import (
 
 GENOME = "tests/files_for_testing/gibson/Streptomyces_coelicolor_A3_chromosome.gb"
 CRISPY_DIR = "tests/files_for_testing/crispy_web"
+GENSCRIPT_DIR = "tests/files_for_testing/genscript"
+
+# GenScript designs against whole chromosomes and reports chromosome
+# coordinates, so each record here is that gene's own slice of its chromosome
+# and ``offset`` converts back: chromosome position = position in record + offset.
+GENSCRIPT_CAS12A = [
+    # gene, locus tag, record, export, chromosome offset, teemi guides
+    ("CAN1", "YEL063C", "CAN1_YEL063C.gb", "cas12a_CAN1_lbcas12a.csv", 31599, 81),
+    ("LYP1", "YNL268W", "LYP1_YNL268W.gb", "cas12a_LYP1_lbcas12a.csv", 138449, 67),
+]
 
 # Hand-curated base-editing results for SCO7048, a minus-strand CDS: the guide
 # and the amino-acid changes its C-to-T edits produce.
@@ -201,6 +218,87 @@ def test_cas9_finds_every_guide_crispy_web_reports(coelicolor):
     assert len(merged) == len(expected)
     mismatched = merged[merged["pam"] != merged["PAM"]]
     assert mismatched.empty, f"PAM differs for {list(mismatched['sgrna'])}"
+
+
+@pytest.mark.parametrize(
+    "gene,locus_tag,record,export,offset,total",
+    GENSCRIPT_CAS12A,
+    ids=[row[0] for row in GENSCRIPT_CAS12A],
+)
+def test_cas12a_finds_every_guide_genscript_reports(
+    gene, locus_tag, record, export, offset, total
+):
+    """Every GenScript guide must be found, with the same PAM, in the same place.
+
+    This is the Cas12a counterpart of the CRISPy-web test above, and the only
+    reference for the nuclease that teemi gets wholly from outside. It is worth
+    more than a second Cas9 reference would be, because GenScript encodes the
+    PAM and the spacer length itself: agreeing with it checks the two constants
+    in ``_NUCLEASES["cas12a"]``, which no test written against teemi's own table
+    can do.
+
+    As with CRISPy-web, teemi reports a superset -- 81 guides to GenScript's 26
+    here, 67 to 29 for LYP1 -- because GenScript ranks and truncates by its own
+    scores, so this asserts containment rather than equality.
+
+    The position assertion is the part the sequence comparison cannot stand in
+    for. ``sgrna_loc`` is in coordinates of the CDS as extracted 5'->3'; mapping
+    it back out to the chromosome and landing on the base GenScript names ties
+    teemi's internal convention to an externally stated genomic coordinate.
+    Both position formulas are covered because CAN1 is on the minus strand and
+    LYP1 on the plus.
+    """
+    rec = SeqIO.read(f"{GENSCRIPT_DIR}/{record}", "genbank")
+    cds = next(f for f in rec.features if f.type == "CDS")
+    assert cds.qualifiers["locus_tag"] == [locus_tag]
+
+    molecule = Dseqrecord(rec)
+    molecule.id = gene
+    molecule.features = rec.features
+    guides = extract_sgRNAs(
+        SgRNAargs(
+            dseqrecord=molecule,
+            locus_tag=[locus_tag],
+            cas_type="cas12a",
+            step=["find"],
+            off_target_seed=13,
+        )
+    )
+    expected = pd.read_csv(f"{GENSCRIPT_DIR}/{export}")
+
+    assert len(guides) == total
+    assert guides["sgrna"].is_unique
+    found = {row.sgrna: row for row in guides.itertuples()}
+    missing = sorted(set(expected["Sequence"]) - set(found))
+    assert (
+        not missing
+    ), f"{gene}: teemi misses {len(missing)} guides, e.g. {missing[:3]}"
+
+    # The spacer length is one of the two constants this reference checks.
+    assert set(guides["sgrna"].str.len()) == {_NUCLEASES["cas12a"].protospacer_len}
+
+    start, end = int(cds.location.start), int(cds.location.end)
+    on_plus = cds.location.strand == 1
+    for row in expected.itertuples():
+        hit = found[row.Sequence]
+        assert hit.pam == row.PAM, f"{gene} {row.Sequence}: {hit.pam} != {row.PAM}"
+
+        # GenScript's span runs PAM then protospacer along its own strand, so
+        # the protospacer begins 4 nt in on the plus strand and at the span's
+        # start on the minus.
+        span_start = int(row.Location.split("..")[0])
+        want = (
+            span_start + _NUCLEASES["cas12a"].pam_len
+            if row.Strand == "+"
+            else span_start
+        )
+
+        begin = hit.sgrna_loc - len(hit.sgrna)
+        in_record = start + begin if on_plus else end - hit.sgrna_loc
+        assert in_record + offset + 1 == want, (
+            f"{gene} {row.Sequence}: teemi puts it at "
+            f"{in_record + offset + 1}, GenScript at {want}"
+        )
 
 
 # ---------------------------------------------------------------------------

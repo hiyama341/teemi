@@ -204,6 +204,24 @@ Unreleased
 - Corrected the ``off_target_upper`` docstring, which called it a "maximum
   number of seed nucleotides" where ``filter_guides`` compares it against a
   guide's count of off-target sites.
+- Added the first external reference for Cas12a. The nuclease had none: the
+  CRISPy-web export validates Cas9, and SCO5087, the gene it covers, carries no
+  TTTV site on either strand of this GC-rich chromosome. Two *S. cerevisiae*
+  genes designed with LbCas12a in GenScript's tool fill the gap -- CAN1
+  (YEL063C, minus strand) and LYP1 (YNL268W, plus strand), 55 guides between
+  them -- with each gene's own slice of its chromosome taken from RefSeq so the
+  comparison runs offline. teemi finds every one of those guides, with the same
+  PAM, at the same chromosome coordinate. This checks what no test written
+  against teemi's own parameter table can: GenScript encodes the TTTV PAM and
+  the 23 nt spacer itself, so agreeing with it tests the two constants rather
+  than only the code that reads them.
+- Recorded that excluding TTTT from the Cas12a PAM is load-bearing twice over.
+  It is the measured As/LbCas12a consensus, and it is also what keeps the
+  non-overlapping ``re.finditer`` scan complete: no two TTTV sites can start
+  within 4 nt of each other, so none is skipped. TTTN has no such property --
+  over this repository's chromosome it finds 7,996 sites where an overlapping
+  scan finds 9,338, and over the two yeast genes it loses 14 of the guides
+  GenScript reports.
 
 1.0.5 (2026-03-15)
 ~~~~~~~~~~~~~~~~~~
