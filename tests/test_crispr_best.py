@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import pandas as pd
+import pytest
+from Bio.Seq import Seq
 
 from teemi.design.crispr_best import (
     filter_sgrnas_for_base_editing,
@@ -15,14 +17,49 @@ GENE_STOP_MINUS = "ATG" "AAA" "AAA" "TGG" "CCC" "CCC" "CCC"  # MKKWPPP
 GENE_MISSENSE_AND_STOP = "ATG" "CCA" "AAA" "CAG" "GGG" "GGG"  # MPKQGG
 GENE_EARLY_STOP = "ATG" "CAA" "GGG" "GGG" "GGG" "GGG"  # MQGGGG
 GENE_DOUBLE_STOP = "ATG" "CAA" "CAA" "GGG" "GGG" "GGG"  # MQQGGG
+GENE_SYNONYMOUS = "ATG" "GGG" "GGG" "GGG"  # MGGG; GGG -> GGA stays Gly
+
+GUIDE_LEN = 12
 
 
-def _row(locus_tag, sgrna_loc, sgrna_strand, editable_cytosines, editing_context="0"):
+def _row(
+    locus_tag,
+    gene,
+    target_idx,
+    *,
+    sense,
+    gene_strand=1,
+    editing_context="0",
+):
+    """Build a guide row that places an editable cytosine on ``gene[target_idx]``.
+
+    The guide is cut out of the gene rather than written by hand, so the row is
+    always self-consistent: a guide reading along the CDS carries a C where the
+    gene has one, and a guide reading against it carries a C where the gene has
+    the complementary G. ``sense`` says which, and ``gene_strand`` then fixes
+    ``sgrna_strand``, since the code decides orientation by comparing the two.
+    """
+    start = max(0, min(target_idx - GUIDE_LEN // 2, len(gene) - GUIDE_LEN))
+    region = gene[start : start + GUIDE_LEN]
+    if sense:
+        sgrna = region
+        position = target_idx - start + 1
+    else:
+        sgrna = str(Seq(region).reverse_complement())
+        position = GUIDE_LEN - (target_idx - start)
+    assert sgrna[position - 1] == "C", (
+        f"gene[{target_idx}] is {gene[target_idx]!r}; a "
+        f"{'sense' if sense else 'antisense'} guide needs a "
+        f"{'C' if sense else 'G'} there"
+    )
     return {
         "locus_tag": locus_tag,
-        "sgrna_loc": sgrna_loc,
-        "sgrna_strand": sgrna_strand,
-        "editable_cytosines": editable_cytosines,
+        "sgrna": sgrna,
+        "gene_strand": gene_strand,
+        "sgrna_strand": gene_strand if sense else -gene_strand,
+        # What the finder reports: the offset one past the protospacer's end.
+        "sgrna_loc": start + GUIDE_LEN,
+        "editable_cytosines": str(position),
         "editing_context": editing_context,
     }
 
@@ -33,7 +70,7 @@ def _row(locus_tag, sgrna_loc, sgrna_strand, editable_cytosines, editing_context
 
 
 def test_identify_base_editing_sites_default_window():
-    # Window is positions 3..10 (1-based), i.e. indices 2..9.
+    # Window is positions 4..10 (1-based), i.e. indices 3..9.
     #              idx 0123456789
     df = pd.DataFrame({"sgrna": ["AAGCAAAACA"]})
 
@@ -48,7 +85,7 @@ def test_identify_base_editing_sites_default_window():
 
 def test_identify_base_editing_sites_ignores_cytosines_outside_window():
     # C at index 0 (position 1) and index 11 (position 12) are both outside
-    # the default 3..10 window.
+    # the default 4..10 window.
     df = pd.DataFrame({"sgrna": ["CAAAAAAAAAAC", "AAAAAAAAAA"]})
 
     result = identify_base_editing_sites(df)
@@ -58,13 +95,14 @@ def test_identify_base_editing_sites_ignores_cytosines_outside_window():
 
 
 def test_identify_base_editing_sites_handles_sgrna_shorter_than_window():
-    # Only 4 bases, so indices 4..9 of the default window do not exist.
+    # Only 4 bases, so indices 4..9 of the default window do not exist. The C at
+    # index 2 is position 3, which the CRISPR-cBEST window 4..10 excludes.
     df = pd.DataFrame({"sgrna": ["AACA"]})
 
     result = identify_base_editing_sites(df)
 
-    assert result.loc[0, "editable_cytosines"] == "3"
-    assert result.loc[0, "editing_context"] == "0"
+    assert result.loc[0, "editable_cytosines"] == ""
+    assert result.loc[0, "editing_context"] == ""
 
 
 def test_identify_base_editing_sites_custom_window():
@@ -111,10 +149,9 @@ def test_filter_sgrnas_for_base_editing_drops_rows_without_editable_cytosines():
 # ---------------------------------------------------------------------------
 
 
-def test_process_base_editing_plus_strand_c_to_t():
-    # sgrna_loc 26 -> sgrna_start 6; editable cytosine 4 -> gene index 9,
-    # the C of codon 4 ("CAA" = Q), which becomes "TAA" = stop.
-    df = pd.DataFrame([_row("g1", 26, 1, "4")])
+def test_process_base_editing_guide_along_the_cds_edits_c_to_t():
+    # Gene index 9 is the C of codon 4 ("CAA" = Q), which becomes "TAA" = stop.
+    df = pd.DataFrame([_row("g1", GENE_STOP_PLUS, 9, sense=True)])
 
     result = process_base_editing(df, {"g1": GENE_STOP_PLUS})
 
@@ -124,10 +161,10 @@ def test_process_base_editing_plus_strand_c_to_t():
     assert "mutated_sequence" not in result.columns
 
 
-def test_process_base_editing_minus_strand_g_to_a():
-    # sgrna_strand -1 -> genome_pos = sgrna_loc - pos = 15 - 4 = 11, the last G
-    # of codon 4 ("TGG" = W), which becomes "TGA" = stop.
-    df = pd.DataFrame([_row("g2", 15, -1, "4")])
+def test_process_base_editing_guide_against_the_cds_edits_g_to_a():
+    # The guide reads against the CDS, so its C is the G at gene index 11, the
+    # last base of codon 4 ("TGG" = W), which becomes "TGA" = stop.
+    df = pd.DataFrame([_row("g2", GENE_STOP_MINUS, 11, sense=False)])
 
     result = process_base_editing(df, {"g2": GENE_STOP_MINUS})
 
@@ -135,57 +172,96 @@ def test_process_base_editing_minus_strand_g_to_a():
     assert result.iloc[0]["mutations"] == "W4*"
 
 
-def test_process_base_editing_drops_rows_without_amino_acid_change():
-    # Gene index 9 is a G on the plus strand, so no C-to-T edit happens and the
-    # protein is unchanged.
-    df = pd.DataFrame([_row("g1", 26, 1, "4"), _row("early", 20, 1, "7")])
+@pytest.mark.parametrize("gene_strand", [1, -1])
+@pytest.mark.parametrize("sense", [True, False])
+def test_process_base_editing_depends_on_strand_only_through_the_comparison(
+    gene_strand, sense
+):
+    """A gene on the minus strand must give the same answer as one on the plus.
 
-    result = process_base_editing(df, {"g1": GENE_STOP_PLUS, "early": GENE_EARLY_STOP})
+    ``gene_sequences`` is always the CDS read 5'->3', so what decides the edit
+    is whether the guide runs along that sequence -- ``sgrna_strand ==
+    gene_strand`` -- and not the sign of ``sgrna_strand`` on its own. Reading
+    the sign alone silently mirrors the window on every minus-strand gene.
+    """
+    gene = GENE_STOP_PLUS if sense else GENE_STOP_MINUS
+    target = 9 if sense else 11
+    expected = "Q4*" if sense else "W4*"
+
+    df = pd.DataFrame([_row("g", gene, target, sense=sense, gene_strand=gene_strand)])
+
+    result = process_base_editing(df, {"g": gene})
+
+    assert list(result["mutations"]) == [expected]
+
+
+def test_process_base_editing_drops_rows_without_amino_acid_change():
+    # Gene index 5 is the third base of codon 2 ("GGG" = G); G-to-A gives "GGA",
+    # still Gly, so the row carries no amino-acid change and is dropped.
+    df = pd.DataFrame(
+        [
+            _row("g1", GENE_STOP_PLUS, 9, sense=True),
+            _row("syn", GENE_SYNONYMOUS, 5, sense=False),
+        ]
+    )
+
+    result = process_base_editing(
+        df, {"g1": GENE_STOP_PLUS, "syn": GENE_SYNONYMOUS}
+    )
 
     assert list(result["mutations"]) == ["Q4*"]
 
 
 def test_process_base_editing_reports_multiple_mutations():
-    # sgrna_start 0; cytosines at positions 4 and 7 -> gene indices 3 and 6,
-    # the C of codon 2 and the C of codon 3, both "CAA" = Q -> "TAA" = stop.
-    df = pd.DataFrame([_row("g5", 20, 1, "4,7")])
+    # One guide over gene[0:12] carries the C of codon 2 (index 3) at position 4
+    # and the C of codon 3 (index 6) at position 7. Both "CAA" (Q) -> "TAA".
+    row = _row("g5", GENE_DOUBLE_STOP, 3, sense=True)
+    row["editable_cytosines"] = "4,7"
+    df = pd.DataFrame([row])
 
     result = process_base_editing(df, {"g5": GENE_DOUBLE_STOP})
 
     assert result.iloc[0]["mutations"] == "Q2*, Q3*"
 
 
-def test_process_base_editing_warns_when_plus_strand_position_out_of_range(capsys):
-    # sgrna_loc 1 -> sgrna_start -19 -> genome_pos -16, before the gene start.
-    df = pd.DataFrame([_row("g1", 1, 1, "4")])
+def test_process_base_editing_raises_when_the_guide_is_not_where_it_says():
+    # The sequence at sgrna_loc is checked, so a guide table that does not
+    # belong to this gene fails loudly instead of editing an arbitrary position.
+    row = _row("g1", GENE_STOP_PLUS, 9, sense=True)
+    row["sgrna"] = "CCCCCCCCCCCC"
+    df = pd.DataFrame([row])
 
-    result = process_base_editing(df, {"g1": GENE_STOP_PLUS})
-
-    assert result.empty  # nothing mutated, so no amino-acid change
-    out = capsys.readouterr().out
-    assert "genome_pos -16 out of range for gene length 27" in out
+    with pytest.raises(RuntimeError, match="is not at offset"):
+        process_base_editing(df, {"g1": GENE_STOP_PLUS})
 
 
-def test_process_base_editing_warns_when_minus_strand_position_out_of_range(capsys):
-    # sgrna_strand -1 -> genome_pos = 100 - 4 = 96, past the 21 nt gene.
-    df = pd.DataFrame([_row("g2", 100, -1, "4")])
+def test_process_base_editing_raises_when_a_position_is_not_a_cytosine():
+    # Gene index 10 is an A, so position 8 of this guide is not editable. The old
+    # code silently edited nothing and reported the guide as having no effect.
+    row = _row("g1", GENE_STOP_PLUS, 9, sense=True)
+    row["editable_cytosines"] = "8"
+    df = pd.DataFrame([row])
 
-    result = process_base_editing(df, {"g2": GENE_STOP_MINUS})
+    with pytest.raises(RuntimeError, match="not an editable cytosine"):
+        process_base_editing(df, {"g1": GENE_STOP_PLUS})
 
-    assert result.empty
-    out = capsys.readouterr().out
-    assert "genome_pos 96 out of range for gene length 21" in out
+
+def test_process_base_editing_requires_the_columns_it_reads():
+    df = pd.DataFrame([{"locus_tag": "g1", "editable_cytosines": "4"}])
+
+    with pytest.raises(ValueError, match="gene_strand"):
+        process_base_editing(df, {"g1": GENE_STOP_PLUS})
 
 
 def test_process_base_editing_only_stop_codons_filters_and_sorts():
     df = pd.DataFrame(
         [
             # "CCA" (P) codon 2 -> "TCA" (S): a missense change, no stop.
-            _row("missense", 20, 1, "4"),
+            _row("missense", GENE_MISSENSE_AND_STOP, 3, sense=True),
             # "CAG" (Q) codon 4 -> "TAG": stop at amino acid 4.
-            _row("missense", 26, 1, "4"),
+            _row("missense", GENE_MISSENSE_AND_STOP, 9, sense=True),
             # "CAA" (Q) codon 2 -> "TAA": stop at amino acid 2.
-            _row("early", 20, 1, "4"),
+            _row("early", GENE_EARLY_STOP, 3, sense=True),
         ]
     )
     gene_sequences = {
@@ -205,11 +281,10 @@ def test_process_base_editing_only_stop_codons_filters_and_sorts():
 
 
 def test_process_base_editing_editing_context_filter():
+    multi = _row("g5", GENE_DOUBLE_STOP, 3, sense=True, editing_context="0,1")
+    multi["editable_cytosines"] = "4,7"
     rows = pd.DataFrame(
-        [
-            _row("g1", 26, 1, "4", editing_context="0"),
-            _row("g5", 20, 1, "4,7", editing_context="0,1"),
-        ]
+        [_row("g1", GENE_STOP_PLUS, 9, sense=True, editing_context="0"), multi]
     )
     gene_sequences = {"g1": GENE_STOP_PLUS, "g5": GENE_DOUBLE_STOP}
 
@@ -222,8 +297,49 @@ def test_process_base_editing_editing_context_filter():
 
 
 def test_process_base_editing_does_not_mutate_input():
-    df = pd.DataFrame([_row("g1", 26, 1, "4")])
+    df = pd.DataFrame([_row("g1", GENE_STOP_PLUS, 9, sense=True)])
 
     process_base_editing(df, {"g1": GENE_STOP_PLUS})
 
     assert "mutations" not in df.columns
+
+
+# A tandem repeat long enough to contain the same protospacer twice. Editing
+# position 4 of that guide hits codon 3 at the first copy and codon 7 at the
+# second, so the two guides have different answers.
+GENE_TANDEM_REPEAT = "ATG" "GGGCAAGGGGGG" "GGGCAAGGGGGG" "TAA"  # MGQGGGQGG*
+
+
+def test_process_base_editing_distinguishes_repeated_protospacers():
+    """Placement must use sgrna_loc, not a search for the protospacer.
+
+    Inside a tandem repeat the same protospacer sits at several offsets, and
+    ``gene_seq.find()`` would return the first one for both guides. On
+    *S. coelicolor* that silently moves the edit for 15 of 133,168 guides,
+    always onto a position the guide cannot even bind, because the repeat
+    breaks inside the PAM.
+    """
+    guide = GENE_TANDEM_REPEAT[3:15]
+    assert GENE_TANDEM_REPEAT.count(guide) == 2
+
+    # The two rows differ only in sgrna_loc, which is the one field that says
+    # which copy the guide came from. The protospacers start at 3 and 15, and
+    # sgrna_loc is one past their ends.
+    rows = pd.DataFrame(
+        [
+            {
+                "locus_tag": "tandem",
+                "sgrna": guide,
+                "gene_strand": 1,
+                "sgrna_strand": 1,
+                "sgrna_loc": start + len(guide),
+                "editable_cytosines": "4",
+                "editing_context": "0",
+            }
+            for start in (3, 15)
+        ]
+    )
+
+    result = process_base_editing(rows, {"tandem": GENE_TANDEM_REPEAT})
+
+    assert list(result["mutations"]) == ["Q3*", "Q7*"]

@@ -19,6 +19,265 @@ Unreleased
   test-only ``pytest-cov`` pin from the runtime requirements.
 - Corrected dependency floors that could not be satisfied together: ``pydna``
   requires ``numpy>1.26``, and ``pandas`` requires ``openpyxl>=3.1.0``.
+- Fixed CRISPR base editing on minus-strand genes. ``process_base_editing``
+  read ``sgrna_strand`` on its own, but it and ``gene_strand`` are both
+  genome-relative, so a guide reads along the CDS only when the two agree.
+  Every minus-strand edit was placed on the wrong residue.
+- Fixed the Cas9 off-target seed register. ``find_off_target_hits`` took the
+  seed as the bases ending at the PAM match, but the ``(?=GG)`` pattern matches
+  at the first G of NGG, so the seed included the PAM's N and dropped the
+  protospacer's last base, one base out of step with the slice the finders look
+  the count up by. Cas9 and CRISPRi off-target counts therefore change, and the
+  ``off_target_upper`` filter admits a different set of guides.
+- Changed the default C-to-T editing window in ``identify_base_editing_sites``
+  from 3-10 to 4-10, the window measured for CRISPR-cBEST. Position 3 has no
+  reported conversion; pass ``editing_window_start=3`` for the old behaviour.
+- ``process_base_editing`` now requires the ``gene_strand`` and ``sgrna``
+  columns, and raises instead of printing a warning when a protospacer is not
+  at its stated offset or an edited position is not a cytosine.
+- ``find_off_target_hits`` accepts ``dcas9`` as an alias for ``cas9`` and names
+  an unknown ``cas_type`` instead of raising ``KeyError``; ``SgRNAargs``
+  rejects an ``off_target_seed`` outside ``1..protospacer_len``; and
+  ``filter_guides`` builds its GC and off-target masks from the frame being
+  filtered, fixing an ``IndexError`` on a multi-contig guide table.
+- Added ``tests/test_crispr_validation.py``, which checks guide finding and
+  base editing against CRISPy-web output and a hand curation of a minus-strand
+  gene.
+- Stopped the sgRNA finders reporting guides that the molecule does not carry.
+  ``feature.extract()`` concatenates the parts of a compound location, so a
+  window spanning two of them read a protospacer and PAM assembled across the
+  gap -- across an intron on a spliced eukaryotic gene, or across the 10 bp
+  overlap in ``SCO0022``, the one compound CDS in the *S. coelicolor*
+  chromosome teemi validates against, which alone yielded 10 cas9 and 2 cas3
+  guides occurring nowhere in the genome on either strand. Such guides also
+  scored ``off_target_count`` 0, ranking them above real ones. The finders now
+  skip windows that span a genomic discontinuity; parts that are *adjacent* on
+  the DNA, such as a CDS crossing the origin of a circular record, are
+  unaffected. Guide counts drop for spliced genes (2.95% to 0% phantoms on
+  *A. oryzae* chromosome 1); one-part CDSs, which is every CDS in a bacterial
+  genome bar the above, are untouched.
+- Collapsed the three sgRNA finders into one scan. ``find_sgrna_hits_cas9``,
+  ``find_sgrna_hits_cas12a`` and ``find_sgrna_hits_cas3`` were near-copies of
+  one another -- the cas12a and cas3 bodies were 96% byte-identical, differing
+  only in two constants and whether a ``print`` was commented out -- so a fix
+  had to be made three times and in practice was not: a mutation audit found
+  that 6 of 8 deliberate defects in the cas12a copy went undetected by the test
+  suite, against 1 of 6 in cas3, which has golden-row tests. The three now
+  delegate to one implementation driven by a ``_Nuclease`` record of everything
+  that differs: PAM pattern and length, protospacer length, which side of the
+  protospacer the PAM sits on, the strand sign, and the diagnostic messages.
+  Their names, signatures and argument order are unchanged, since ``crispri``
+  and the tests call them positionally.
+- No change in what the finders return. Verified byte-identical over 43,663
+  guide rows in 14 configurations: the *S. coelicolor* chromosome across 134
+  loci for all three nucleases, two cas12a protospacer lengths, the ``filter``
+  step, and synthetic circular, spliced and opposite-strand records. Preserved
+  deliberately, because this change is not the place to alter them: the printed
+  messages, including which nucleases stay silent; the cas12a and cas3
+  ``sgrna_loc``, which the position formula misplaces (fixed separately,
+  below); and the ``TypeError`` raised on a CDS whose parts lie on opposite
+  strands, which Biopython gives ``strand=None``.
+- A differential search over 2.95 million inputs -- truncated windows and
+  each guard path, every compound-location arrangement, degenerate sequence
+  content, parameter extremes, printed output, and every CDS of the
+  *S. coelicolor* and *A. oryzae* genomes -- found three edge paths where the
+  collapse had shifted behaviour, all since restored: an empty protospacer
+  prints cas9's out-of-border message again, that nuclease having had no
+  empty branch of its own; the window arithmetic stays inside the match loop,
+  so a ``protospacer_len`` it cannot add still fails at the first match
+  rather than at the call; and the strand multiplication stays ahead of the
+  seed slice, which decides which ``TypeError`` a strandless CDS raises.
+- One deliberate difference: ``find_sgrna_hits_cas9`` calls its ``revcomp``
+  argument once per candidate window rather than twice, taking the guide and
+  its PAM from one reverse complement instead of two. Any pure ``revcomp``,
+  the module's own included, yields the same rows; only one that counts, logs
+  or caches its calls can tell the difference.
+- Dropped, in the course of that collapse: ``gene_counter`` and
+  ``sgrna_counter``, incremented in three functions and never read; three
+  commented-out ``print`` statements; and a docstring documenting a ``filepath``
+  parameter the function did not take. The scan-flag branch was an ``if``/``elif``
+  with no ``else``, leaving three names reachable-unbound, and is now an
+  ``if``/``else``. The module goes from 941 lines to 699, and from 246 statements
+  to 176.
+
+- Fixed ``sgrna_loc`` for Cas12a and Cas3. The column is one past the
+  protospacer's end, in coordinates of the CDS as extracted 5'->3'. It is how
+  ``crispr_best.process_base_editing`` finds a guide, by slicing
+  ``[sgrna_loc - len(sgrna) : sgrna_loc]``, so a value out by one base edits the
+  wrong residue. Two errors with separate causes were both inert for Cas9 and so
+  went unseen. The forward scan added a literal 3 to ``match.end()``, which for a
+  5' PAM already covers the PAM -- Cas9's PAM pattern is a zero-width lookahead,
+  so there the 3 supplies the PAM length rather than duplicating it -- and the
+  reverse scan subtracted that same literal 3 where the nuclease's own
+  ``pam_len`` belonged. Cas12a positions were therefore 3 nt out on the forward
+  scan and 1 nt out on the reverse, and Cas3's 3 nt out on the forward scan only,
+  its PAM being 3 nt. Base editing a Cas3 guide table raised ``RuntimeError`` in
+  consequence -- the offset guard in ``process_base_editing`` catching the
+  protospacer not being where the table said -- and now completes. A Cas12a
+  table still fails there, but for an unrelated reason that this change does not
+  touch: on SCO5087 it yields no editable guides at all, and
+  ``process_base_editing`` raises ``ValueError`` on an empty frame rather than
+  returning one.
+- Checked by reading the slice back out of the CDS over the whole
+  *S. coelicolor* chromosome: all 1,725,388 Cas9 guides already sat where they
+  claimed, against none of the 8,124 Cas12a guides and none of the 75,555
+  forward-scan Cas3 guides. Every guide of all three now does, and Cas9's eleven
+  columns are unchanged across those 1,725,388 rows, so only the Cas12a and Cas3
+  ``sgrna_loc`` moves. ``tests/test_crispr_validation.py`` asserts this per
+  nuclease and requires both scan directions to occur, so that neither position
+  formula can go unexercised.
+- This is a point where teemi departs from StreptoCAD, which its guide finders
+  were ported from. StreptoCAD computes the same two expressions, but every
+  nuclease it supports has a 3 nt PAM -- its Cas12a is experimental and uses a
+  3 nt ``TTN`` -- so the hardcoded 3 is never wrong on its reverse scan. teemi
+  brought that half of the defect to light by adopting Cas12a's 4 nt ``TTTV``
+  PAM. The forward-scan error is present in both, and misplaces Cas3 guides
+  there as it did here.
+- Pinned each nuclease's PAM and spacer length to the enzyme it was measured
+  for. The three parameter sets were bare literals, so nothing in the module
+  recorded which enzyme ``cas_type="cas3"`` meant, or where a 34 nt spacer and a
+  ``TTC`` PAM had come from. Each entry now names its enzyme and cites a source
+  that states both of its constants: ``cas9`` is SpCas9 (Jinek et al. 2012),
+  ``cas12a`` is As/LbCas12a (Toth et al. 2018), and ``cas3`` is the minimal
+  Type I-C CASCADE-Cas3 of pCRISPR-Cas3 (Whitford et al. 2025), which is this
+  group's own system rather than a guess at one. All six constants were checked
+  against the primary literature and none of them changed.
+- Two things that surfaced in doing so, both worth recording. Cas3's subtype is
+  I-C, and that does not follow from its PAM: Type I-B uses ``TTC`` as well, so
+  the subtype comes from the system being modelled, while canonical Type I-E
+  takes ``AAG`` instead. And Type I-C cuts bi-directionally from the target
+  site, so the extent of a Cas3 deletion cannot be predicted to run one way.
+- Fixed Cas12a guides coming back 20 nt long from ``extract_sgRNAs``. Each
+  parameter set carries the spacer length its enzyme was measured for, but
+  ``SgRNAargs.protospacer_len`` defaulted to 20 and was forwarded to the cas12a
+  finder alone, so the default path overrode the As/LbCas12a 23 with a Cas9
+  number while cas9 and cas3 kept their own. ``protospacer_len`` now defaults to
+  ``None``, meaning whatever the chosen ``cas_type`` was measured for, and an
+  explicit value applies to whichever nuclease is in use rather than to cas12a
+  only. Over 40 *S. coelicolor* CDSs this moves Cas12a from 89 guides of 20 nt
+  to 88 of 23 nt, which is what calling the finder directly already returned.
+  Notebook 10 had been passing ``protospacer_len=23`` by hand to get it.
+- Fixed the ``off_target_seed`` ceiling refusing legal values. It was checked
+  against ``protospacer_len``, which was 20 whatever the nuclease, so
+  ``cas_type="cas3", off_target_seed=25`` was rejected although Cas3's
+  protospacer is 34 nt long and the seed is sliced out of it. The ceiling is now
+  the protospacer length the ``cas_type`` resolves to, and the message names the
+  nuclease that set it.
+- Replaced the three substring guards in ``extract_sgRNAs`` with one lookup in
+  the parameter table. ``if "cas9" in args.cas_type`` is what had made ``dcas9``
+  work, it matched a nuclease named anywhere in the string, and a ``cas_type``
+  none of the three recognised fell through all of them and left ``sgrna_df``
+  unbound. An unknown ``cas_type`` is now rejected when ``SgRNAargs`` is
+  constructed, since resolving the protospacer length is what validates it.
+- Moved the off-target scan's PAM patterns into that same table as
+  ``off_target_pam_pattern``. They were a second dictionary holding Cas9's PAM
+  in the opposite orientation -- ``(?=GG)`` against ``(?=CC)`` -- with nothing
+  recording that the two scans read their seed off different strands and so need
+  the PAM in different senses. Both scans read both strands, so the seeds
+  collected were always the same; the counters are unchanged, verified identical
+  across four ``cas_type`` values and four seed lengths over both strands of the
+  chromosome and a set of degenerate short inputs.
+- Settled ``off_target_seed`` by leaving all three nucleases on 13. It is not a
+  stray Cas9 constant: it is CRISPy-web's own window, and Blin et al. 2020 sort
+  candidates by off-target hits "with 0, 1, or 2 mismatches in the 13 bp seed
+  region right upstream of the PAM". CRISPy-web holds that 13 fixed and varies
+  only the PAM between nucleases, so one seed length for all three is upstream's
+  design rather than something overlooked here. Whitford et al. 2025's Cas3
+  figure is real and ``off_target_seed=8`` reproduces it exactly, but as a
+  default it costs more than it buys: over the first 500 CDSs of NC_003888.3,
+  Cas3 at 13 keeps all 8712 candidate guides under the default
+  ``off_target_upper=10`` with a median count of 0, while at 8 it keeps 54.2%,
+  the median count is 9, the 90th percentile is 32 and three genes are left with
+  no guide at all. The seed and that cutoff are a coupled pair, and Whitford's
+  script applies no numeric cutoff, so moving one of the two alone does not
+  reproduce their method. The parameter stays overridable and its provenance is
+  now recorded beside the table.
+- Recorded the gap that matters more than the seed length. ``off_target_count``
+  counts exact matches, where CRISPy-web counts near-misses in the same window.
+  This repository's own fixture carries both: guide CY00000196 of SCO5087 has 0
+  off-targets at 0 mismatches, 30 at one and 591 at two, and teemi reproduces
+  the first of those three columns only. So ``off_target_upper`` rejects almost
+  nothing at the shipped defaults -- 0.2% of Cas9 candidates over those 500
+  CDSs -- and a guide reported as unique may have hundreds of near-misses.
+  Nothing in the test suite guards the default either, since every call site
+  passes ``off_target_seed`` explicitly.
+- Corrected the ``off_target_upper`` docstring, which called it a "maximum
+  number of seed nucleotides" where ``filter_guides`` compares it against a
+  guide's count of off-target sites.
+- Added the first external reference for Cas12a. The nuclease had none: the
+  CRISPy-web export validates Cas9, and SCO5087, the gene it covers, carries no
+  TTTV site on either strand of this GC-rich chromosome. Two *S. cerevisiae*
+  genes designed with LbCas12a in GenScript's tool fill the gap -- CAN1
+  (YEL063C, minus strand) and LYP1 (YNL268W, plus strand), 55 guides between
+  them -- with each gene's own slice of its chromosome taken from RefSeq so the
+  comparison runs offline. teemi finds every one of those guides, with the same
+  PAM, at the same chromosome coordinate. This checks what no test written
+  against teemi's own parameter table can: GenScript encodes the TTTV PAM and
+  the 23 nt spacer itself, so agreeing with it tests the two constants rather
+  than only the code that reads them.
+- Recorded that excluding TTTT from the Cas12a PAM is load-bearing twice over.
+  It is the measured As/LbCas12a consensus, and it is also what keeps the
+  non-overlapping ``re.finditer`` scan complete: no two TTTV sites can start
+  within 4 nt of each other, so none is skipped. TTTN has no such property --
+  over this repository's chromosome it finds 7,996 sites where an overlapping
+  scan finds 9,338, and over the two yeast genes it loses 14 of the guides
+  GenScript reports.
+- Added the first external reference for Cas3. No design service offers
+  Type I-C: GenScript has no Type I system, and CRISPy-web 3.0 added CRISPRi
+  and TnpB but is still Cas9-only among the cutters. The authors of
+  pCRISPR-Cas3 hit the same wall -- "the majority of existing computational
+  tools do not support type I/type I-C CRISPR systems" -- and published the
+  notebook they picked their own spacers with, `NBChub/Type1_Protospacers
+  <https://github.com/NBChub/Type1_Protospacers>`_. That makes it the
+  reference implementation of the system modelled here, and the same source
+  ``TTC`` and ``34`` are taken from. Over SCO5087 (plus strand) and SCO7048
+  (minus strand) it reports 31 spacers each and teemi reports exactly the same
+  sets -- same sequence, same chromosome coordinate and same strand, guide for
+  guide, with equality rather than containment because the notebook ranks but
+  does not truncate. Over the first 400 single-part CDSs of NC_003888.3 all
+  6,924 guides agree on both. It is the same laboratory as teemi and as
+  CRISPy-web, so it does not make the biology independent; what it pins
+  independently is the mechanics, which side of the protospacer the PAM sits
+  on, how far the spacer runs, how the reverse strand is reached and where the
+  result lands -- the four things that were wrong for cas12a and cas3 before.
+- Confirmed the ``off_target_seed=8`` claim against that notebook rather than
+  against its paper's prose. teemi's ``off_target_count`` at 8 is the
+  notebook's seed count minus one for every guide of both genes, up to counts
+  of 53. The offset is the on-target site, which teemi subtracts and the
+  notebook leaves in, as its README says: "a match count of 1 indicates that
+  no off-target sites were found". A count that reached only one strand, or
+  anchored the seed a base out, would diverge by more than a constant.
+- Added the spacers pCRISPR-Cas3 was actually cloned with, which is the only
+  CRISPR reference here made of guides known to cut rather than guides a scan
+  proposed. The paper's data record (DTU Data, doi:10.11583/DTU.22786157)
+  lists ten protospacers targeting this chromosome; seven lie inside a
+  single-part CDS and so are reachable by a locus tag, and teemi reports every
+  one of them at the coordinate and strand the record gives, across six genes
+  from 92 kb to 7.4 Mb, four on the minus strand and three on the plus. The
+  other three are intergenic, which ``extract_sgRNAs`` cannot reach because it
+  takes locus tags and nothing else -- Cas3 deletes processively, so the paper
+  also aims it between genes. This cannot validate ``TTC`` or ``34``, since
+  those spacers were chosen by searching for that PAM at that length, and the
+  test says so; what it validates is the scanner, over far more of the
+  chromosome than two genes reach.
+- Recorded a source for the Cas3 PAM from outside teemi's own authors, which
+  the parameter table had been missing. Leon et al. 2021 (NAR 49:2114,
+  doi:10.1093/nar/gkab006) determined it in the system's native host and by
+  the laboratory that built this compact I-C system rather than the one that
+  ported it: "Alignments of 3163 protospacers with upstream and downstream
+  regions revealed the consensus PAM ... to be 5'-TTC-3'". The same paper puts
+  34 nt inside a measured range instead of at an optimum -- "Because Type I-C
+  spacer length ranges from 32-37 nt, contrary to Type I-F spacers
+  consistently measuring 32 nt" -- so 34 is the pCRISPR-Cas3 cloning
+  convention chosen within a functional window. The notebook credits Csorgo
+  et al. 2020 for its defaults; that paper introduced the system, and the PAM
+  determination for it is Leon.
+- Noted one published number that does not reproduce, so that it is not
+  mistaken for an oracle later. Whitford et al. report "158 341 5'-TTC-3' PAM
+  sequences" in *S. coelicolor*, "averaging one PAM for every 54.7 bp", where
+  scanning NC_003888.3 on both strands finds 162,382 and collapsing identical
+  spacers gives 159,792. Neither is their figure and the 2.5% gap is
+  undocumented.
 
 1.0.5 (2026-03-15)
 ~~~~~~~~~~~~~~~~~~

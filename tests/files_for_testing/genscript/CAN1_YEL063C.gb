@@ -1,0 +1,187 @@
+LOCUS       NC_001137               1961 bp    DNA     linear   CON 10-JUL-2026
+DEFINITION  Saccharomyces cerevisiae S288C chromosome V, complete sequence.
+ACCESSION   NC_001137 REGION: 31600..33560
+VERSION     NC_001137.3
+DBLINK      BioProject: PRJNA128
+            Assembly: GCF_000146045.2
+KEYWORDS    RefSeq.
+SOURCE      Saccharomyces cerevisiae S288C
+  ORGANISM  Saccharomyces cerevisiae S288C
+            Eukaryota; Fungi; Dikarya; Ascomycota; Saccharomycotina;
+            Saccharomycetes; Saccharomycetales; Saccharomycetaceae;
+            Saccharomyces.
+REFERENCE   1  (bases 1 to 1961)
+  AUTHORS   Engel,S.R., Wong,E.D., Nash,R.S., Aleksander,S., Alexander,M.,
+            Douglass,E., Karra,K., Miyasato,S.R., Simison,M., Skrzypek,M.S.,
+            Weng,S. and Cherry,J.M.
+  TITLE     New data and collaborations at the Saccharomyces Genome Database:
+            updated reference genome, alleles, and the Alliance of Genome
+            Resources
+  JOURNAL   Genetics 220 (4) (2022)
+   PUBMED   34897464
+REFERENCE   2  (bases 1 to 1961)
+  AUTHORS   Dietrich,F.S., Mulligan,J., Hennessy,K., Yelton,M.A., Allen,E.,
+            Araujo,R., Aviles,E., Berno,A., Brennan,T., Carpenter,J., Chen,E.,
+            Cherry,J.M., Chung,E., Duncan,M., Guzman,E., Hartzell,G.,
+            Hunicke-Smith,S., Hyman,R.W., Kayser,A., Komp,C., Lashkari,D.,
+            Lew,H., Lin,D., Mosedale,D., Davis,R.W. et al.
+  TITLE     The nucleotide sequence of Saccharomyces cerevisiae chromosome V
+  JOURNAL   Nature 387 (6632 SUPPL), 78-81 (1997)
+   PUBMED   9169868
+REFERENCE   3  (bases 1 to 1961)
+  AUTHORS   Goffeau,A., Barrell,B.G., Bussey,H., Davis,R.W., Dujon,B.,
+            Feldmann,H., Galibert,F., Hoheisel,J.D., Jacq,C., Johnston,M.,
+            Louis,E.J., Mewes,H.W., Murakami,Y., Philippsen,P., Tettelin,H. and
+            Oliver,S.G.
+  TITLE     Life with 6000 genes
+  JOURNAL   Science 274 (5287), 546 (1996)
+   PUBMED   8849441
+REFERENCE   4  (bases 1 to 1961)
+  CONSRTM   NCBI Genome Project
+  TITLE     Direct Submission
+  JOURNAL   Submitted (10-JUL-2026) National Center for Biotechnology
+            Information, NIH, Bethesda, MD 20894, USA
+REFERENCE   5  (bases 1 to 1961)
+  CONSRTM   Saccharomyces Genome Database
+  TITLE     Direct Submission
+  JOURNAL   Submitted (16-JAN-2015) Department of Genetics, Stanford
+            University, Stanford, CA 94305-5120, USA
+  REMARK    Protein update by submitter
+REFERENCE   6  (bases 1 to 1961)
+  CONSRTM   Saccharomyces Genome Database
+  TITLE     Direct Submission
+  JOURNAL   Submitted (29-JUL-2014) Department of Genetics, Stanford
+            University, Stanford, CA 94305-5120, USA
+  REMARK    Protein update by submitter
+REFERENCE   7  (bases 1 to 1961)
+  CONSRTM   Saccharomyces Genome Database
+  TITLE     Direct Submission
+  JOURNAL   Submitted (04-MAY-2012) Department of Genetics, Stanford
+            University, Stanford, CA 94305-5120, USA
+  REMARK    Protein update by submitter
+REFERENCE   8  (bases 1 to 1961)
+  CONSRTM   Saccharomyces Genome Database
+  TITLE     Direct Submission
+  JOURNAL   Submitted (31-MAR-2011) Department of Genetics, Stanford
+            University, Stanford, CA 94305-5120, USA
+  REMARK    Sequence update by submitter
+REFERENCE   9  (bases 1 to 1961)
+  CONSRTM   Saccharomyces Genome Database
+  TITLE     Direct Submission
+  JOURNAL   Submitted (11-DEC-2009) Department of Genetics, Stanford
+            University, Stanford, CA 94305-5120, USA
+COMMENT     REVIEWED REFSEQ: This record has been curated by SGD. The reference
+            sequence is identical to BK006939.
+            
+            On Apr 26, 2011 this sequence version replaced NC_001137.2.
+            Structural annotation is propagated from INSDC submissions or other
+            annotation providers and processed to follow RefSeq standards.
+            Functional annotation is provided by RefSeq, and is derived from
+            model organism databases, orthologous species, curation, domain
+            architecture analysis, and submitted information.
+            
+            ##Genome-Annotation-Data-START##
+            Annotation Provider :: SGD
+            Annotation Status   :: Full Annotation
+            Annotation Version  :: R64-5-1
+            URL                 :: http://www.yeastgenome.org/
+            ##Genome-Annotation-Data-END##
+            COMPLETENESS: full length.
+FEATURES             Location/Qualifiers
+     source          1..1961
+                     /organism="Saccharomyces cerevisiae S288C"
+                     /mol_type="genomic DNA"
+                     /strain="S288C"
+                     /db_xref="taxon:559292"
+                     /chromosome="V"
+     gene            complement(<95..>1867)
+                     /gene="CAN1"
+                     /locus_tag="YEL063C"
+                     /db_xref="GeneID:856646"
+     mRNA            complement(<95..>1867)
+                     /gene="CAN1"
+                     /locus_tag="YEL063C"
+                     /product="arginine permease CAN1"
+                     /transcript_id="NM_001178878.1"
+                     /db_xref="GeneID:856646"
+     CDS             complement(95..1867)
+                     /gene="CAN1"
+                     /locus_tag="YEL063C"
+                     /experiment="EXISTENCE:direct assay:GO:0005739
+                     mitochondrion [PMID:16823961|PMID:14576278]"
+                     /experiment="EXISTENCE:direct assay:GO:0005783 endoplasmic
+                     reticulum [PMID:26928762]"
+                     /experiment="EXISTENCE:direct assay:GO:0005886 plasma
+                     membrane [PMID:15536122]"
+                     /experiment="EXISTENCE:direct assay:GO:0015174 basic amino
+                     acid transmembrane transporter activity [PMID:10654085]"
+                     /experiment="EXISTENCE:direct assay:GO:0015802 basic amino
+                     acid transport [PMID:10654085]"
+                     /experiment="EXISTENCE:direct assay:GO:0032126 eisosome
+                     [PMID:15536122|PMID:29402931]"
+                     /experiment="EXISTENCE:direct assay:GO:0055085
+                     transmembrane transport [PMID:10654085]"
+                     /experiment="EXISTENCE:genetic interaction:GO:1903826
+                     L-arginine transmembrane transport [PMID:23047103]"
+                     /experiment="EXISTENCE:mutant phenotype:GO:0061459
+                     L-arginine transmembrane transporter activity
+                     [PMID:10753927]"
+                     /note="Plasma membrane arginine permease; transceptor that
+                     senses extracellular basic amino acids; negative regulator
+                     of biofilm formation; requires phosphatidyl ethanolamine
+                     (PE) for localization, exclusively associated with lipid
+                     rafts; mutation confers canavanine resistance; CAN1 has a
+                     paralog, ALP1, that arose from the whole genome
+                     duplication"
+                     /codon_start=1
+                     /product="arginine permease CAN1"
+                     /protein_id="NP_010851.1"
+                     /db_xref="GeneID:856646"
+                     /db_xref="SGD:S000000789"
+                     /translation="MTNSKEDADIEEKHMYNEPVTTLFHDVEASQTHHRRGSIPLKDE
+                     KSKELYPLRSFPTRVNGEDTFSMEDGIGDEDEGEVQNAEVKRELKQRHIGMIALGGTI
+                     GTGLFIGLSTPLTNAGPVGALISYLFMGSLAYSVTQSLGEMATFIPVTSSFTVFSQRF
+                     LSPAFGAANGYMYWFSWAITFALELSVVGQVIQFWTYKVPLAAWISIFWVIITIMNLF
+                     PVKYYGEFEFWVASIKVLAIIGFLIYCFCMVCGAGVTGPVGFRYWRNPGAWGPGIISK
+                     DKNEGRFLGWVSSLINAAFTFQGTELVGITAGEAANPRKSVPRAIKKVVFRILTFYIG
+                     SLLFIGLLVPYNDPKLTQSTSYVSTSPFIIAIENSGTKVLPHIFNAVILTTIISAANS
+                     NIYVGSRILFGLSKNKLAPKFLSRTTKGGVPYIAVFVTAAFGALAYMETSTGGDKVFE
+                     WLLNITGVAGFFAWLFISISHIRFMQALKYRGISRDELPFKAKLMPGLAYYAATFMTI
+                     IIIIQGFTAFAPKFNGVSFAAAYISIFLFLAVWILFQCIFRCRFIWKIGDVDIDSDRR
+                     DIEAIVWEDHEPKTFWDKFWNVVA"
+ORIGIN      
+        1 ttgatccctt aaactttctt ttcggtgtat gacttatgag ggtgagaatg cgaaatggcg
+       61 tggaaatgtg atcaaaggta ataaaacgtc atatctatgc tacaacattc caaaatttgt
+      121 cccaaaaagt ctttggttca tgatcttccc atacaattgc ctcaatgtct cttctatcgg
+      181 aatcgatgtc gacatctcca atcttccaaa taaatctgca tctgaatatg cattgaaata
+      241 agatccaaac agctaagaac aggaaaatag agatataggc ggcagcaaag ctaacaccat
+      301 tgaattttgg tgcaaaagcc gtgaaacctt gaataatgat aatgatcgtc ataaatgtgg
+      361 ccgcataata agccaagccg ggcattaatt tagctttaaa tggtaactcg tcacgagaga
+      421 tgccacggta tttcaaagct tgcataaatc tgatgtgcga gattgagata aataaccatg
+      481 caaaaaagcc tgcaacacca gtgatattta atagccattc gaaaactttg tcaccaccag
+      541 tagatgtctc catgtaagcc aaagcgccaa atgcagcagt aacgaaaact gcaatgtatg
+      601 gaacaccacc tttggtggtc cttgacagga atttaggagc caacttgttc tttgatagac
+      661 caaataaaat acgggaacca acgtaaatat ttgaatttgc ggcagaaata atggttgtta
+      721 agataacagc gttgaagata tgtggcaaaa cctttgtacc agagttctca atagcaataa
+      781 taaagggaga agtagaaacg taggaagtag attgtgttag tttagggtca ttgtatggaa
+      841 ctaaaagtcc aatgaataat agagagccaa tgtagaaggt taagatacgg aaaacaactt
+      901 ttttgatggc tcttggaacg gattttctgg ggtttgcagc ttcaccagca gtgataccaa
+      961 ctagttcagt accttgaaat gtgaaggcag cgttaatcaa agaggaaacc caacctaaga
+     1021 acctcccttc gtttttatcc ttagatatta tacctggacc ccaggcacct gggtttctcc
+     1081 aataacggaa tccaactggg ccggtaaccc cagcaccaca aaccatacaa aaacagtata
+     1141 ttagaaaccc gataatggct aaaactttga tggaagcgac ccagaactcg aattcaccgt
+     1201 aatatttgac agggaacaag ttcattattg tgataattac ccaaaaaata ctaatccatg
+     1261 ccgccagtgg aactttgtac gtccaaaatt gaatgacttg gccaactaca ctaagttcca
+     1321 gggcaaaagt gattgcccaa gaaaaccaat acatgtaacc attggccgca ccaaatgctg
+     1381 gagaaaggaa tctttgtgag aaaactgtga aagaggatgt aacagggatg aatgtagcca
+     1441 tttcacccaa ggactgcgtg acagaatatg ccaaagaacc cataaataaa tatgatataa
+     1501 gagcgcccac tgggccggcg ttggtcagag gtgtggataa accaatgaaa agacctgtac
+     1561 caatagtacc accaagggca atcataccaa tatgtctttg cttaagctct ctcttcactt
+     1621 cagcgttctg tacttctcct tcatcttcat cacctatgcc atcctccata gagaacgtat
+     1681 cctcgccatt tactctcgtc gggaaagagc gcaatggata caattcttta cttttctcat
+     1741 ctttcaatgg tattgaccca cgtctgtggt gtgtttgtga agcttcaacg tcgtgaaaga
+     1801 gggttgtgac cggctcattg tacatatgct tctcctctat gtcggcgtct tcttttgaat
+     1861 ttgtcattgc tatgcctttt tttttttttg tttttacagg agttaagaag tctgaagaac
+     1921 tctgaaataa actttcgatt gacgacagat taaaaactgg a
+//
+
