@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+import itertools
+import re
+
 import pandas as pd
 import pytest
 from Bio.Seq import Seq
@@ -9,6 +12,7 @@ from teemi.design.crispr_best import (
     identify_base_editing_sites,
     process_base_editing,
 )
+from teemi.design.crispr_cas import _NUCLEASES
 
 # Genes used by the process_base_editing tests. Index 0 is the first base.
 #                  0  1  2   3  4  5   6  7  8   9 10 11  12..
@@ -61,6 +65,10 @@ def _row(
         "sgrna_loc": start + GUIDE_LEN,
         "editable_cytosines": str(position),
         "editing_context": editing_context,
+        # process_base_editing refuses a table whose PAM is not Cas9's, so the
+        # rows it is given carry one. Which NGG it is makes no difference to
+        # any assertion here.
+        "pam": "AGG",
     }
 
 
@@ -335,6 +343,7 @@ def test_process_base_editing_distinguishes_repeated_protospacers():
                 "sgrna_loc": start + len(guide),
                 "editable_cytosines": "4",
                 "editing_context": "0",
+                "pam": "AGG",
             }
             for start in (3, 15)
         ]
@@ -343,3 +352,291 @@ def test_process_base_editing_distinguishes_repeated_protospacers():
     result = process_base_editing(rows, {"tandem": GENE_TANDEM_REPEAT})
 
     assert list(result["mutations"]) == ["Q3*", "Q7*"]
+
+
+# ---------------------------------------------------------------------------
+# CRISPR-BEST is dCas9 only
+#
+# The editors are rAPOBEC1 and ecTadA fused to an SpCas9 D10A nickase, and the
+# 4-10 editing window is a measurement on that 20 nt Cas9 geometry, so a guide
+# table from another nuclease has to be refused. It used not to be: with the
+# sgrna_loc positions correct, a Cas3 table passed every check and came back
+# with invented amino-acid changes, five of them on SCO5087.
+# ---------------------------------------------------------------------------
+
+
+def _cas9_row(pam="AGG"):
+    """One well-formed Cas9 row whose only interesting field is the PAM.
+
+    Index 9 of ``GENE_STOP_PLUS`` is the C the other tests edit, so the row
+    produces a real mutation and an acceptance can be told from a no-op.
+    """
+    row = _row("g", GENE_STOP_PLUS, 9, sense=True)
+    row["pam"] = pam
+    return row
+
+
+def _pams_matching(pattern, length):
+    """Every k-mer of ``length`` that ``pattern`` matches end to end."""
+    return [
+        "".join(kmer)
+        for kmer in itertools.product("ACGT", repeat=length)
+        if re.fullmatch(pattern, "".join(kmer))
+    ]
+
+
+def test_no_pam_another_supported_nuclease_can_emit_is_accepted():
+    """Tied to the nuclease table, not to hand-written strings.
+
+    This is the assertion that has to keep holding if a nuclease is ever added:
+    the guard tests ``endswith("GG")``, and that is only a sound proxy for "came
+    from Cas9" as long as no other entry in ``_NUCLEASES`` can produce such a
+    PAM. Expanding each pattern over ACGT checks exactly that, so adding an
+    entry whose PAM could end in GG fails here rather than silently widening
+    what CRISPR-BEST accepts.
+    """
+    foreign = {
+        name: _pams_matching(spec.pam_pattern, spec.pam_len)
+        for name, spec in _NUCLEASES.items()
+        if name not in ("cas9", "dcas9")
+    }
+    # Guard the guard: if a pattern expands to nothing the loop below is vacuous.
+    assert foreign, "no non-Cas9 nucleases found in _NUCLEASES"
+    for name, pams in foreign.items():
+        assert pams, f"{name}'s pam_pattern expanded to no k-mers"
+        for pam in pams:
+            with pytest.raises(ValueError, match="not supported for CRISPR-BEST"):
+                process_base_editing(
+                    pd.DataFrame([_cas9_row(pam)]), {"g": GENE_STOP_PLUS}
+                )
+
+
+@pytest.mark.parametrize("pam", ["AGG", "CGG", "GGG", "TGG", "agg", "tgg"])
+def test_every_cas9_pam_is_accepted(pam):
+    """All four NGG, and lower case, since a record can be read either way.
+
+    ``_NUCLEASES["cas9"].pam_pattern`` is ``(?=CC)``, the form matched on the
+    scanned strand; what the finder reports in the ``pam`` column is the NGG
+    form, which is what this covers.
+    """
+    result = process_base_editing(
+        pd.DataFrame([_cas9_row(pam)]), {"g": GENE_STOP_PLUS}
+    )
+
+    assert len(result) == 1
+
+
+@pytest.mark.parametrize("pam", ["GGA", "GGT", "GGTTC", "AGGAG"])
+def test_a_pam_containing_gg_without_ending_in_it_is_refused(pam):
+    """Pins ``endswith`` rather than ``contains``.
+
+    Every other PAM in these tests either ends in GG or holds no GG at all, so
+    relaxing the guard to ``str.contains`` passed the whole suite. No entry in
+    ``_NUCLEASES`` emits a PAM like these, so this closes no reachable bypass;
+    it pins the predicate that ``_CAS9_PAM_SUFFIX``, the module comment and the
+    error message all state.
+    """
+    with pytest.raises(ValueError, match="not supported for CRISPR-BEST"):
+        process_base_editing(
+            pd.DataFrame([_cas9_row(pam)]), {"g": GENE_STOP_PLUS}
+        )
+
+
+@pytest.mark.parametrize("pam", ["AGG ", " AGG", "\tagg\n"])
+def test_a_cas9_pam_with_surrounding_whitespace_is_accepted(pam):
+    """A CSV round trip can pad the column; the guide is still Cas9.
+
+    Without the ``strip`` this was asymmetric, because only the suffix is
+    tested: a leading space passed and a trailing one was refused, reported as
+    a PAM that renders identically to an accepted one.
+    """
+    result = process_base_editing(
+        pd.DataFrame([_cas9_row(pam)]), {"g": GENE_STOP_PLUS}
+    )
+
+    assert len(result) == 1
+
+
+def test_process_base_editing_refuses_a_cas3_guide_table():
+    result = pytest.raises(
+        ValueError,
+        match=r"PAM\(s\) \['TTC'\] are not supported for CRISPR-BEST",
+    )
+    with result:
+        process_base_editing(
+            pd.DataFrame([_cas9_row("TTC")]), {"g": GENE_STOP_PLUS}
+        )
+
+
+def test_one_foreign_row_refuses_the_whole_table_and_the_message_names_it():
+    """A mixed table is a scope error too, and only the odd PAM is reported."""
+    rows = pd.DataFrame([_cas9_row("AGG"), _cas9_row("TTC"), _cas9_row("CGG")])
+
+    with pytest.raises(ValueError, match=r"\['TTC'\]") as excinfo:
+        process_base_editing(rows, {"g": GENE_STOP_PLUS})
+
+    assert "AGG" not in str(excinfo.value)
+    assert "CGG" not in str(excinfo.value)
+
+
+def test_process_base_editing_requires_the_pam_column():
+    row = _cas9_row()
+    del row["pam"]
+
+    with pytest.raises(ValueError, match=r"needs the column\(s\) \['pam'\]"):
+        process_base_editing(pd.DataFrame([row]), {"g": GENE_STOP_PLUS})
+
+
+@pytest.mark.parametrize("missing", [None, float("nan"), ""])
+def test_a_missing_pam_is_refused_rather_than_passed_over(missing):
+    """A guide with no recorded PAM carries no evidence it came from Cas9.
+
+    Refused deliberately, not by accident. What the ``fillna`` in the guard is
+    for is pinned by
+    ``test_a_missing_pam_beside_a_foreign_one_reports_both`` instead.
+    """
+    with pytest.raises(ValueError, match="not supported for CRISPR-BEST"):
+        process_base_editing(
+            pd.DataFrame([_cas9_row(missing)]), {"g": GENE_STOP_PLUS}
+        )
+
+
+def test_a_missing_pam_among_real_ones_still_refuses():
+    """A NaN mixed with valid PAMs must not slip through."""
+    rows = pd.DataFrame([_cas9_row("AGG"), _cas9_row(None), _cas9_row("CGG")])
+
+    with pytest.raises(ValueError, match="not supported for CRISPR-BEST"):
+        process_base_editing(rows, {"g": GENE_STOP_PLUS})
+
+
+def test_a_missing_pam_beside_a_foreign_one_reports_both():
+    """What the ``fillna`` in the guard is actually for.
+
+    Left as NaN, a missing PAM reaches ``sorted`` as a float, which cannot be
+    ordered against the real PAM strings, so this table raised ``TypeError: '<'
+    not supported between instances of 'str' and 'float'`` out of the guard
+    rather than the refusal below.
+    """
+    rows = pd.DataFrame([_cas9_row("TTC"), _cas9_row(None)])
+
+    with pytest.raises(
+        ValueError, match="not supported for CRISPR-BEST"
+    ) as excinfo:
+        process_base_editing(rows, {"g": GENE_STOP_PLUS})
+
+    assert "TTC" in str(excinfo.value)
+    assert "''" in str(excinfo.value)
+
+
+def test_identify_base_editing_sites_refuses_a_non_cas9_table_when_it_can_tell():
+    df = pd.DataFrame({"sgrna": ["AAGCAAAACA"], "pam": ["TTC"]})
+
+    with pytest.raises(ValueError, match="not supported for CRISPR-BEST"):
+        identify_base_editing_sites(df)
+
+
+def test_identify_base_editing_sites_does_not_require_a_pam_column():
+    """It only reports where the cytosines in a spacer are.
+
+    That is true of the spacer whichever nuclease produced it, so the column is
+    checked when present and not demanded. ``process_base_editing``, which
+    asserts an amino-acid change, requires it.
+    """
+    result = identify_base_editing_sites(pd.DataFrame({"sgrna": ["AAGCAAAACA"]}))
+
+    assert result.loc[0, "editable_cytosines"] == "4,9"
+
+
+def test_process_base_editing_returns_an_empty_frame_rather_than_raising():
+    """A gene whose guides carry no editable cytosine is a legitimate result.
+
+    A row-wise apply over a 0-row frame returns a DataFrame rather than a
+    Series, so assigning it to one column used to raise a bare pandas
+    ValueError naming nothing a caller could act on.
+
+    The input carries ``mutated_sequence`` because a caller re-running the
+    chain can already have it, and the non-empty path drops that column after
+    using it; without it in the input the assertion below is vacuous.
+    """
+    empty = pd.DataFrame(columns=list(_cas9_row()) + ["mutated_sequence"])
+
+    result = process_base_editing(empty, {"g": GENE_STOP_PLUS})
+
+    assert result.empty
+    # The same column set the non-empty path returns.
+    assert "mutations" in result.columns
+    assert "mutated_sequence" not in result.columns
+    assert set(_cas9_row()) <= set(result.columns)
+
+
+def test_process_base_editing_requires_editing_context_only_when_it_reads_it():
+    """It is read at the end, and only when the flag is left True.
+
+    Listing it unconditionally would refuse a legitimate
+    ``editing_context=False`` call; not listing it at all raised ``KeyError``
+    from pandas for a frame that met the documented contract.
+    """
+    row = _cas9_row()
+    del row["editing_context"]
+    df = pd.DataFrame([row])
+
+    with pytest.raises(ValueError, match=r"needs the column\(s\) \['editing_context'\]"):
+        process_base_editing(df, {"g": GENE_STOP_PLUS})
+
+    assert len(process_base_editing(df, {"g": GENE_STOP_PLUS}, editing_context=False)) == 1
+
+
+@pytest.mark.parametrize("empty", ["", "   ", "\t\n", None, float("nan")])
+def test_an_unfiltered_guide_table_names_the_filter_it_is_missing(empty):
+    """``identify_base_editing_sites`` leaves this empty for a guide with no
+    cytosine in the window, and ``filter_sgrnas_for_base_editing`` is what
+    drops those rows.
+
+    Following the chain the column guard above prescribes, without that filter,
+    used to reach ``int('')`` and die with a bare pandas ``ValueError: invalid
+    literal for int() with base 10: ''`` -- naming neither the column nor the
+    step that had been left out. On a real Cas9 table it is routinely half the
+    rows: 15 of 30 on the 306 nt CDS this was found with.
+
+    A whitespace-only value counts as empty, because a CSV round trip can pad
+    the column and ``int('   ')`` fails exactly as ``int('')`` does. Without
+    the ``strip`` in the guard those cases reach the same bare pandas error.
+    """
+    row = _cas9_row()
+    row["editable_cytosines"] = empty
+
+    with pytest.raises(ValueError, match="filter_sgrnas_for_base_editing") as excinfo:
+        process_base_editing(pd.DataFrame([row]), {"g": GENE_STOP_PLUS})
+
+    assert "1 of 1 guides have no editable cytosine" in str(excinfo.value)
+
+
+def test_one_unfiltered_row_refuses_the_whole_table():
+    """Refusing is deliberate, rather than dropping the row and carrying on.
+
+    Dropping it would make ``filter_sgrnas_for_base_editing`` optional and
+    silently return fewer rows than the caller passed, which is the shape of
+    mistake this module raises about everywhere else.
+    """
+    rows = pd.DataFrame([_cas9_row(), {**_cas9_row(), "editable_cytosines": ""}])
+
+    with pytest.raises(ValueError, match="1 of 2 guides have no editable cytosine"):
+        process_base_editing(rows, {"g": GENE_STOP_PLUS})
+
+
+def test_the_column_guard_names_every_step_of_the_chain():
+    """Its message is the only instruction a caller gets, so it has to be whole.
+
+    It named the finders and ``identify_base_editing_sites`` but not
+    ``filter_sgrnas_for_base_editing``, so following it literally landed on the
+    crash in the test above.
+    """
+    row = _cas9_row()
+    del row["pam"]
+
+    with pytest.raises(ValueError) as excinfo:
+        process_base_editing(pd.DataFrame([row]), {"g": GENE_STOP_PLUS})
+
+    message = str(excinfo.value)
+    assert "identify_base_editing_sites" in message
+    assert "filter_sgrnas_for_base_editing" in message

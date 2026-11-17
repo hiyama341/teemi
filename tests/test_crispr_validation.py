@@ -216,6 +216,63 @@ def test_base_editing_matches_crispy_web_on_a_plus_strand_gene(sco5087_stops):
 
 
 # ---------------------------------------------------------------------------
+# Base editing is dCas9 only
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("cas_type", ["cas12a", "cas3"])
+def test_base_editing_refuses_a_guide_table_from_another_nuclease(
+    coelicolor, cas_type
+):
+    """The regression test for the whole guard, run on real guides.
+
+    CRISPR-BEST's editors are rAPOBEC1 and ecTadA fused to an SpCas9 D10A
+    nickase, and the 4-10 editing window is a measurement on that 20 nt Cas9
+    geometry, so a table from another nuclease has to be refused. Before the
+    guard it was not: once ``sgrna_loc`` was correct for Cas3, the offset check
+    inside ``process_base_editing`` stopped firing -- it had been the only thing
+    in the way -- and a Cas3 table came back with five invented amino-acid
+    changes for SCO5087 at the default arguments, each row carrying a 34 nt
+    spacer, a ``TTC`` PAM, and the C-to-T window read off positions 4 to 10 of
+    a 34-mer.
+
+    SCO5087 and SCO7048 are used rather than one gene because SCO5087 carries
+    no TTTV site at all -- *S. coelicolor* is GC rich, and its 1,404 nt CDS has
+    not one ``TTT`` on either strand -- so a Cas12a table for it comes back
+    empty, and an empty table has no PAM to judge. The assertion below that the
+    guide table is non-empty is what keeps this test honest: without it the
+    Cas12a case would pass vacuously, which is the exact hole the guard cannot
+    close.
+    """
+    locus_tag = "SCO5087" if cas_type == "cas3" else "SCO7048"
+    guides = extract_sgRNAs(
+        SgRNAargs(
+            dseqrecord=coelicolor,
+            locus_tag=[locus_tag],
+            cas_type=cas_type,
+            step=["find"],
+            off_target_seed=13,
+        )
+    )
+    # Guard the guard: a 0-row table would make every assertion below vacuous.
+    assert not guides.empty, f"no {cas_type} guides for {locus_tag} to refuse"
+    assert set(guides["pam"]), "the finder produced no PAMs to judge"
+
+    with pytest.raises(ValueError, match="not supported for CRISPR-BEST"):
+        identify_base_editing_sites(guides)
+
+    # And again at the point the amino-acid claim is made, for a caller who
+    # assembled the annotated table some other way.
+    annotated = identify_base_editing_sites(guides.drop(columns=["pam"]))
+    annotated["pam"] = list(guides["pam"])
+    with pytest.raises(ValueError, match="not supported for CRISPR-BEST"):
+        process_base_editing(
+            filter_sgrnas_for_base_editing(annotated),
+            gene_sequences=_gene_sequences(coelicolor, [locus_tag]),
+        )
+
+
+# ---------------------------------------------------------------------------
 # Cas9 guide finding against CRISPy-web
 # ---------------------------------------------------------------------------
 
