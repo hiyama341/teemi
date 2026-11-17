@@ -36,7 +36,7 @@ setup(
     author_email="lucaslevassor@gmail.com",
     python_requires=">=3.11",
     classifiers=[
-        "Development Status :: 2 - Pre-Alpha",
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: MIT License",

@@ -4,25 +4,42 @@ History
 Unreleased
 ~~~~~~~~~~
 
-- Repaired and modernized the documentation with a Sphinx + PyData Sphinx Theme setup.
-- Added a cleaner front page, quickstart example, workflow gallery refresh, and improved Colab notebook links.
-- Fixed the source distribution, which could not be built or installed because
-  ``setup.py`` reads ``requirements.txt`` and ``MANIFEST.in`` did not ship it.
-- Registered the ``dev``, ``docs`` and new ``learn`` extras. ``extras_require``
-  was never passed to ``setup()``, so ``pip install teemi[dev]`` silently
-  installed nothing; the 0.5.0 entry claiming this was fixed has been removed.
-- Removed the ``teemi`` console script. It pointed at ``teemi.cli:main``, a
-  module that has never existed, so the command only ever raised
-  ``ModuleNotFoundError``.
-- Declared ``requests``, ``seaborn`` and ``scipy``, which the package imports
-  but never declared, and dropped the docs-only ``nbsphinx`` pin and the
-  test-only ``pytest-cov`` pin from the runtime requirements.
-- Corrected dependency floors that could not be satisfied together: ``pydna``
-  requires ``numpy>1.26``, and ``pandas`` requires ``openpyxl>=3.1.0``.
+1.2.0 (2026-11-17)
+~~~~~~~~~~~~~~~~~~
+
+.. warning::
+
+   **Upgrading changes CRISPR results, and nothing raises to say so.**
+   Guide tables, off-target counts and base-edit calls produced with 1.1.0
+   or earlier do not match what this release produces from the same inputs.
+   Regenerate anything you mean to order, publish or build on. The changes
+   that move results silently are: every base edit on a minus-strand gene,
+   which was placed on the wrong residue; the default C-to-T editing window,
+   from 3-10 to 4-10; Cas9 and CRISPRi ``off_target_count`` wherever a guide
+   has off-targets at all, the seed having been read one base out of step --
+   a guide whose seed is unique still counts 0, as it did before; Cas12a
+   spacers, from 20 nt to 23 nt on a 4 nt ``TTTV`` PAM; Cas12a and Cas3
+   ``sgrna_loc``, by up to 3 nt; and guide tables for genes with a compound
+   location, which shrink, because a guide spanning one of its gaps is no
+   longer reported. Base editing a Cas12a or Cas3 guide table raises
+   instead, where it used to return invented amino-acid changes.
+
 - Fixed CRISPR base editing on minus-strand genes. ``process_base_editing``
   read ``sgrna_strand`` on its own, but it and ``gene_strand`` are both
   genome-relative, so a guide reads along the CDS only when the two agree.
   Every minus-strand edit was placed on the wrong residue.
+- ``process_base_editing`` now refuses a guide table that has not been through
+  ``filter_sgrnas_for_base_editing``, instead of failing on it. The column
+  guard's message named the finders and ``identify_base_editing_sites`` but not
+  that filter, which is not optional: ``identify_base_editing_sites`` leaves
+  ``editable_cytosines`` empty for a guide with no cytosine in the window -- on
+  a real Cas9 table, routinely half the rows -- and following the message
+  literally reached ``int('')`` and raised pandas' ``invalid literal for int()
+  with base 10: ''``, naming neither the column nor the step that had been left
+  out. The message now names all three steps, and an empty
+  ``editable_cytosines`` is refused by name and count. Both public base-editing
+  docstrings also called CRISPR-BEST a dCas9 base editor; its nuclease is an
+  SpCas9 D10A nickase, as the module comment and the entry above say.
 - Fixed the Cas9 off-target seed register. ``find_off_target_hits`` took the
   seed as the bases ending at the PAM match, but the ``(?=GG)`` pattern matches
   at the first G of NGG, so the seed included the PAM's N and dropped the
@@ -99,25 +116,63 @@ Unreleased
   with no ``else``, leaving three names reachable-unbound, and is now an
   ``if``/``else``. The module goes from 941 lines to 699, and from 246 statements
   to 176.
-
+- ``process_base_editing`` and ``identify_base_editing_sites`` now refuse a
+  guide table from any nuclease but Cas9. CRISPR-BEST is an SpCas9 system:
+  its editors are rAPOBEC1 (cBEST) and ecTadA (aBEST) fused to a
+  *Streptomyces* codon-optimised SpCas9 D10A nickase, and the default 4-10
+  editing window is the one measured for cBEST on that 20 nt geometry (Tong
+  et al. 2019, doi:10.1073/pnas.1913493116). A guide table carries no
+  nuclease label -- the finders' frame is eleven columns and ``cas_type`` is
+  not one of them -- so the decision is made on the ``pam`` column, which
+  must end in ``GG``. Every SpCas9 PAM does, and neither other nuclease can
+  produce one that does: Cas12a's pattern is ``TTT[ACG]`` and Cas3's is
+  ``TTC``. ``process_base_editing`` therefore now also requires the ``pam``
+  column, and ``editing_context`` when the flag of that name is left True.
+  The check is strict there, where an amino-acid change gets asserted, and
+  advisory in ``identify_base_editing_sites``, which only reports where the
+  cytosines in a spacer are and so checks the PAMs when present without
+  demanding them. Two limits are deliberate: a ``pam`` cell is an ordinary
+  string, so a caller who overwrites one is believed, and the PAM fixes the
+  nuclease but not the geometry -- a table found with ``cas_type="cas9"``
+  and ``protospacer_len`` overridden carries real NGG PAMs and still has the
+  4-10 window read off a spacer that window was never measured on. An empty
+  guide table carries no PAM to judge and is allowed through; it now comes
+  back empty rather than raising the bare pandas ``ValueError`` described
+  below.
 - Fixed ``sgrna_loc`` for Cas12a and Cas3. The column is one past the
-  protospacer's end, in coordinates of the CDS as extracted 5'->3'. It is how
-  ``crispr_best.process_base_editing`` finds a guide, by slicing
-  ``[sgrna_loc - len(sgrna) : sgrna_loc]``, so a value out by one base edits the
-  wrong residue. Two errors with separate causes were both inert for Cas9 and so
-  went unseen. The forward scan added a literal 3 to ``match.end()``, which for a
-  5' PAM already covers the PAM -- Cas9's PAM pattern is a zero-width lookahead,
-  so there the 3 supplies the PAM length rather than duplicating it -- and the
-  reverse scan subtracted that same literal 3 where the nuclease's own
-  ``pam_len`` belonged. Cas12a positions were therefore 3 nt out on the forward
-  scan and 1 nt out on the reverse, and Cas3's 3 nt out on the forward scan only,
-  its PAM being 3 nt. Base editing a Cas3 guide table raised ``RuntimeError`` in
-  consequence -- the offset guard in ``process_base_editing`` catching the
-  protospacer not being where the table said -- and now completes. A Cas12a
-  table still fails there, but for an unrelated reason that this change does not
-  touch: on SCO5087 it yields no editable guides at all, and
-  ``process_base_editing`` raises ``ValueError`` on an empty frame rather than
-  returning one.
+  protospacer's end, in coordinates of the CDS as extracted 5'->3'. It is
+  how ``crispr_best.process_base_editing`` finds a guide, by slicing
+  ``[sgrna_loc - len(sgrna) : sgrna_loc]``, so a value out by one base edits
+  the wrong residue. Two errors with separate causes were both inert for
+  Cas9 and so went unseen. The forward scan added a literal 3 to
+  ``match.end()``, which for a 5' PAM already covers the PAM -- Cas9's PAM
+  pattern is a zero-width lookahead, so there the 3 supplies the PAM length
+  rather than duplicating it -- and the reverse scan subtracted that same
+  literal 3 where the nuclease's own ``pam_len`` belonged. Cas12a positions
+  were therefore 3 nt out on the forward scan and 1 nt out on the reverse,
+  and Cas3's 3 nt out on the forward scan only, its PAM being 3 nt. Base
+  editing a Cas3 guide table raised ``RuntimeError`` in consequence -- the
+  offset guard in ``process_base_editing`` catching the protospacer not
+  being where the table said -- and ran to completion once the positions
+  were right. That was a regression this change introduced, recorded here
+  because the ``RuntimeError`` had accidentally been the only thing stopping
+  a scope error: with the positions correct a Cas3 table returned base edits
+  instead of refusing. On SCO5087 all 31 of its guides were reported as
+  carrying an editable cytosine, and ``process_base_editing`` returned five
+  rows of invented amino-acid changes at its default arguments -- 28 with
+  ``editing_context=False`` -- every row carrying a 34 nt spacer and a
+  ``TTC`` PAM, the C-to-T window having been read off positions 4 to 10 of a
+  34-mer. All of it was fiction, and the nuclease guard above now refuses
+  it. A Cas12a table failed instead of lying, for a reason this change does
+  not touch and which is not about base editing at all: SCO5087 yields no
+  Cas12a **guides**. Its 1,404 nt CDS is 72.1% GC and carries not one
+  ``TTT`` on either strand, so there is no TTTV site to find, and none would
+  appear if the PAM were widened to TTTN. What reached
+  ``process_base_editing`` was an empty frame, and the pandas assignment
+  raised a bare ``ValueError`` reading "Cannot set a DataFrame with multiple
+  columns to the single column mutated_sequence" -- not the module's own
+  column guard above it, so the message named nothing a caller could act
+  on. The entry above returns an empty frame instead.
 - Checked by reading the slice back out of the CDS over the whole
   *S. coelicolor* chromosome: all 1,725,388 Cas9 guides already sat where they
   claimed, against none of the 8,124 Cas12a guides and none of the 75,555
@@ -126,13 +181,15 @@ Unreleased
   ``sgrna_loc`` moves. ``tests/test_crispr_validation.py`` asserts this per
   nuclease and requires both scan directions to occur, so that neither position
   formula can go unexercised.
-- This is a point where teemi departs from StreptoCAD, which its guide finders
-  were ported from. StreptoCAD computes the same two expressions, but every
-  nuclease it supports has a 3 nt PAM -- its Cas12a is experimental and uses a
-  3 nt ``TTN`` -- so the hardcoded 3 is never wrong on its reverse scan. teemi
-  brought that half of the defect to light by adopting Cas12a's 4 nt ``TTTV``
-  PAM. The forward-scan error is present in both, and misplaces Cas3 guides
-  there as it did here.
+- The same two expressions are in StreptoCAD, which teemi's guide finders were
+  ported from, and the forward-scan error was live there too. StreptoCAD has
+  since dropped the ``+ 3`` from its Cas3 finder, so the two now agree on every
+  Cas3 ``sgrna_loc`` -- on SCO5087, 31 guides each, same spacers and PAMs,
+  positions equal on all 31. Its reverse scan still subtracts a literal 3, and
+  still cannot be wrong there, because every nuclease it supports has a 3 nt
+  PAM. That is the half teemi had to fix: teemi keeps the 4 nt ``TTTV`` Cas12a
+  that both projects inherited from the same pre-split finder and that
+  StreptoCAD has since deleted.
 - Pinned each nuclease's PAM and spacer length to the enzyme it was measured
   for. The three parameter sets were bare literals, so nothing in the module
   recorded which enzyme ``cas_type="cas3"`` meant, or where a 34 nt spacer and a
@@ -278,6 +335,64 @@ Unreleased
   scanning NC_003888.3 on both strands finds 162,382 and collapsing identical
   spacers gives 159,792. Neither is their figure and the 2.5% gap is
   undocumented.
+- Re-executed the two *Aspergillus oryzae* CRISPR notebooks, 09 (Cas9) and 10
+  (Cas12a), whose committed output predated all of the above. Both ran against
+  the eight local RIB40 chromosomes, 37,848,727 bp and 60,033 features. Two of
+  the changes here move them: the splice fix replaced one of
+  ``AO090009000002``'s two chosen Cas9 guides, ``GTATTAGATGGGTATTTGGA`` at
+  ``sgrna_loc`` 3596 giving way to ``CGATTATCATTCAACCAGAT`` at 3504, and the
+  Cas12a 20 -> 23 nt correction reaches notebook 10's whole guide table.
+- Notebook 10's committed output had never been produced by notebook 10. All
+  twelve of its code cells' outputs were byte-identical to notebook 09's, the
+  two whose source differs included, so it reported 20 nt spacers under the
+  label ``sgRNA spacer`` although its own code passes ``protospacer_len=23``
+  and sets ``item_type='Cas12a crRNA spacer'``; both notebooks also carried the
+  same execution counts, 17 to 28, which is the tell. It now carries its own
+  output: 23 nt spacers on ``TTTA``, ``TTTC`` and ``TTTG`` PAMs. This was a
+  pre-existing defect rather than one the fixes above caused.
+- Fixed an ``in_tail`` part taking the whole library down with it. Such a
+  part has two independent limits: ``in_tail_max_bp``, what a primer tail
+  will physically carry, which is pydna's ``maxlink``; and
+  ``homology_length``, what the overlap has to *spend*, because an
+  ``in_tail`` part sits inside the homology rather than being added to it.
+  Only the first was checked, and the two defaults sit close together -- 40
+  against a ``homology_length`` of 35 -- so a part between 36 and 40 bp was
+  admitted by ``plan_layout`` and then refused by ``design_junction``,
+  which raised ``JunctionError`` and returned no variants, no PCRs and
+  nothing designed. ``plan_layout`` now demotes such a part to its own
+  fragment, as it already did for the physical cap: one more PCR rather
+  than no library. The two ``JunctionError`` cases are reported apart now,
+  because their remedies differ -- a part longer than the whole homology is
+  a number in the spec, whereas two parts too short to supply the budget is
+  the choice of parts, and printing the part lengths against a negative
+  budget pointed at the parts for a failure that was neither of theirs.
+- ``teemi.design.combinatorial.flow`` imported ``Annotated`` from
+  ``typing_extensions``, which teemi does not declare and had only because
+  pydantic depends on it. It comes from ``typing`` now, where it has been
+  since Python 3.9, against a floor of 3.11, so nothing need be declared.
+
+1.1.0 (2026-10-30)
+~~~~~~~~~~~~~~~~~~
+
+- Added the ``teemi.design.combinatorial`` subpackage, the JSON-spec driven
+  combinatorial design backend, in `#47
+  <https://github.com/hiyama341/teemi/pull/47>`_.
+- Extended support to Python 3.12, 3.13 and 3.14.
+- Repaired and modernized the documentation with a Sphinx + PyData Sphinx Theme setup.
+- Added a cleaner front page, quickstart example, workflow gallery refresh, and improved Colab notebook links.
+- Fixed the source distribution, which could not be built or installed because
+  ``setup.py`` reads ``requirements.txt`` and ``MANIFEST.in`` did not ship it.
+- Registered the ``dev``, ``docs`` and new ``learn`` extras. ``extras_require``
+  was never passed to ``setup()``, so ``pip install teemi[dev]`` silently
+  installed nothing; the 0.5.0 entry claiming this was fixed has been removed.
+- Removed the ``teemi`` console script. It pointed at ``teemi.cli:main``, a
+  module that has never existed, so the command only ever raised
+  ``ModuleNotFoundError``.
+- Declared ``requests``, ``seaborn`` and ``scipy``, which the package imports
+  but never declared, and dropped the docs-only ``nbsphinx`` pin and the
+  test-only ``pytest-cov`` pin from the runtime requirements.
+- Corrected dependency floors that could not be satisfied together: ``pydna``
+  requires ``numpy>1.26``, and ``pandas`` requires ``openpyxl>=3.1.0``.
 
 1.0.5 (2026-03-15)
 ~~~~~~~~~~~~~~~~~~
