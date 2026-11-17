@@ -32,14 +32,13 @@ Unreleased
   ``filter_sgrnas_for_base_editing``, instead of failing on it. The column
   guard's message named the finders and ``identify_base_editing_sites`` but not
   that filter, which is not optional: ``identify_base_editing_sites`` leaves
-  ``editable_cytosines`` empty for a guide with no cytosine in the window -- on
-  a real Cas9 table, routinely half the rows -- and following the message
-  literally reached ``int('')`` and raised pandas' ``invalid literal for int()
-  with base 10: ''``, naming neither the column nor the step that had been left
-  out. The message now names all three steps, and an empty
-  ``editable_cytosines`` is refused by name and count. Both public base-editing
-  docstrings also called CRISPR-BEST a dCas9 base editor; its nuclease is an
-  SpCas9 D10A nickase, as the module comment and the entry above say.
+  ``editable_cytosines`` empty for a guide with no cytosine in the window --
+  2.9% of the guides over 50 CDSs of the validation chromosome, and some on
+  every one of them -- and following the message literally reached ``int('')``
+  and raised pandas' ``invalid literal for int() with base 10: ''``, naming
+  neither the column nor the step that had been left out. The message now names
+  all three steps, and an empty ``editable_cytosines`` is refused by name and
+  count.
 - Fixed the Cas9 off-target seed register. ``find_off_target_hits`` took the
   seed as the bases ending at the PAM match, but the ``(?=GG)`` pattern matches
   at the first G of NGG, so the seed included the PAM's N and dropped the

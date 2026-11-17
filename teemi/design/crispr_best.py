@@ -311,8 +311,9 @@ def process_base_editing(df: pd.DataFrame, gene_sequences: dict,
     _reject_non_cas9_guides(df)
 
     # ``identify_base_editing_sites`` leaves this empty for a guide with no
-    # cytosine in the window -- on a real Cas9 table, routinely half the rows --
-    # and ``filter_sgrnas_for_base_editing`` is what drops them. Skipping it
+    # cytosine in the window -- 2.9% of the guides over 50 CDSs of the
+    # validation chromosome, and some on every one of them -- and
+    # ``filter_sgrnas_for_base_editing`` is what drops them. Skipping it
     # reached ``int('')`` in the apply below and died with a bare pandas
     # ``ValueError: invalid literal for int() with base 10: ''``, which names
     # neither the column nor the step that was left out.

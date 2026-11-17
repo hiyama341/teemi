@@ -595,8 +595,9 @@ def test_an_unfiltered_guide_table_names_the_filter_it_is_missing(empty):
     Following the chain the column guard above prescribes, without that filter,
     used to reach ``int('')`` and die with a bare pandas ``ValueError: invalid
     literal for int() with base 10: ''`` -- naming neither the column nor the
-    step that had been left out. On a real Cas9 table it is routinely half the
-    rows: 15 of 30 on the 306 nt CDS this was found with.
+    step that had been left out. On a real Cas9 table it is a few per cent of
+    the rows, but never none of them: 2.9% of 12,254 guides over 50 CDSs of the
+    validation chromosome, 4 of 290 on SCO5087 and 9 of 232 on SCO7048.
 
     A whitespace-only value counts as empty, because a CSV round trip can pad
     the column and ``int('   ')`` fails exactly as ``int('')`` does. Without
