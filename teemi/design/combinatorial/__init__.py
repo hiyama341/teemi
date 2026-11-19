@@ -61,6 +61,7 @@ Module map::
     simulate.py   assemble it and compare with the intended construct
     report.py     plan(), the result, the three tables
     export.py     the file-writing edge: the bundle, GenBank, figures
+    idt.py        the order sheet as a vendor's form: IDT tubes and plates
 """
 
 from teemi.design.combinatorial.design import Diagnostic, Violation
@@ -72,19 +73,28 @@ from teemi.design.combinatorial.flow import (
     plan_flow,
 )
 from teemi.design.combinatorial.export import (
+    ALL_CONSTRUCTS,
     bundle_layout,
     BUNDLE_PATHS,
     build_summary,
+    construct_maps,
+    constructs_genbank,
     spec_json,
     write_assembly_figures,
     write_bundle,
     write_bundle_zip,
     write_genbank_files,
 )
+from teemi.design.combinatorial.idt import (
+    plate_frames,
+    primers_fasta,
+    tube_frame,
+)
 from teemi.design.combinatorial.report import (
     DesignResult,
     InfeasibleDesignError,
     pcr_dataframe,
+    pcr_worklist_dataframe,
     plan,
     primer_dataframe,
     primer_uses_dataframe,
@@ -102,6 +112,13 @@ __all__ = [
     "primer_dataframe",
     "primer_uses_dataframe",
     "pcr_dataframe",
+    "pcr_worklist_dataframe",
+    "tube_frame",
+    "plate_frames",
+    "primers_fasta",
+    "constructs_genbank",
+    "construct_maps",
+    "ALL_CONSTRUCTS",
     "write_genbank_files",
     "write_assembly_figures",
     "write_bundle",
