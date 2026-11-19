@@ -311,8 +311,9 @@ def process_base_editing(df: pd.DataFrame, gene_sequences: dict,
     _reject_non_cas9_guides(df)
 
     # ``identify_base_editing_sites`` leaves this empty for a guide with no
-    # cytosine in the window -- 2.9% of the guides over 50 CDSs of the
-    # validation chromosome, and some on every one of them -- and
+    # cytosine in the window -- 319 of the 7,651 cas9 guides over the first 50
+    # single-part CDSs of the S. coelicolor validation chromosome, 4.2% of
+    # them, reaching 45 of those 50 genes -- and
     # ``filter_sgrnas_for_base_editing`` is what drops them. Skipping it
     # reached ``int('')`` in the apply below and died with a bare pandas
     # ``ValueError: invalid literal for int() with base 10: ''``, which names

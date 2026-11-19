@@ -1,4 +1,18 @@
-# Runtime dependencies. setup.py reads this file into install_requires.
+# Runtime dependencies, and a SECOND COPY of pyproject.toml's
+# `[project].dependencies` -- which is the one that ships.  setup.py reads this
+# file into install_requires, but pyproject declares dependencies statically
+# and lists only version and readme as dynamic, so setuptools discards the
+# setup.py value and a wheel built here carries pyproject's list, not this one.
+#
+# So this file governs nothing a user installs, and everything `tox` runs:
+# tox.ini's only dependency source is `-r requirements.txt`.  pydantic and
+# primer3-py were missing from it while being imported by
+# teemi/design/combinatorial/{spec,flow,report}.py and {design,tm}.py, so every
+# tox env failed collecting tests/test_combinatorial_*.py -- the half of teemi
+# the 1.2.0 release extends.  CI did not catch it because its test step is
+# `uv run --locked --extra dev pytest`, which resolves from pyproject instead.
+#
+# Keep the two lists the same. Nothing checks that they are.
 # (The documentation build uses docs/requirements.txt, not this file.)
 #
 # Floors are the oldest versions the test suite is actually run against, and
@@ -16,6 +30,10 @@ requests>=2.32.0
 matplotlib>=3.10.9
 seaborn>=0.13.2
 scipy>=1.13
+
+# Combinatorial specs use pydantic v2; primer3 is used for secondary structure.
+pydantic>=2.14.1
+primer3-py>=2.3.1
 
 # benchlingapi 2.1.12 (its latest release) imports distutils, which was
 # removed in Python 3.12; setuptools still ships a drop-in copy.

@@ -13,7 +13,10 @@ import pytest
 from Bio import SeqIO
 
 from teemi.design.combinatorial.export import (
+    ALL_CONSTRUCTS,
     BUNDLE_PATHS,
+    construct_maps,
+    constructs_genbank,
     write_assembly_figures,
     write_bundle,
     write_bundle_zip,
@@ -337,8 +340,14 @@ PROMISED = (
     f"{BUNDLE_PATHS['primers']}/primers.csv",
     f"{BUNDLE_PATHS['primers']}/analysis.csv",
     f"{BUNDLE_PATHS['primers']}/uses.csv",
+    f"{BUNDLE_PATHS['primers']}/oligo_order_idt.csv",
+    f"{BUNDLE_PATHS['primers']}/oligo_order_idt_plate.xlsx",
+    f"{BUNDLE_PATHS['primers']}/primers.fasta",
     f"{BUNDLE_PATHS['pcrs']}/pcrs.csv",
+    f"{BUNDLE_PATHS['pcrs']}/worklist_by_ta.csv",
     f"{BUNDLE_PATHS['parts']}/parts.csv",
+    f"{BUNDLE_PATHS['constructs']}/constructs.csv",
+    f"{BUNDLE_PATHS['constructs']}/{ALL_CONSTRUCTS}",
     f"{BUNDLE_PATHS['constructs']}/assemblies.txt",
 )
 
@@ -359,6 +368,9 @@ def test_the_bundle_writes_everything_its_own_layout_promises(
     expected = set(PROMISED)
     if submitted is None:
         expected.discard(BUNDLE_PATHS["request"])
+    # No run record was passed, so there is none to promise -- the same
+    # conditional the submitted document has, for the same reason.
+    expected.discard(BUNDLE_PATHS["run"])
     for relative in expected:
         assert (folder / relative).is_file(), relative
 
@@ -369,11 +381,17 @@ def test_the_bundle_writes_everything_its_own_layout_promises(
             assert named in layout or relative.replace("/", "/*") in layout, relative
     # And nothing is named that is not there.
     assert (BUNDLE_PATHS["request"] in layout) == (submitted is not None)
+    assert BUNDLE_PATHS["run"] not in layout
 
     written = {
         str(path.relative_to(folder)) for path in folder.rglob("*") if path.is_file()
     }
-    maps = {name for name in written if name.endswith(".gb")}
+    # Every `.gb` except the combined one, which `expected` already names.
+    maps = {
+        name
+        for name in written
+        if name.endswith(".gb") and not name.endswith(ALL_CONSTRUCTS)
+    }
     assert len(maps) == len(list(linear.designs))
     assert written == expected | maps
 
@@ -393,7 +411,7 @@ def test_every_map_is_named_by_its_construct_number(linear, tmp_path):
     assert labels == [f"{n:03d}" for n in range(1, len(designs) + 1)]
     assert len(set(labels)) == len(labels)
 
-    maps = sorted((folder / BUNDLE_PATHS["constructs"]).glob("*.gb"))
+    maps = list(construct_maps(folder))
     assert len(maps) == len(designs)
     assert [path.name for path in maps] == sorted(
         path.name for path in maps
@@ -530,6 +548,8 @@ def test_every_column_of_dna_in_the_bundle_says_which_end_is_which(linear, tmp_p
     dna = re.compile(r"^[ACGTacgt]+$")
     checked = 0
     for path in sorted(folder.rglob("*.csv")):
+        if path.name in _VENDOR_HEADERS:
+            continue
         frame = pd.read_csv(path, dtype=str)
         for column in frame.columns:
             values = frame[column].dropna()
@@ -540,6 +560,24 @@ def test_every_column_of_dna_in_the_bundle_says_which_end_is_which(linear, tmp_p
             assert "5'-3'" in column, (path.name, column)
             checked += 1
     assert checked >= 3, f"only {checked} sequence columns found; expected more"
+
+    # The excused files still have to say it SOMEWHERE, and the map is the only
+    # place that can: their headings belong to the vendor.
+    layout = (folder / BUNDLE_PATHS["layout"]).read_text()
+    for name in _VENDOR_HEADERS:
+        line = next(l for l in layout.splitlines() if name in l)
+        assert "5'-3'" in line, name
+
+
+#: Files whose column headings are a SUPPLIER'S and not ours to improve.
+#:
+#: Every other column of DNA in a bundle is headed ``sequence(5'-3')``, because
+#: a footprint read the wrong way round still looks like a primer.  IDT's
+#: upload reads a column called exactly ``Sequence``, so a heading that said
+#: which end is which would be a refused order.  The orientation moves to the
+#: layout line instead, which the test above asserts -- so the invariant is
+#: kept, in the one place that can keep it.
+_VENDOR_HEADERS = frozenset({"oligo_order_idt.csv"})
 
 
 def test_the_submitted_document_is_archived_unchanged(linear, tmp_path):
@@ -610,11 +648,10 @@ def test_a_second_bundle_does_not_leave_the_first_behind(linear, tmp_path):
     assert not stale.exists(), "a map of a construct that is gone has to go"
     assert not renumbered.exists(), "an entry from an older numbering has to go"
     assert mine.read_text() == "keep me\n", "only our own entries are removed"
-    maps = list((again / BUNDLE_PATHS["constructs"]).glob("*.gb"))
-    assert len(maps) == len(list(linear.designs))
+    assert len(construct_maps(again)) == len(list(linear.designs))
     for relative in PROMISED:
-        if relative == BUNDLE_PATHS["request"]:
-            continue  # no document was submitted to this bundle
+        if relative in (BUNDLE_PATHS["request"], BUNDLE_PATHS["run"]):
+            continue  # neither was passed to this bundle
         assert (again / relative).is_file(), relative
 
 
@@ -647,7 +684,7 @@ def test_every_construct_map_annotates_its_primers_over_the_whole_primer(
     folder = write_bundle(circular, tmp_path / "build")
     by_id = {p.label: p for p in circular.primers}
     checked = 0
-    for path in sorted((folder / BUNDLE_PATHS["constructs"]).glob("*.gb")):
+    for path in construct_maps(folder):
         record = SeqIO.read(path, "genbank")
         for feature in record.features:
             if feature.type != "primer_bind":
@@ -660,9 +697,7 @@ def test_every_construct_map_annotates_its_primers_over_the_whole_primer(
             checked += 1
     assert checked, "the maps have to carry primer_bind features at all"
     # And the parts are annotated too, which is the other half of a map.
-    record = SeqIO.read(
-        next((folder / BUNDLE_PATHS["constructs"]).glob("*.gb")), "genbank"
-    )
+    record = SeqIO.read(construct_maps(folder)[0], "genbank")
     parts = [f for f in record.features if f.type == "misc_feature"]
     assert parts
     for feature in parts:
@@ -740,3 +775,231 @@ def test_assemblies_are_one_file_with_one_figure_per_construct(linear, tmp_path)
     assert sorted(
         p.name for p in (folder / BUNDLE_PATHS["constructs"]).glob("*.txt")
     ) == ["assemblies.txt"]
+
+
+# -- the order, in the shapes a vendor's form takes --------------------------
+
+
+def test_the_idt_files_order_the_same_oligos_as_the_order_sheet(linear, tmp_path):
+    """One order in three shapes, so none of them can be a second opinion.
+
+    Compared on SEQUENCES, not on counts.  An oligo is identified by its
+    sequence and not by its name, so the right NUMBER of the wrong molecules is
+    exactly what a count would wave through -- and a plate is only useful if
+    the tube that arrives holds the DNA the sheet says it does.
+    """
+    from openpyxl import load_workbook
+
+    folder = write_bundle(linear, tmp_path / "build")
+    primers = folder / BUNDLE_PATHS["primers"]
+
+    sheet = pd.read_csv(primers / "primers.csv")["sequence(5'-3')"].tolist()
+    tubes = pd.read_csv(primers / "oligo_order_idt.csv")["Sequence"].tolist()
+    fasta = [
+        line
+        for line in (primers / "primers.fasta").read_text().splitlines()
+        if not line.startswith(">")
+    ]
+
+    book = load_workbook(primers / "oligo_order_idt_plate.xlsx")
+    plated = [
+        row[2]
+        for name in book.sheetnames
+        for row in book[name].iter_rows(min_row=2, values_only=True)
+    ]
+
+    assert tubes == sheet
+    assert fasta == sheet
+    assert plated == sheet
+
+
+def test_the_plate_is_one_worksheet_per_plate_with_idts_headers(linear, tmp_path):
+    from openpyxl import load_workbook
+
+    folder = write_bundle(linear, tmp_path / "build")
+    book = load_workbook(
+        folder / BUNDLE_PATHS["primers"] / "oligo_order_idt_plate.xlsx"
+    )
+    # Sixteen oligos is one plate; IDT reads one plate per tab.
+    assert book.sheetnames == ["Plate1"]
+    assert [cell.value for cell in book["Plate1"][1]] == [
+        "Well Position",
+        "Name",
+        "Sequence",
+    ]
+    wells = [row[0] for row in book["Plate1"].iter_rows(min_row=2, values_only=True)]
+    # Down the columns: the eighth oligo is still in column 1.
+    assert wells[:8] == ["A1", "B1", "C1", "D1", "E1", "F1", "G1", "H1"]
+    assert wells[8] == "A2"
+
+
+def test_the_summary_says_when_an_order_is_under_idts_plate_minimum(linear, tmp_path):
+    """Sixteen oligos cannot be ordered as a 96-well plate at all.
+
+    Said with both numbers rather than as advice, and said in the summary
+    because that is the page someone reads before they order.  The plate file
+    is still written: with 16 oligos and no file, a person cannot tell a
+    too-small order from a broken feature.
+    """
+    folder = write_bundle(linear, tmp_path / "build")
+    summary = (folder / BUNDLE_PATHS["summary"]).read_text()
+    assert len(linear.primers) < 24
+    assert "under IDT's 24" in summary
+    assert (
+        folder / BUNDLE_PATHS["primers"] / "oligo_order_idt_plate.xlsx"
+    ).is_file()
+
+
+# -- the reactions, grouped the way they are run ----------------------------
+
+
+def test_the_worklist_groups_on_the_temperature_the_pcr_table_prints(
+    linear, tmp_path
+):
+    """Two files beside each other must not disagree about what to dial in.
+
+    ``pcrs.csv`` prints Ta as a whole degree, ties down.  Offline the records
+    carry tenths, so a worklist grouping on the raw number would split two
+    reactions the table shows at one temperature.
+    """
+    folder = write_bundle(linear, tmp_path / "build")
+    pcrs = pd.read_csv(folder / BUNDLE_PATHS["pcrs"] / "pcrs.csv")
+    work = pd.read_csv(folder / BUNDLE_PATHS["pcrs"] / "worklist_by_ta.csv")
+
+    assert len(work) == len(pcrs) == len(linear.pcrs)
+    assert set(work["anneal (C)"]) == set(pcrs["Ta_from_footprints (C)"])
+    # The count beside each row is how many share that temperature.
+    for temperature, group in work.groupby("anneal (C)"):
+        assert set(group["n_at_this_temperature"]) == {len(group)}
+    assert work["anneal (C)"].is_monotonic_increasing
+
+
+def test_the_worklist_header_does_not_depend_on_having_any_pcrs():
+    """A plan with no reactions writes the same header as a plan with some.
+
+    The empty case returned early with the raw keys while every other plan
+    returned them rendered through ``COLUMN_LABELS``, so the first column of
+    ``worklist_by_ta.csv`` was ``anneal_c`` or ``anneal (C)`` depending on the
+    plan -- and a reader naming that column got it right only sometimes.  The
+    expectation is computed from ``COLUMN_LABELS`` rather than written out, so
+    renaming the label moves both sides at once; what is asserted here is that
+    the two shapes AGREE, which is the part that was wrong.
+    """
+    from teemi.design.combinatorial.report import (
+        COLUMN_LABELS,
+        PCR_WORKLIST_COLUMNS,
+        pcr_worklist_dataframe,
+    )
+
+    class _NoPcrs:
+        pcrs = ()
+
+    expected = [COLUMN_LABELS.get(c, c) for c in PCR_WORKLIST_COLUMNS]
+    assert list(pcr_worklist_dataframe(_NoPcrs()).columns) == expected
+    # And the label really is doing something, or this test would pass on a
+    # version that had never rendered the header at all.
+    assert "anneal_c" not in expected
+
+
+def test_an_empty_worklist_and_a_full_one_carry_the_same_columns(linear):
+    from teemi.design.combinatorial.report import pcr_worklist_dataframe
+
+    class _NoPcrs:
+        pcrs = ()
+
+    assert list(pcr_worklist_dataframe(_NoPcrs()).columns) == list(
+        pcr_worklist_dataframe(linear).columns
+    )
+
+
+# -- what is being built ----------------------------------------------------
+
+
+def test_the_constructs_table_is_the_index_to_the_maps(linear, tmp_path):
+    """The bundle had no table of what it was building; the maps are named by
+    variant id and nothing listed them."""
+    folder = write_bundle(linear, tmp_path / "build")
+    table = pd.read_csv(folder / BUNDLE_PATHS["constructs"] / "constructs.csv")
+
+    assert len(table) == len(linear.variants)
+    labels = [f"{n:03d}" for n in range(1, len(linear.variants) + 1)]
+    assert [f"{c:03d}" for c in table["construct"]] == labels
+    # Every row names a map that is in the folder.
+    names = [path.name for path in construct_maps(folder)]
+    for label, variant_id in zip(table["construct"], table["variant_id"]):
+        assert any(name.startswith(f"{label:03d}_") for name in names), variant_id
+
+
+def test_every_record_in_the_combined_genbank_is_a_record_and_is_distinct(
+    linear, tmp_path
+):
+    """Read back with SeqIO rather than counted by LOCUS lines.
+
+    Counting is what missed the first bug here: pydna ends a record at ``//``
+    with no trailing newline, so joining the formatted records gave
+    ``//LOCUS`` on one line and a file holding ONE record as far as any parser
+    was concerned.  And the LOCUS field is ``variant.id[:16]``, so variants
+    differing at a later position share it -- eight constructs collapsed onto
+    four names.  Both are failures a reader would have met before the test did.
+    """
+    folder = write_bundle(linear, tmp_path / "build")
+    combined = folder / BUNDLE_PATHS["constructs"] / ALL_CONSTRUCTS
+
+    records = list(SeqIO.parse(combined, "genbank"))
+    designs = [d for d in linear.designs if d.construct is not None]
+    assert len(records) == len(designs)
+    assert len({record.name for record in records}) == len(designs)
+    for record, design in zip(records, designs):
+        assert record.name.startswith(design.label)
+    # Same molecules as the per-construct maps, in the same order.
+    assert [len(record) for record in records] == [
+        len(SeqIO.read(path, "genbank")) for path in construct_maps(folder)
+    ]
+
+
+def test_the_combined_genbank_does_not_rename_the_records_it_was_given(linear):
+    """``result.designs`` is the caller's: FLOW draws its on-screen tables from
+    the same objects, so a writer that renamed them in place would change what
+    the next reader sees."""
+    before = [d.construct.name for d in linear.designs if d.construct is not None]
+    constructs_genbank(linear.designs)
+    after = [d.construct.name for d in linear.designs if d.construct is not None]
+    assert after == before
+
+
+# -- the run record ---------------------------------------------------------
+
+
+def test_the_run_record_says_what_built_it_and_what_the_caller_knew(
+    linear, tmp_path
+):
+    import teemi
+
+    folder = write_bundle(
+        linear,
+        tmp_path / "build",
+        run={"built_at": "20261118-121503Z", "library_version": "external@abc1234"},
+    )
+    record = json.loads((folder / BUNDLE_PATHS["run"]).read_text())
+
+    # Measured, not declared.
+    assert record["teemi"] == teemi.__version__
+    assert record["pydna"] and record["primer3"]
+    # And the caller's own facts survive.
+    assert record["built_at"] == "20261118-121503Z"
+    assert record["library_version"] == "external@abc1234"
+    # The date is on the page someone reads, not only in the filename.
+    assert "20261118-121503Z" in (folder / BUNDLE_PATHS["summary"]).read_text()
+
+
+def test_a_caller_may_not_claim_a_version_it_did_not_build_with(linear, tmp_path):
+    """A bundle naming a teemi its own code did not produce cannot be checked,
+    and the clash is far likelier to be a mistake than an intention.
+
+    Refused BEFORE the folder exists, the way a document that will not turn
+    into JSON is -- a half-written bundle is the thing all of this avoids.
+    """
+    target = tmp_path / "build"
+    with pytest.raises(ValueError, match="teemi"):
+        write_bundle(linear, target, run={"teemi": "99.0.0"})
+    assert not target.exists() or not any(target.iterdir())

@@ -100,6 +100,8 @@ __all__ = [
     "variant_overview_dataframe",
     "primer_dataframe",
     "pcr_dataframe",
+    "pcr_worklist_dataframe",
+    "whole_ties_down",
 ]
 
 #: The readable projection of a primer row; everything else is behind ``full``.
@@ -163,6 +165,10 @@ COLUMN_LABELS = {
     "oligo_tm_forward": "oligo_Tm_fwd (C)",
     "oligo_tm_reverse": "oligo_Tm_rev (C)",
     "ta_from_footprints": "Ta_from_footprints (C)",
+    # The same quantity as `ta_from_footprints`, named for what the worklist
+    # does with it.  It is here and not in a local rename because the empty
+    # plan and the full one were emitting two different headers for one file.
+    "anneal_c": "anneal (C)",
     "hairpin_dg": "hairpin_deltaG (kcal/mol)",
     "hairpin_tm": "hairpin_Tm (C)",
     "homodimer_dg": "homodimer_deltaG (kcal/mol)",
@@ -1321,6 +1327,19 @@ def _decimals(key: str) -> Optional[int]:
     return None
 
 
+def whole_ties_down(celsius: float) -> int:
+    """A temperature as the whole degree a machine is set to, ties going down.
+
+    Extracted from :func:`_project` so the PCR table and
+    :func:`pcr_worklist_dataframe` cannot round the same reaction two ways --
+    a worklist headed 58 C beside a table printing 57 C for that reaction is
+    two files disagreeing about what to dial in.  The direction is the one
+    :data:`_WHOLE_TIES_DOWN` documents: an anneal set a degree low still
+    amplifies, one set a degree high may give nothing.
+    """
+    return ceil(celsius - 0.5)
+
+
 def _project(rows: List[dict], columns: Sequence[str], full: bool) -> pd.DataFrame:
     frame = pd.DataFrame(rows)
     if frame.empty:
@@ -1335,7 +1354,7 @@ def _project(rows: List[dict], columns: Sequence[str], full: bool) -> pd.DataFra
             # a reaction with no temperature at all is still representable.
             frame[key] = (
                 frame[key]
-                .map(lambda value: value if pd.isna(value) else ceil(value - 0.5))
+                .map(lambda value: value if pd.isna(value) else whole_ties_down(value))
                 .astype("Int64")
             )
             continue
@@ -1483,6 +1502,70 @@ def primer_uses_dataframe(result: DesignResult) -> pd.DataFrame:
             for use in primer.uses
         ],
         columns=list(PRIMER_USE_COLUMNS),
+    )
+
+
+#: The worklist: one row per reaction, sorted into the temperature it runs at.
+PCR_WORKLIST_COLUMNS = (
+    "anneal_c",
+    "n_at_this_temperature",
+    "part_id",
+    "forward_primer",
+    "reverse_primer",
+    "amplicon_bp",
+)
+
+
+def pcr_worklist_dataframe(result: DesignResult) -> pd.DataFrame:
+    """The reactions in the order someone would actually set them up.
+
+    ``pcrs.csv`` is one row per reaction with everything measured about it.
+    This is the same reactions sorted by the temperature they anneal at, so
+    the reactions that can go in together are adjacent and
+    ``n_at_this_temperature`` says how many that is.
+
+    ROUNDED TO THE WHOLE DEGREE, by :func:`whole_ties_down`, which is the same
+    rounding ``pcrs.csv`` prints -- so a reaction appears here under the
+    temperature the table beside it shows.  Grouping on the raw number instead
+    would be useless offline: pydna answers in tenths, so 57.64 and 57.72
+    would be two groups of one reaction each, where NEB would have called both
+    58.
+
+    It does NOT say how many thermocycler runs this is.  That depends on the
+    machine -- a gradient block covers a range of these in one go -- so this
+    reports the temperatures and the counts and leaves the arithmetic to
+    whoever knows what they are running it on.
+    """
+    rows = [
+        {
+            "anneal_c": whole_ties_down(
+                pcr.temperatures.ta_from_footprints.celsius
+            ),
+            "part_id": pcr.part_id,
+            "forward_primer": pcr.forward_label,
+            "reverse_primer": pcr.reverse_label,
+            "amplicon_bp": pcr.amplicon_bp,
+        }
+        for pcr in result.pcrs
+    ]
+    frame = pd.DataFrame(
+        rows,
+        columns=[c for c in PCR_WORKLIST_COLUMNS if c != "n_at_this_temperature"],
+    )
+    if not frame.empty:
+        counts = frame["anneal_c"].value_counts()
+        frame["n_at_this_temperature"] = frame["anneal_c"].map(counts)
+        frame = frame.sort_values(
+            ["anneal_c", "part_id"], kind="stable"
+        ).reset_index(drop=True)
+    # ONE EXIT, because the empty plan and the full one are the same file.
+    # Returning early on empty emitted `anneal_c` where every other plan
+    # emitted `anneal (C)`, so `worklist_by_ta.csv` changed its header with the
+    # plan and anything reading the first column by name read it correctly only
+    # sometimes.  `reindex` rather than `frame[...]` so the empty frame GAINS
+    # `n_at_this_temperature` instead of being asked for a column it lacks.
+    return frame.reindex(columns=list(PCR_WORKLIST_COLUMNS)).rename(
+        columns=COLUMN_LABELS
     )
 
 

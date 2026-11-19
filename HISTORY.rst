@@ -4,7 +4,7 @@ History
 Unreleased
 ~~~~~~~~~~
 
-1.2.0 (2026-11-17)
+1.2.0 (2026-11-19)
 ~~~~~~~~~~~~~~~~~~
 
 .. warning::
@@ -16,10 +16,12 @@ Unreleased
    that move results silently are: every base edit on a minus-strand gene,
    which was placed on the wrong residue; the default C-to-T editing window,
    from 3-10 to 4-10; Cas9 and CRISPRi ``off_target_count`` wherever a guide
-   has off-targets at all, the seed having been read one base out of step --
-   a guide whose seed is unique still counts 0, as it did before; Cas12a
-   spacers, from 20 nt to 23 nt on a 4 nt ``TTTV`` PAM; Cas12a and Cas3
-   ``sgrna_loc``, by up to 3 nt; and guide tables for genes with a compound
+   has off-targets at all, the seed having been read one base out of step;
+   Cas12a spacers, from 20 nt to 23 nt on a 4 nt ``TTTV`` PAM; Cas12a and
+   Cas3 ``sgrna_loc``, by up to 3 nt; ``editing_context``, and so which rows
+   survive ``editing_context=True``, for a window starting at position 1,
+   which used to read the guide's LAST base as the context for its first; and
+   guide tables for genes with a compound
    location, which shrink, because a guide spanning one of its gaps is no
    longer reported. Base editing a Cas12a or Cas3 guide table raises
    instead, where it used to return invented amino-acid changes.
@@ -33,8 +35,10 @@ Unreleased
   guard's message named the finders and ``identify_base_editing_sites`` but not
   that filter, which is not optional: ``identify_base_editing_sites`` leaves
   ``editable_cytosines`` empty for a guide with no cytosine in the window --
-  2.9% of the guides over 50 CDSs of the validation chromosome, and some on
-  every one of them -- and following the message literally reached ``int('')``
+  319 of the 7,651 cas9 guides over the first 50 single-part CDSs of the
+  *S. coelicolor* validation chromosome, SCO0001 to SCO0058, which is 4.2% of
+  them and reaches 45 of the 50 genes -- and following the message literally
+  reached ``int('')``
   and raised pandas' ``invalid literal for int() with base 10: ''``, naming
   neither the column nor the step that had been left out. The message now names
   all three steps, and an empty ``editable_cytosines`` is refused by name and
@@ -113,8 +117,11 @@ Unreleased
   commented-out ``print`` statements; and a docstring documenting a ``filepath``
   parameter the function did not take. The scan-flag branch was an ``if``/``elif``
   with no ``else``, leaving three names reachable-unbound, and is now an
-  ``if``/``else``. The module goes from 941 lines to 699, and from 246 statements
-  to 176.
+  ``if``/``else``. Measured against the 1.1.0 tag, the collapse takes
+  ``crispr_cas.py`` from 216 ``ast`` statements to 190, while the file grows
+  from 824 lines to 856 -- the sourcing work further down this list is longer
+  than the code it documents, and the two numbers move opposite ways for that
+  reason rather than by accident.
 - ``process_base_editing`` and ``identify_base_editing_sites`` now refuse a
   guide table from any nuclease but Cas9. CRISPR-BEST is an SpCas9 system:
   its editors are rAPOBEC1 (cBEST) and ecTadA (aBEST) fused to a
@@ -365,10 +372,113 @@ Unreleased
   a number in the spec, whereas two parts too short to supply the budget is
   the choice of parts, and printing the part lengths against a negative
   budget pointed at the parts for a failure that was neither of theirs.
+- A refused plan no longer returns its stop alone. ``_stopped`` built exactly
+  one ``Diagnostic``, so a ``no_footprint`` or ``impossible_junction`` result
+  had a one-element ``diagnostics`` and ``diagnostics[0]`` was the stop; the
+  warnings already settled before it were dropped, which reported a part that
+  could not be used and said nothing about the ones that had already been
+  demoted. Both stops now carry what was established first, so the critical
+  entry is LAST rather than only. A consumer that keyed on "a refused design
+  has one diagnostic, and it is the stop" has to read the last one instead.
+- ``plan_layout``'s ``in_tail`` fix above emits a second diagnostic code,
+  ``in_tail_over_homology``, beside the existing ``in_tail_too_long``. The
+  string is named here because ``Diagnostic.code`` crosses the boundary through
+  ``DesignResult.to_dict``, so anything filtering or grouping on codes meets a
+  value it has not seen.
+- ``filter_guides`` refuses a pattern filter on a column the finders do not
+  produce -- ``ValueError`` naming the column, where it used to reach
+  ``frame[column]`` and raise ``KeyError``. ``downstream_remove`` and
+  ``upstream_remove`` have always been such columns: ``_HIT_COLUMNS`` is
+  eleven and neither is among them.
+- ``SgRNAargs.protospacer_len`` is resolved on construction, not just
+  defaulted. The entry above says it "defaults to ``None``", which describes
+  the parameter; the ATTRIBUTE is the nuclease's own length by the time
+  anything reads it, so ``SgRNAargs(..., cas_type="cas3").protospacer_len`` is
+  34 and cas12a's is 23, where 1.1.0 gave 20 for both. Anything that read it
+  to slice, label or report reads a different number.
+- The ``Development Status`` classifier goes from ``2 - Pre-Alpha`` to
+  ``5 - Production/Stable``. It is metadata rather than behaviour, but it is
+  what PyPI shows, and this is the release that moves it.
 - ``teemi.design.combinatorial.flow`` imported ``Annotated`` from
   ``typing_extensions``, which teemi does not declare and had only because
   pydantic depends on it. It comes from ``typing`` now, where it has been
   since Python 3.9, against a floor of 3.11, so nothing need be declared.
+- Added ``teemi.design.combinatorial.idt``: the primer order in the two shapes
+  IDT takes it in. ``tube_frame`` is its bulk tube form, ``plate_frames`` one
+  frame per 96-well plate with the wells filled **down the columns** -- an
+  8-channel pipette spans exactly one column, so a part-full plate's oligos
+  sit in whole columns instead of being smeared across every row -- and
+  ``primers_fasta`` the same oligos for whatever reads no CSV. Both frames
+  read ``result.primers`` in order, so the plate is a re-shaping of the order
+  sheet and the two cannot disagree about what is in the order. The module is
+  pure; ``export.py`` remains the only file-writing edge of the package.
+- ``oligo_name`` puts the primer's label before its id, which is what makes
+  the length cap safe: a label is unique within one plan by construction, so
+  two long ids that truncate alike still give two distinct names. It does not
+  collapse runs of underscores: ``ID_SEPARATOR`` is ``__``, so collapsing
+  doubles WOULD make ``A__B`` and ``A_B`` the same oligo. Conditional because
+  no release had it -- a sanitiser ported from elsewhere collapsed them, and
+  the module's own parametrised test caught it before any of this shipped.
+- The bundle gained six files and a provenance stamp:
+  ``02_primers/oligo_order_idt.csv``, ``02_primers/oligo_order_idt_plate.xlsx``
+  and ``02_primers/primers.fasta``; ``03_pcrs/worklist_by_ta.csv``;
+  ``05_constructs/constructs.csv``, which is ``variant_overview_dataframe`` --
+  built on every plan and, until now, never written, so the archive carried a
+  map per construct and no table of what was being built; and
+  ``05_constructs/00_all_constructs.gb``. The xlsx is the only new binary and
+  needs no new dependency, ``openpyxl`` already being one.
+- ``write_bundle``, ``write_bundle_zip`` and ``build_summary`` take ``run=``, a
+  mapping the caller supplies, written out as ``09_run.json`` beside the seven
+  things teemi can see for itself: ``teemi``, ``pydna``, ``primer3``,
+  ``pandas`` and ``Bio``, plus ``python`` and ``platform``. Same argument
+  ``part_info`` already makes: provenance this package cannot know. The keyword
+  is defaulted and the file conditional, so every EXISTING caller is
+  unaffected, and ``00_LAYOUT.txt``, which is built from what was actually
+  written, cannot promise a file that is not there.
+- Two things a NEW caller of ``run=`` has to know, since the keyword is not as
+  opaque as it looks. Those seven names are reserved: ``run_json`` raises
+  ``ValueError`` on a key that collides with one, because a bundle naming a
+  teemi version its own code did not produce cannot be checked, and the clash
+  is likelier a mistake than an intention. And ``build_summary`` reads one key
+  by name -- ``built_at``, which it prints under the rule at the top of
+  ``01_SUMMARY.txt`` -- so a caller spelling it ``timestamp`` or ``date`` gets
+  no line and no complaint. Nothing here reads the clock: the timestamp is the
+  caller's, because it is the one fact that has to agree with their own
+  filenames and log lines.
+- ``bundle_layout``'s description column starts at 40 characters instead of
+  30, because the plate workbook's path is 37 and the old gutter wrapped it
+  into the text. Every line of ``00_LAYOUT.txt`` therefore moves, which is
+  worth saying out loud because that file is the one in the bundle meant to be
+  read rather than parsed. It also gained a keyword-only ``omit``, which drops
+  individual lines from an entry that was written -- additive, and public,
+  ``bundle_layout`` being in the package surface.
+- ``build_summary`` states how many plates the oligos fill and, under 24 of
+  them, that the order is below IDT's floor for a 96-well plate. The observed
+  count against the limit, the way a ``Violation`` reads, rather than advice.
+- Added ``pcr_worklist_dataframe``, the reactions grouped by the temperature
+  they anneal at. It groups on the **whole degree with ties going down**, which
+  is the rule ``pcrs.csv`` already prints Ta by, now extracted as
+  ``report.whole_ties_down`` so both readers share one owner: grouping on the
+  raw float would turn 61.2 and 61.4 into two blocks of one reaction each,
+  since an offline plan gets its Tm from pydna in tenths, and could label a
+  block a degree away from the Ta printed for that same reaction. It reports no
+  thermocycler count, because a gradient block covers a range.
+- Fixed ``constructs_genbank`` holding one record. pydna ends a formatted
+  record at ``//`` with no trailing newline, so joining them directly gave
+  ``//LOCUS`` on one line and a file that holds a single record as far as any
+  parser is concerned. Counting ``LOCUS`` lines is what missed it; the test
+  parses the file back.
+- Fixed LOCUS name collisions in the same file. ``simulate`` names a product
+  from ``variant.id[:16]``, which is not distinct across variants -- 8 designs
+  gave 4 distinct names, 12 gave 8 -- so the combined file re-stamps each
+  record from its label and id on a copy, leaving the caller's records alone.
+- Added ``construct_maps(folder)``, and this is the one thing in the bundle
+  work that an existing caller has to know about: ``glob("*.gb")`` over
+  ``05_constructs`` now matches the combined file too, which is a ``.gb`` that
+  is not a construct map. Anything counting those files counts one too many,
+  and anything handing each to ``SeqIO.read`` gets a multi-record file --
+  which is exactly what four of teemi's own tests did. Use
+  ``construct_maps(folder)`` rather than the glob.
 
 1.1.0 (2026-10-30)
 ~~~~~~~~~~~~~~~~~~
