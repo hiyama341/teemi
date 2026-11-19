@@ -81,12 +81,26 @@ def test_the_public_surface_is_small_and_complete():
             "write_bundle",
             "write_bundle_zip",
             "build_summary",
-            # Where each thing lands, so a reader need not hard-code it.
+            # Where each thing lands, so a reader need not hard-code it --
+            # ALL_CONSTRUCTS and construct_maps for the same reason, because
+            # the obvious glob for the maps matches the combined file too.
             "BUNDLE_PATHS",
             "bundle_layout",
+            "ALL_CONSTRUCTS",
+            "construct_maps",
             # The long form of used_as.
             "primer_uses_dataframe",
             "spec_json",
+            # The reactions sorted by the temperature they run at.
+            "pcr_worklist_dataframe",
+            # The order sheet as a vendor's form, for a caller who wants the
+            # order without writing a whole bundle.  Same reason the dataframe
+            # builders above are public.
+            "tube_frame",
+            "plate_frames",
+            "primers_fasta",
+            # Every map in one file, beside the per-construct writer.
+            "constructs_genbank",
         ]
     )
     for name in cb.__all__:
@@ -106,6 +120,7 @@ def test_the_package_is_the_modules_the_map_names():
         "design.py",
         "export.py",
         "flow.py",
+        "idt.py",
         "report.py",
         "simulate.py",
         "sources.py",

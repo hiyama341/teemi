@@ -33,16 +33,21 @@ resolved target must stay inside ``out_dir``.  It is also made *writable* and
 
 from __future__ import annotations
 
+import copy
 import hashlib
+import importlib
 import json
+import platform
 import re
 import shutil
+import sys
 import tempfile
 import zipfile
 from collections import Counter
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
+from teemi.design.combinatorial import idt
 from teemi.design.combinatorial.report import VariantPlan
 
 __all__ = [
@@ -52,6 +57,10 @@ __all__ = [
     "write_bundle_zip",
     "build_summary",
     "bundle_layout",
+    "constructs_genbank",
+    "construct_maps",
+    "environment_record",
+    "ALL_CONSTRUCTS",
 ]
 
 
@@ -151,6 +160,11 @@ def _target(out_dir: Union[str, Path], stem: str, suffix: str) -> Path:
 # The whole build, in one folder
 # --------------------------------------------------------------------------- #
 
+#: The one file in ``05_constructs`` that is NOT a map of a single construct.
+#: Above :data:`BUNDLE_ORDER` because that table names it.  ``00_`` so it sorts
+#: above the numbered maps it is the concatenation of.
+ALL_CONSTRUCTS = "00_all_constructs.gb"
+
 #: What a bundle contains, and in what order a person should read it.
 #: The order to read the bundle in, which is why the entries are numbered: a
 #: folder listing is alphabetical and would otherwise open on ``constructs/``.
@@ -170,13 +184,34 @@ BUNDLE_ORDER = (
         (
             ("/primers.csv", "the order sheet, one row per distinct molecule"),
             (
+                "/oligo_order_idt.csv",
+                "the same oligos as an ORDER: paste into IDT's bulk tube form "
+                "(Sequence is 5'-3')",
+            ),
+            (
+                "/oligo_order_idt_plate.xlsx",
+                "or upload this; one worksheet per 96-well plate, wells filled "
+                "down the columns (Sequence is 5'-3')",
+            ),
+            ("/primers.fasta", "every oligo as FASTA, for whatever takes no CSV"),
+            (
                 "/analysis.csv",
                 "every column the primer table has, not just the readable ones",
             ),
             ("/uses.csv", "which junctions each oligo serves, one row each"),
         ),
     ),
-    ("pcrs", "03_pcrs", (("/pcrs.csv", "one row per reaction"),)),
+    (
+        "pcrs",
+        "03_pcrs",
+        (
+            ("/pcrs.csv", "one row per reaction"),
+            (
+                "/worklist_by_ta.csv",
+                "the same reactions sorted by the temperature they anneal at",
+            ),
+        ),
+    ),
     (
         "parts",
         "04_parts",
@@ -186,7 +221,12 @@ BUNDLE_ORDER = (
         "constructs",
         "05_constructs",
         (
+            ("/constructs.csv", "what each construct is made of, one row each"),
             ("/NNN_*.gb", "one annotated map per verified construct, numbered"),
+            (
+                f"/{ALL_CONSTRUCTS}",
+                "every one of those maps in a single file, to import in one step",
+            ),
             ("/assemblies.txt", "every assembly figure, in one file"),
         ),
     ),
@@ -205,6 +245,11 @@ BUNDLE_ORDER = (
         "08_design.json",
         (("", "the whole result: junctions, primers, PCRs, diagnostics"),),
     ),
+    (
+        "run",
+        "09_run.json",
+        (("", "when this was built, by which versions, against which library"),),
+    ),
 )
 
 #: Where each thing is, by the key :data:`BUNDLE_ORDER` gives it.
@@ -215,21 +260,64 @@ BUNDLE_PATHS = {key: path for key, path, _ in BUNDLE_ORDER}
 _NUMBERED = re.compile(r"^\d\d_")
 
 
-def bundle_layout(keys: Optional[Iterable[str]] = None) -> str:
+def construct_maps(folder: Union[str, Path]) -> Tuple[Path, ...]:
+    """The per-construct maps in a written bundle, in filename order.
+
+    Filename order is numbered order up to 999 constructs and not past it: the
+    number is zero-padded to three digits (``report``'s ``:03d``), so a library
+    of 1000 sorts ``1000_`` ahead of ``100_``.  Said here rather than fixed
+    here, because the fix worth making is the padding -- which renames every
+    map in every bundle -- and not a sort this function alone would get right.
+
+    A glob for ``*.gb`` is the obvious way to ask this and it is WRONG, because
+    :data:`ALL_CONSTRUCTS` sits in the same folder and is every construct at
+    once.  Three separate tests asked that way, at four call sites, and all
+    three broke the day the combined file arrived -- two counted nine maps for
+    eight constructs, and the third handed a multi-record file to
+    ``SeqIO.read``, which takes exactly one, at both of its call sites.
+
+    So the question has an owner.  ``folder`` is a bundle root.
+    """
+    constructs = Path(folder) / BUNDLE_PATHS["constructs"]
+    return tuple(
+        path
+        for path in sorted(constructs.glob("*.gb"))
+        if path.name != ALL_CONSTRUCTS
+    )
+
+
+def bundle_layout(
+    keys: Optional[Iterable[str]] = None, *, omit: Iterable[str] = ()
+) -> str:
     """The map of the bundle, describing the entries named by ``keys``.
 
     Built from what was actually written rather than from a fixed list,
     because a map naming a file the bundle did not produce is worse for
-    someone finding their way around than no map at all -- and two of the
-    entries are conditional: there is no spec for a refused design and no
-    submitted document unless the caller passed one.
+    someone finding their way around than no map at all -- and three of the
+    entries are conditional: there is no spec for a refused design, no
+    submitted document unless the caller passed one, and no run record unless
+    the caller said when and against what.
+
+    ``omit`` drops INDIVIDUAL LINES from an entry that was itself written,
+    which ``keys`` cannot express.  One file needs it: the IDT plate workbook
+    lives in ``02_primers`` beside the primer tables, so that entry is written
+    whenever there are primers at all, but a result with no primers has
+    nothing to order and openpyxl cannot write a workbook with no worksheets
+    in it.  Paths are given as they appear here, e.g.
+    ``02_primers/oligo_order_idt_plate.xlsx``.
+
+    The gutter is 40 rather than the 30 it was: the plate workbook's path is
+    37 characters and a narrower column pushed its description out of
+    alignment with every other line.
     """
     wanted = set(BUNDLE_PATHS) if keys is None else set(keys)
+    dropped = set(omit)
     lines = [
-        f"{path + suffix:<30} {text}"
+        f"{path + suffix:<40} {text}"
         for key, path, described in BUNDLE_ORDER
         if key in wanted
         for suffix, text in described
+        if path + suffix not in dropped
     ]
     return "\n".join(lines) + "\n" if lines else ""
 
@@ -252,12 +340,110 @@ def spec_json(spec) -> str:
     return json.dumps(spec.model_dump(mode="json", exclude_none=True), indent=2)
 
 
+def constructs_genbank(designs: Iterable[VariantPlan]) -> str:
+    """Every verified construct in one GenBank file, in the numbered order.
+
+    One file to import rather than one import per construct, which is the
+    difference between a click and a morning when a library has sixty of them.
+
+    IT RE-STAMPS THE LOCUS NAME, and that is the whole reason this is not a
+    `cat` of the files :func:`write_genbank_files` writes.  A construct's LOCUS
+    is set to ``variant.id[:16]`` when it is assembled, and a variant id is the
+    part ids joined in track order -- so every variant that differs only at a
+    LATER position has the same first sixteen characters.  The shipped
+    combinatorial fixtures collapse eight constructs onto four LOCUS names and
+    twelve onto eight.  Separate files hide it because the FILENAMES carry the
+    construct number and the full id; one file would show duplicate LOCUS
+    lines, and a reader with no way to tell two records apart.
+
+    So the LOCUS becomes the construct number first and as much of the id as
+    fits.  The number is unique within a plan by construction, so the records
+    are distinguishable however the ids collide.
+
+    The records are COPIED before they are touched.  ``result.designs`` is held
+    for the caller's own use -- FLOW draws its on-screen tables from the same
+    object -- and a writer that renamed them in place would change what the
+    next reader sees.
+    """
+    plans = [design for design in designs if design.construct is not None]
+    out = []
+    for design in plans:
+        record = copy.copy(design.construct)
+        record.annotations = dict(record.annotations)
+        record.annotations.setdefault("molecule_type", "DNA")
+        # 16 characters is the LOCUS field; the number leads so it cannot clash.
+        record.name = f"{design.label}_{design.id}"[:16]
+        text = record.format("genbank")
+        # pydna ends a record at `//` with NO trailing newline, so joining the
+        # formatted records directly gives `//LOCUS` on one line and a file
+        # that holds one record as far as any parser is concerned.  The test
+        # for this reads the file back with SeqIO rather than counting LOCUS
+        # lines, because counting is what missed it.
+        out.append(text if text.endswith("\n") else text + "\n")
+    return "".join(out)
+
+
+#: Packages whose version changes what a design comes out as.
+_MEASURED = ("teemi", "pydna", "primer3", "pandas", "Bio")
+
+
+def environment_record() -> Dict[str, object]:
+    """The versions that produced this build, read rather than declared.
+
+    A bundle is meant to make a run repeatable.  The spec beside it says what
+    was asked for; this says what answered -- and a primer set is a function of
+    the Tm engine and the structure predictor as much as of the spec, so
+    "which teemi" and "which primer3" are part of the result.
+    """
+    versions: Dict[str, object] = {
+        "python": sys.version.split()[0],
+        "platform": platform.platform(),
+    }
+    for name in _MEASURED:
+        try:
+            module = importlib.import_module(name)
+        except Exception:  # pragma: no cover - an optional package absent
+            continue
+        versions[name] = str(getattr(module, "__version__", "unknown"))
+    return versions
+
+
+def run_json(run: Optional[Mapping[str, object]]) -> str:
+    """The run record: what the caller knows, then what this package measures.
+
+    ``run`` is provenance teemi cannot know -- when the design was computed,
+    which commit of a part library resolved the ids, which service asked --
+    exactly the argument ``part_info`` already makes, so it arrives the same
+    way rather than being invented here.
+
+    TEEMI'S OWN KEYS ARE WRITTEN LAST so a caller cannot shadow them, and a
+    caller that tries RAISES.  A bundle reporting a teemi version its own code
+    did not produce is worse than one reporting none, and the clash is far more
+    likely to be a mistake than an intention.
+
+    Nothing here reads the clock.  A timestamp is the caller's: it is the one
+    fact that has to agree with the caller's own log lines and filenames, and a
+    second reading of the clock here would differ from the first.
+    """
+    measured = environment_record()
+    supplied = dict(run or {})
+    clash = sorted(set(supplied) & set(measured))
+    if clash:
+        raise ValueError(
+            f"run may not set {', '.join(clash)}: this package measures those "
+            "itself, and a bundle naming a version it was not built with "
+            "cannot be checked"
+        )
+    return json.dumps({**supplied, **measured}, indent=2, default=str)
+
+
 def write_bundle(
     result,
     out_dir: Union[str, Path],
     *,
     part_info: Optional[Mapping[str, Mapping[str, object]]] = None,
     request: Optional[Mapping[str, object]] = None,
+    run: Optional[Mapping[str, object]] = None,
     overwrite: bool = False,
 ) -> Path:
     """Write the whole build to one folder and return it.
@@ -285,6 +471,13 @@ def write_bundle(
     these primers had nowhere to look, and nothing in the folder could be
     re-run.
 
+    ``run`` is when this was built and against what: a timestamp, a library
+    version, whatever names the caller's own run.  Same argument as
+    ``part_info`` -- provenance this package cannot know -- and
+    :func:`run_json` adds the versions it can measure.  Omitted, there is no
+    ``09_run.json``, because a run record that could only say "some teemi,
+    some day" is not one.
+
     ``request`` is the document as the caller received it -- a FLOW document,
     say -- archived unchanged.  The spec beside it is what teemi made of that
     document, which is not the same thing: validation fills in defaults,
@@ -304,8 +497,12 @@ def write_bundle(
     Everything not matching that convention is left alone.
     """
     # Serialized before the folder is touched, so a document that will not
-    # turn into JSON fails here rather than halfway through a bundle.
+    # turn into JSON fails here rather than halfway through a bundle.  The run
+    # record is built here for the same reason and one more: it REFUSES a
+    # caller key that would shadow a measured version, and that refusal has to
+    # land before anything is written.
     request_text = None if request is None else json.dumps(request, indent=2) + "\n"
+    run_text = None if run is None else run_json(run) + "\n"
 
     root = Path(out_dir).resolve()
     if root.is_dir() and any(root.iterdir()):
@@ -334,20 +531,48 @@ def write_bundle(
     if request_text is not None:
         (root / BUNDLE_PATHS["request"]).write_text(request_text)
         written.add("request")
-    (root / BUNDLE_PATHS["layout"]).write_text(bundle_layout(written))
+    if run_text is not None:
+        (root / BUNDLE_PATHS["run"]).write_text(run_text)
+        written.add("run")
 
     primers = root / BUNDLE_PATHS["primers"]
     _frame(result, "primer").to_csv(primers / "primers.csv", index=False)
     _frame(result, "primer", full=True).to_csv(primers / "analysis.csv", index=False)
     _frame(result, "uses").to_csv(primers / "uses.csv", index=False)
     _frame(result, "pcr").to_csv(root / BUNDLE_PATHS["pcrs"] / "pcrs.csv", index=False)
+    _frame(result, "worklist").to_csv(
+        root / BUNDLE_PATHS["pcrs"] / "worklist_by_ta.csv", index=False
+    )
     _parts_frame(result, part_info).to_csv(
         root / BUNDLE_PATHS["parts"] / "parts.csv", index=False
     )
 
+    # The order, in the two shapes a vendor's form takes.  Built from the same
+    # `result.primers` the sheet above is, so the three cannot disagree about
+    # what is in the order -- which is asserted on SEQUENCES, because an oligo
+    # is identified by its sequence and the right count of the wrong molecules
+    # is exactly what a count would pass.
+    idt.tube_frame(result).to_csv(primers / "oligo_order_idt.csv", index=False)
+    (primers / "primers.fasta").write_text(idt.primers_fasta(result))
+    plates = idt.plate_frames(result)
+    omit = ()
+    if plates:
+        with pd_excel_writer(primers / "oligo_order_idt_plate.xlsx") as writer:
+            for index, plate in enumerate(plates, start=1):
+                plate.to_excel(writer, sheet_name=f"Plate{index}", index=False)
+    else:
+        # No primers, so nothing to order.  The entry is still written -- the
+        # primer tables live in it -- so the one missing line is dropped from
+        # the map rather than the whole shelf.
+        omit = (f"{BUNDLE_PATHS['primers']}/oligo_order_idt_plate.xlsx",)
+
+    (root / BUNDLE_PATHS["layout"]).write_text(bundle_layout(written, omit=omit))
+
     designs = list(result.designs)
     constructs = root / BUNDLE_PATHS["constructs"]
+    _frame(result, "overview").to_csv(constructs / "constructs.csv", index=False)
     write_genbank_files(designs, constructs)
+    (constructs / ALL_CONSTRUCTS).write_text(constructs_genbank(designs))
     figures = write_assembly_figures(designs, constructs)
     # A blank line and a rule between figures, or they run into each other.
     joined = ("\n" + "-" * 72 + "\n\n").join(
@@ -357,7 +582,7 @@ def write_bundle(
     for path in figures:
         path.unlink()
 
-    (root / BUNDLE_PATHS["summary"]).write_text(build_summary(result, part_info))
+    (root / BUNDLE_PATHS["summary"]).write_text(build_summary(result, part_info, run=run))
     return root
 
 
@@ -367,6 +592,7 @@ def write_bundle_zip(
     *,
     part_info: Optional[Mapping[str, Mapping[str, object]]] = None,
     request: Optional[Mapping[str, object]] = None,
+    run: Optional[Mapping[str, object]] = None,
 ) -> Path:
     """:func:`write_bundle` into a temporary folder, zipped, for handing over.
 
@@ -381,7 +607,11 @@ def write_bundle_zip(
     stem = target.name[:-4] if target.name.endswith(".zip") else target.name
     with tempfile.TemporaryDirectory() as scratch:
         folder = write_bundle(
-            result, Path(scratch) / stem, part_info=part_info, request=request
+            result,
+            Path(scratch) / stem,
+            part_info=part_info,
+            request=request,
+            run=run,
         )
         with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
             for path in sorted(folder.rglob("*")):
@@ -390,16 +620,33 @@ def write_bundle_zip(
     return target
 
 
+def pd_excel_writer(path: Path):
+    """``pd.ExcelWriter`` on openpyxl, named so the one import has one home.
+
+    A workbook is the only binary this module writes, and it is written because
+    IDT's plate upload takes Excel and not CSV.
+    """
+    import pandas as pd
+
+    return pd.ExcelWriter(path, engine="openpyxl")
+
+
 def _frame(result, kind: str, full: bool = False):
     """A table, imported here so :mod:`.report` can import this module freely."""
     from teemi.design.combinatorial.report import (
         pcr_dataframe,
+        pcr_worklist_dataframe,
         primer_dataframe,
         primer_uses_dataframe,
+        variant_overview_dataframe,
     )
 
     if kind == "uses":
         return primer_uses_dataframe(result)
+    if kind == "worklist":
+        return pcr_worklist_dataframe(result)
+    if kind == "overview":
+        return variant_overview_dataframe(result)
     build = primer_dataframe if kind == "primer" else pcr_dataframe
     return build(result, full=full)
 
@@ -453,7 +700,10 @@ def _parts_frame(result, part_info: Optional[Mapping[str, Mapping[str, object]]]
 
 
 def build_summary(
-    result, part_info: Optional[Mapping[str, Mapping[str, object]]] = None
+    result,
+    part_info: Optional[Mapping[str, Mapping[str, object]]] = None,
+    *,
+    run: Optional[Mapping[str, object]] = None,
 ) -> str:
     """The page to read first: what this build is, and what to look at twice.
 
@@ -461,6 +711,15 @@ def build_summary(
     a count of reactions, a reason a reaction is flagged, how often a part is
     reused.  Everything here is derived from the result, so it cannot drift from
     the tables beside it.
+
+    ``run``'s date is printed under the heading.  The archive's filename
+    carries it too, but a filename is lost the moment someone unzips the folder
+    or renames it, and this is the page they actually read.
+
+    It is read from ONE key, ``built_at``, and no other spelling is looked for:
+    a caller passing ``timestamp`` or ``date`` gets no line and no complaint,
+    because every other key in ``run`` is the caller's to name and this page
+    cannot tell a misspelling from a key it was never meant to print.
     """
     if result.spec is None:
         return "no design: " + "; ".join(d.message for d in result.diagnostics) + "\n"
@@ -478,6 +737,11 @@ def build_summary(
     lines = [
         result.spec.design.name,
         "=" * len(result.spec.design.name),
+    ]
+    built_at = (run or {}).get("built_at")
+    if built_at:
+        lines.append(f"built {built_at}")
+    lines += [
         "",
         result.summary(),
         "",
@@ -486,6 +750,29 @@ def build_summary(
         f"{sum(p['length_nt'] for p in primers)} bases, "
         f"{result.price:.0f} {result.spec.objective.currency}",
     ]
+    if primers:
+        plates = idt.plate_count(len(primers))
+        where = f"{BUNDLE_PATHS['primers']}/oligo_order_idt.csv"
+        lines.append(
+            f"  as tubes: {where}  "
+            f"({idt.DEFAULT_SCALE}, {idt.DEFAULT_PURIFICATION})"
+        )
+        if len(primers) < idt.IDT_PLATE_MINIMUM:
+            # Said with both numbers rather than as advice, the way a breached
+            # bound is reported: the plate file is still written, because a
+            # person with 16 oligos and no plate file cannot tell a too-small
+            # order from a broken feature.
+            lines.append(
+                f"  as a plate: {len(primers)} oligos is under IDT's "
+                f"{idt.IDT_PLATE_MINIMUM} for a 96-well plate, so this order "
+                "goes as tubes"
+            )
+        else:
+            lines.append(
+                f"  as a plate: {plates} "
+                f"{'plate' if plates == 1 else 'plates'}, filled down the "
+                f"columns -- {BUNDLE_PATHS['primers']}/oligo_order_idt_plate.xlsx"
+            )
     if shared:
         lines.append(
             f"  {len(shared)} of them are shared, saving "
