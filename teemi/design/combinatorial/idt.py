@@ -41,7 +41,7 @@ order matters more than it looks: see :func:`plate_frames`.
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, List, Sequence, Tuple
+from typing import TYPE_CHECKING, List, Tuple
 
 if TYPE_CHECKING:  # pragma: no cover - import cycle at runtime, types only
     import pandas as pd
@@ -198,9 +198,13 @@ def tube_frame(
 
     ``scale`` and ``purification`` are IDT's codes and are written on every
     row, since the form takes them per oligo.  The defaults are the smallest
-    scale and no purification, which is what a PCR primer needs; purification
-    at IDT requires a scale of at least 100 nmol, so the two defaults cannot be
-    changed independently without checking that pairing.
+    scale and no purification, which is what a PCR primer needs.
+
+    NOT CITED, like :data:`IDT_NAME_MAX`: purification at IDT appears to
+    require a scale of at least 100 nmol, so the two defaults look like they
+    cannot be changed independently.  That pairing is read off the order form
+    rather than a document with a version on it, and a caller who overrides one
+    should check the other against the form rather than against this sentence.
     """
     import pandas as pd
 

@@ -261,13 +261,20 @@ _NUMBERED = re.compile(r"^\d\d_")
 
 
 def construct_maps(folder: Union[str, Path]) -> Tuple[Path, ...]:
-    """The per-construct maps in a written bundle, in numbered order.
+    """The per-construct maps in a written bundle, in filename order.
+
+    Filename order is numbered order up to 999 constructs and not past it: the
+    number is zero-padded to three digits (``report``'s ``:03d``), so a library
+    of 1000 sorts ``1000_`` ahead of ``100_``.  Said here rather than fixed
+    here, because the fix worth making is the padding -- which renames every
+    map in every bundle -- and not a sort this function alone would get right.
 
     A glob for ``*.gb`` is the obvious way to ask this and it is WRONG, because
     :data:`ALL_CONSTRUCTS` sits in the same folder and is every construct at
-    once.  Four separate tests asked that way and all four broke the day the
-    combined file arrived -- two counted nine maps for eight constructs, and
-    two handed a multi-record file to ``SeqIO.read``, which takes exactly one.
+    once.  Three separate tests asked that way, at four call sites, and all
+    three broke the day the combined file arrived -- two counted nine maps for
+    eight constructs, and the third handed a multi-record file to
+    ``SeqIO.read``, which takes exactly one, at both of its call sites.
 
     So the question has an owner.  ``folder`` is a bundle root.
     """
@@ -708,6 +715,11 @@ def build_summary(
     ``run``'s date is printed under the heading.  The archive's filename
     carries it too, but a filename is lost the moment someone unzips the folder
     or renames it, and this is the page they actually read.
+
+    It is read from ONE key, ``built_at``, and no other spelling is looked for:
+    a caller passing ``timestamp`` or ``date`` gets no line and no complaint,
+    because every other key in ``run`` is the caller's to name and this page
+    cannot tell a misspelling from a key it was never meant to print.
     """
     if result.spec is None:
         return "no design: " + "; ".join(d.message for d in result.diagnostics) + "\n"

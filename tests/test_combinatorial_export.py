@@ -15,6 +15,7 @@ from Bio import SeqIO
 from teemi.design.combinatorial.export import (
     ALL_CONSTRUCTS,
     BUNDLE_PATHS,
+    bundle_layout,
     construct_maps,
     constructs_genbank,
     write_assembly_figures,
@@ -577,7 +578,16 @@ def test_every_column_of_dna_in_the_bundle_says_which_end_is_which(linear, tmp_p
 #: which end is which would be a refused order.  The orientation moves to the
 #: layout line instead, which the test above asserts -- so the invariant is
 #: kept, in the one place that can keep it.
-_VENDOR_HEADERS = frozenset({"oligo_order_idt.csv"})
+_VENDOR_HEADERS = frozenset(
+    {
+        "oligo_order_idt.csv",
+        # The workbook carries the same flat ``Sequence`` heading.  The scan
+        # above globs ``*.csv`` and so never reaches it, which is exactly why
+        # it is named here: the layout line is the only thing saying which end
+        # of those oligos is which, and nothing else would notice it going.
+        "oligo_order_idt_plate.xlsx",
+    }
+)
 
 
 def test_the_submitted_document_is_archived_unchanged(linear, tmp_path):
@@ -1003,3 +1013,26 @@ def test_a_caller_may_not_claim_a_version_it_did_not_build_with(linear, tmp_path
     with pytest.raises(ValueError, match="teemi"):
         write_bundle(linear, target, run={"teemi": "99.0.0"})
     assert not target.exists() or not any(target.iterdir())
+
+
+# -- the layout's omit= -----------------------------------------------------
+
+
+def test_the_layout_can_drop_a_line_for_a_file_that_was_not_written():
+    """``omit=`` is why a conditional file cannot produce a map that lies.
+
+    The plate workbook is written only when there are oligos to put in it, so
+    the line describing it has to be droppable independently of the entry it
+    belongs to -- the entry itself is still written, for the CSV beside it.
+    Asserted here because the keyword is public and the suite stayed green
+    with it unused, which means nothing was holding it.
+    """
+    plate = f"{BUNDLE_PATHS['primers']}/oligo_order_idt_plate.xlsx"
+    tubes = f"{BUNDLE_PATHS['primers']}/oligo_order_idt.csv"
+
+    whole = bundle_layout(["primers"])
+    assert plate in whole and tubes in whole
+
+    without = bundle_layout(["primers"], omit=(plate,))
+    assert plate not in without, "omit= did not drop the line"
+    assert tubes in without, "omit= took the rest of the entry with it"

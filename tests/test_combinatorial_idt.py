@@ -126,11 +126,24 @@ def test_a_nameless_oligo_still_gets_a_name():
 
 
 def test_the_tube_sheet_has_idts_headers_in_order(linear):
+    """Spelled out, because IDT reads these and a constant cannot check itself.
+
+    Asserting against ``IDT_TUBE_COLUMNS`` would pass however that constant
+    were edited, which is the one edit that breaks an upload.
+    """
+    assert tuple(tube_frame(linear).columns) == (
+        "Name",
+        "Sequence",
+        "Scale",
+        "Purification",
+    )
     assert tuple(tube_frame(linear).columns) == IDT_TUBE_COLUMNS
 
 
 def test_the_plate_has_idts_headers_in_order(linear):
+    """Spelled out for the same reason as the tube sheet above."""
     for frame in plate_frames(linear):
+        assert tuple(frame.columns) == ("Well Position", "Name", "Sequence")
         assert tuple(frame.columns) == IDT_PLATE_COLUMNS
 
 

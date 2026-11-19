@@ -452,9 +452,13 @@ Unreleased
   read rather than parsed. It also gained a keyword-only ``omit``, which drops
   individual lines from an entry that was written -- additive, and public,
   ``bundle_layout`` being in the package surface.
-- ``build_summary`` states how many plates the oligos fill and, under 24 of
-  them, that the order is below IDT's floor for a 96-well plate. The observed
+- ``build_summary`` states how many plates the oligos fill, or -- under 24 of
+  them, where there is no plate file to fill -- that the order is below IDT's
+  floor for a 96-well plate. One line or the other, never both. The observed
   count against the limit, the way a ``Violation`` reads, rather than advice.
+  The floor is tested against the whole order, so a long order whose LAST
+  plate holds fewer than 24 oligos is not warned about; whether IDT applies
+  that floor per plate or per order is not something this release can cite.
 - Added ``pcr_worklist_dataframe``, the reactions grouped by the temperature
   they anneal at. It groups on the **whole degree with ties going down**, which
   is the rule ``pcrs.csv`` already prints Ta by, now extracted as
@@ -463,12 +467,13 @@ Unreleased
   since an offline plan gets its Tm from pydna in tenths, and could label a
   block a degree away from the Ta printed for that same reaction. It reports no
   thermocycler count, because a gradient block covers a range.
-- Fixed ``constructs_genbank`` holding one record. pydna ends a formatted
-  record at ``//`` with no trailing newline, so joining them directly gave
-  ``//LOCUS`` on one line and a file that holds a single record as far as any
-  parser is concerned. Counting ``LOCUS`` lines is what missed it; the test
-  parses the file back.
-- Fixed LOCUS name collisions in the same file. ``simulate`` names a product
+- ``constructs_genbank`` is new in this release, so the next two entries are
+  defects that never shipped -- recorded because both are easy to reintroduce.
+  A first cut joined the formatted records directly, and pydna ends one at
+  ``//`` with no trailing newline, so the file WOULD have carried ``//LOCUS``
+  on one line and held a single record as far as any parser is concerned.
+  Counting ``LOCUS`` lines is what missed it; the test parses the file back.
+- LOCUS names would have collided in that same file. ``simulate`` names a product
   from ``variant.id[:16]``, which is not distinct across variants -- 8 designs
   gave 4 distinct names, 12 gave 8 -- so the combined file re-stamps each
   record from its label and id on a copy, leaving the caller's records alone.
