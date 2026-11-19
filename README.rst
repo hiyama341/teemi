@@ -375,8 +375,9 @@ The gRNA template is the DNA sequence that encodes the guide RNA. This RNA molec
 
 .. code-block:: python
 
-    from teemi.lims.csv_database import get_dna_from_box_name
+    from teemi.lims.csv_database import get_dna_from_plate_name
     gRNA1_template = get_dna_from_plate_name('gRNA1_template (1).fasta', 'plasmid_plates', database_path="G8H_CPR_library/data/06-lims/csv_database/")
+    gRNA2_template = get_dna_from_plate_name('gRNA2_template (1).fasta', 'plasmid_plates', database_path="G8H_CPR_library/data/06-lims/csv_database/")
 
 
 1.3: Perform a PCR to amplify the gRNA. 

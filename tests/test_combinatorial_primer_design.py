@@ -204,6 +204,33 @@ def test_a_junction_the_parts_cannot_supply_is_an_error():
     with pytest.raises(D.JunctionError) as caught:
         D.design_junction(junction, spec)
     assert caught.value.junction_id == "a1__b1"
+    assert "cannot supply" in str(caught.value)
+
+
+def test_a_tail_longer_than_the_homology_blames_the_homology_not_the_parts():
+    """The two numbers that matter are the tail's and the homology's.
+
+    A negative budget is not a fact about the two parts -- 400 bp neighbours
+    fail it exactly as 10 bp ones do -- so naming their lengths sent everyone
+    to measure the wrong thing.  :func:`plan_layout` demotes this case before
+    it gets here, so reaching it at all means a hand-built junction.
+    """
+    spec, records, footprints, _ = _resolved()
+    homology = spec.primer_design.junction.homology_length
+    junction = dataclasses.replace(
+        _junction(spec, records, footprints),
+        interposed="A" * (homology + 1),
+    )
+    assert junction.budget == -1
+    with pytest.raises(D.JunctionError) as caught:
+        D.design_junction(junction, spec)
+    assert caught.value.junction_id == "a1__b1"
+
+    message = str(caught.value)
+    assert f"{homology + 1} bp riding in the tails" in message
+    assert f"homology_length {homology}" in message
+    assert "-1" not in message, "a negative budget is not a number to report"
+    assert str(len(junction.upstream_seq)) not in message, "not the parts' fault"
 
 
 # --------------------------------------------------------------------------- #

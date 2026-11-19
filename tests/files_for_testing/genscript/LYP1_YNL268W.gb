@@ -1,0 +1,177 @@
+LOCUS       NC_001146               2041 bp    DNA     linear   CON 10-JUL-2026
+DEFINITION  Saccharomyces cerevisiae S288C chromosome XIV, complete sequence.
+ACCESSION   NC_001146 REGION: 138450..140490
+VERSION     NC_001146.8
+DBLINK      BioProject: PRJNA128
+            Assembly: GCF_000146045.2
+KEYWORDS    RefSeq.
+SOURCE      Saccharomyces cerevisiae S288C
+  ORGANISM  Saccharomyces cerevisiae S288C
+            Eukaryota; Fungi; Dikarya; Ascomycota; Saccharomycotina;
+            Saccharomycetes; Saccharomycetales; Saccharomycetaceae;
+            Saccharomyces.
+REFERENCE   1  (bases 1 to 2041)
+  AUTHORS   Engel,S.R., Wong,E.D., Nash,R.S., Aleksander,S., Alexander,M.,
+            Douglass,E., Karra,K., Miyasato,S.R., Simison,M., Skrzypek,M.S.,
+            Weng,S. and Cherry,J.M.
+  TITLE     New data and collaborations at the Saccharomyces Genome Database:
+            updated reference genome, alleles, and the Alliance of Genome
+            Resources
+  JOURNAL   Genetics 220 (4) (2022)
+   PUBMED   34897464
+REFERENCE   2  (bases 1 to 2041)
+  AUTHORS   Philippsen,P., Kleine,K., Pohlmann,R., Dusterhoft,A., Hamberg,K.,
+            Hegemann,J.H., Obermaier,B., Urrestarazu,L.A., Aert,R.,
+            Albermann,K., Altmann,R., Andre,B., Baladron,V., Ballesta,J.P.,
+            Becam,A.M., Beinhauer,J., Boskovic,J., Buitrago,M.J., Bussereau,F.,
+            Coster,F., Crouzet,M., D'Angelo,M., Dal Pero,F., De Antoni,A.,
+            Hani,J. et al.
+  TITLE     The nucleotide sequence of Saccharomyces cerevisiae chromosome XIV
+            and its evolutionary implications
+  JOURNAL   Nature 387 (6632 SUPPL), 93-98 (1997)
+   PUBMED   9169873
+REFERENCE   3  (bases 1 to 2041)
+  AUTHORS   Goffeau,A., Barrell,B.G., Bussey,H., Davis,R.W., Dujon,B.,
+            Feldmann,H., Galibert,F., Hoheisel,J.D., Jacq,C., Johnston,M.,
+            Louis,E.J., Mewes,H.W., Murakami,Y., Philippsen,P., Tettelin,H. and
+            Oliver,S.G.
+  TITLE     Life with 6000 genes
+  JOURNAL   Science 274 (5287), 546 (1996)
+   PUBMED   8849441
+REFERENCE   4  (bases 1 to 2041)
+  CONSRTM   NCBI Genome Project
+  TITLE     Direct Submission
+  JOURNAL   Submitted (10-JUL-2026) National Center for Biotechnology
+            Information, NIH, Bethesda, MD 20894, USA
+REFERENCE   5  (bases 1 to 2041)
+  CONSRTM   Saccharomyces Genome Database
+  TITLE     Direct Submission
+  JOURNAL   Submitted (04-MAY-2012) Department of Genetics, Stanford
+            University, Stanford, CA 94305-5120, USA
+  REMARK    Protein update by submitter
+REFERENCE   6  (bases 1 to 2041)
+  CONSRTM   Saccharomyces Genome Database
+  TITLE     Direct Submission
+  JOURNAL   Submitted (31-MAR-2011) Department of Genetics, Stanford
+            University, Stanford, CA 94305-5120, USA
+  REMARK    Sequence update by submitter
+REFERENCE   7  (bases 1 to 2041)
+  CONSRTM   Saccharomyces Genome Database
+  TITLE     Direct Submission
+  JOURNAL   Submitted (26-MAY-2010) Department of Genetics, Stanford
+            University, Stanford, CA 94305-5120, USA
+  REMARK    Sequence update by submitter
+REFERENCE   8  (bases 1 to 2041)
+  CONSRTM   Saccharomyces Genome Database
+  TITLE     Direct Submission
+  JOURNAL   Submitted (14-DEC-2009) Department of Genetics, Stanford
+            University, Stanford, CA 94305-5120, USA
+COMMENT     REVIEWED REFSEQ: This record has been curated by SGD. The reference
+            sequence is identical to BK006947.
+            
+            On Apr 26, 2011 this sequence version replaced NC_001146.7.
+            Structural annotation is propagated from INSDC submissions or other
+            annotation providers and processed to follow RefSeq standards.
+            Functional annotation is provided by RefSeq, and is derived from
+            model organism databases, orthologous species, curation, domain
+            architecture analysis, and submitted information.
+            
+            ##Genome-Annotation-Data-START##
+            Annotation Provider :: SGD
+            Annotation Status   :: Full Annotation
+            Annotation Version  :: R64-5-1
+            URL                 :: http://www.yeastgenome.org/
+            ##Genome-Annotation-Data-END##
+            COMPLETENESS: full length.
+FEATURES             Location/Qualifiers
+     source          1..2041
+                     /organism="Saccharomyces cerevisiae S288C"
+                     /mol_type="genomic DNA"
+                     /strain="S288C"
+                     /db_xref="taxon:559292"
+                     /chromosome="XIV"
+     gene            <101..>1936
+                     /gene="LYP1"
+                     /locus_tag="YNL268W"
+                     /db_xref="GeneID:855453"
+     mRNA            <101..>1936
+                     /gene="LYP1"
+                     /locus_tag="YNL268W"
+                     /product="lysine permease"
+                     /transcript_id="NM_001183106.1"
+                     /db_xref="GeneID:855453"
+     CDS             101..1936
+                     /gene="LYP1"
+                     /locus_tag="YNL268W"
+                     /experiment="EXISTENCE:direct assay:GO:0005739
+                     mitochondrion [PMID:14576278|PMID:16823961]"
+                     /experiment="EXISTENCE:direct assay:GO:0005886 plasma
+                     membrane [PMID:40247776]"
+                     /experiment="EXISTENCE:direct assay:GO:0015174 basic amino
+                     acid transmembrane transporter activity [PMID:10654085]"
+                     /experiment="EXISTENCE:direct assay:GO:0015802 basic amino
+                     acid transport [PMID:10654085]"
+                     /experiment="EXISTENCE:direct assay:GO:0032126 eisosome
+                     [PMID:29402931]"
+                     /experiment="EXISTENCE:genetic interaction:GO:0089718
+                     amino acid import across plasma membrane [PMID:40247776]"
+                     /note="Lysine permease; one of three amino acid permeases
+                     (Alp1p, Can1p, Lyp1p) responsible for uptake of cationic
+                     amino acids; broad substrate specificity when
+                     overexpressed in a strain severely deficient for the
+                     uptake of amino acids; predominantly located in the plasma
+                     membrane during exponential growth"
+                     /codon_start=1
+                     /product="lysine permease"
+                     /protein_id="NP_014131.1"
+                     /db_xref="GeneID:855453"
+                     /db_xref="SGD:S000005212"
+                     /translation="MGRFSNIITSNKWDEKQNNIGEQSMQELPEDQIEHEMEAIDPSN
+                     KTTPYSIDEKQYNTKKKHGSLQGGAIADVNSITNSLTRLQVVSHETDINEDEEEAHYE
+                     DKHVKRALKQRHIGMIALGGTIGTGLFVGISTPLSNAGPVGSLIAYIFMGTIVYFVTQ
+                     SLGEMATFIPVTSSITVFSKRFLSPAFGVSNGYMYWFNWAITYAVEVSVIGQVIEYWT
+                     DKVPLAAWIAIFWVIITLMNFFPVKVYGEFEFWVASVKVLAIMGYLIYALIIVCGGSH
+                     QGPIGFRYWRNPGAWGPGIISSDKSEGRFLGWVSSLINAAFTYQGTELVGITAGEAAN
+                     PRKTVPRAINKVVFRIVLFYIMSLFFIGLLVPYNDSRLSASSAVIASSPFVISIQNAG
+                     TYALPDIFNAVVLITVVSAANSNVYVGSRVLYSLARTGNAPKQFGYVTRQGVPYLGVV
+                     CTAALGLLAFLVVNNNANTAFNWLINISTLAGLCAWLFISLAHIRFMQALKHRGISRD
+                     DLPFKAKLMPYGAYYAAFFVTVIIFIQGFQAFCPFKVSEFFTSYISLILLAVVFIGCQ
+                     IYYKCRFIWKLEDIDIDSDRREIEAIIWEDDEPKNLWEKFWAAVA"
+ORIGIN      
+        1 aaaaaaagca acctatccgg cctcctctag ttacacaaac aagacaaaga aattgcattg
+       61 tctataacga taacaaaaga catcgtatat atatatatat atgggcaggt ttagtaacat
+      121 aataacgtcc aataaatggg acgagaaaca aaacaacatt ggcgaacaga gcatgcagga
+      181 attaccagaa gaccagatag aacatgagat ggaagcaata gatccaagta ataagacgac
+      241 cccatactct attgatgaga aacagtacaa cacaaaaaag aagcatgggt cattgcaagg
+      301 tggcgcaatt gctgatgtaa attcgataac taattcgtta acaagattgc aagttgtctc
+      361 tcatgaaaca gatattaacg aggatgaaga agaagcccac tatgaggata aacacgtgaa
+      421 gagagccttg aagcaaagac acattggtat gattgcacta ggtggtacaa tcggtactgg
+      481 tcttttcgtt ggtatctcca ctcccttgag taatgctggc cctgtggggt ccctgattgc
+      541 ttacattttc atgggcacca ttgtctactt cgttacccag tcacttggtg agatggctac
+      601 gtttatcccc gtgacatcat ctatcactgt cttttcgaag aggttcttat cacctgcatt
+      661 cggtgtttct aacggctaca tgtactggtt caattgggct attacttatg ctgtggaggt
+      721 ttctgtcatt ggccaagtta ttgaatactg gacagataaa gttccattag cggcctggat
+      781 tgcgatattc tgggtaatta ttactttgat gaattttttc cctgtcaaag tttatggtga
+      841 atttgagttc tgggtggcct ctgttaaagt tttagccatt atgggttact tgatatatgc
+      901 tttgattatt gtctgcggtg gatcccacca gggccctatc ggtttcaggt actggagaaa
+      961 tccaggagcc tgggggccag gcatcatctc cagtgataaa agtgaaggcc gttttctcgg
+     1021 atgggtctcc tccttgatta atgctgcatt tacgtaccaa ggtactgaac tggttgggat
+     1081 caccgctggt gaagcggcta acccaagaaa gaccgttcca agagctatca ataaagtcgt
+     1141 ctttagaatc gtactattct atattatgtc tttgttcttt attggtctac tggttccata
+     1201 caacgattcc cgtttatctg ctagttctgc tgttattgca tcatcaccct tcgttatttc
+     1261 cattcaaaac gctggtactt atgctcttcc agatattttc aacgccgtgg tgttgattac
+     1321 tgttgtatct gccgctaatt cgaatgttta cgttggttcc cgtgttcttt actctttagc
+     1381 taggactggt aacgcaccaa agcaatttgg atacgtcacc agacagggtg ttccatatct
+     1441 cggtgttgtt tgcactgctg cattgggtct tttggcattc ctggttgtca ataacaatgc
+     1501 aaacactgca tttaactggt tgatcaacat ttccactttg gctgggttat gcgcctggtt
+     1561 attcatctct ttggcacata ttaggttcat gcaagcttta aagcaccgtg gtatttctcg
+     1621 tgatgatctg cccttcaagg ccaaattgat gccttatggt gcctactacg cagccttttt
+     1681 tgtcaccgtc atcatattca tccaagggtt ccaagcgttc tgtccgttca aagtttctga
+     1741 gtttttcaca tcttacatct ccttgattct tttagccgtt gtgttcattg gttgccagat
+     1801 atactacaaa tgcagattta tttggaagct agaagatatt gacatcgatt ccgacagaag
+     1861 agaaatcgaa gcaattattt gggaagacga cgagcctaag aatttatggg agaaattctg
+     1921 ggctgctgtt gcatagtcac agaacctctt gcatgccttc aaaatagaaa aaaataaaaa
+     1981 aatagacgtt tcattaatca aaatagcctg tagagatttt gagggattgc cccaaacttt
+     2041 a
+//
+

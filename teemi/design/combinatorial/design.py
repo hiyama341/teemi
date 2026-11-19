@@ -1362,9 +1362,26 @@ def design_junction(
     bounds it breached attached, because an unbuildable junction that names its
     problem is worth more than a missing one.
 
-    :class:`JunctionError` is for a junction that cannot exist at all -- two
-    parts too short between them to supply ``homology_length``.
+    :class:`JunctionError` is for a junction that cannot exist at all, which is
+    two separate things.  Either what rides in the tails is longer than the
+    whole homology, so there is no budget to split; or the two parts are
+    together too short to supply the budget there is.  They are reported apart
+    because their remedies differ: the first is a number in the spec, the
+    second is the choice of parts.  Printing the two part lengths against a
+    negative budget pointed at the parts for a failure that was neither of
+    theirs.
+
+    :func:`plan_layout` catches the first case earlier and demotes the part to
+    its own fragment, so a spec that went through it does not arrive here.  A
+    hand-built :class:`Junction` still can.
     """
+    if junction.budget < 0:
+        raise JunctionError(
+            f"{len(junction.interposed)} bp riding in the tails is longer than "
+            f"homology_length {junction.homology_length}, so there is none of it "
+            "left for the two parts to supply",
+            junction_id=junction.id,
+        )
     low, high = junction.split_range()
     if low > high:
         raise JunctionError(
@@ -1551,9 +1568,27 @@ class Layout:
 def plan_layout(
     spec: DesignSpec, records: Mapping[str, Dseqrecord]
 ) -> Layout:
-    """Decide which ``in_tail`` requests the primer budget can actually honour."""
+    """Decide which ``in_tail`` requests the primer budget can actually honour.
+
+    Two different limits, both of them real.  ``in_tail_max_bp`` is what a
+    primer tail will physically carry, and is pydna's ``maxlink``.
+    ``homology_length`` is what the overlap has to *spend*: an ``in_tail`` part
+    sits inside the homology rather than being added to it, so a part longer
+    than the whole homology leaves the two neighbours less than nothing to
+    supply.  A part has to clear both.  They are independent fields whose
+    defaults sit close together (``in_tail_max_bp`` 40 against
+    ``homology_length`` 35), so the physical cap is usually the one that bites
+    and the second limit only surfaces once a design lowers its homology --
+    or, at those defaults, for a part between 36 and 40 bp.
+
+    Both failures demote rather than raise.  One more PCR is a design; the
+    :class:`JunctionError` the second one used to reach instead took the whole
+    library down to nothing, which is a worse answer to a request nobody has
+    to honour literally.
+    """
     asked = {position.id for position in spec.positions if position.in_tail}
     limit = spec.constraints.in_tail_max_bp
+    homology = spec.primer_design.junction.homology_length
     slots: List[Tuple[str, Tuple[Part, ...], bool]] = []
     notes: List[Diagnostic] = []
     for slot_id, parts in spec.ordered_slots():
@@ -1571,6 +1606,28 @@ def plan_layout(
                         f"{length} bp, past in_tail_max_bp {limit}; it would be "
                         "added to both flanking primers, so it is amplified as "
                         "its own fragment instead"
+                    ),
+                    part_id=parts[0].id,
+                )
+            )
+            slots.append((slot_id, parts, False))
+            continue
+        if length > homology:
+            # Strictly greater: at length == homology the budget is zero, which
+            # is a real junction -- both amplicons carry the part in full and
+            # the homology IS the part.  Refusing that would be inventing a
+            # floor on how much of the overlap the two neighbours must own.
+            notes.append(
+                Diagnostic(
+                    severity="warning",
+                    code="in_tail_over_homology",
+                    message=(
+                        f"{slot_id}: in_tail was asked for but the part is "
+                        f"{length} bp and homology_length is only {homology}; "
+                        "what rides in the tails is spent out of the homology "
+                        "rather than added to it, so this part is "
+                        f"{length - homology} bp more than the whole homology; "
+                        "it is amplified as its own fragment instead"
                     ),
                     part_id=parts[0].id,
                 )

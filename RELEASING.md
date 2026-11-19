@@ -10,12 +10,19 @@ Important details for this repo:
 
 ## Pre-release checklist
 
-1. Make sure your working tree is clean enough for release.
-2. Run the test suite.
-3. Build the package locally.
-4. Confirm the computed version looks correct.
-5. Create and push a Git tag for the release.
-6. Verify the GitHub Actions publish job succeeds.
+1. Cut the `Unreleased` section of `HISTORY.rst` to the version being released.
+2. Make sure your working tree is clean enough for release.
+3. Run the test suite.
+4. Build the package locally.
+5. Confirm the computed version looks correct.
+6. Land the work on `main` through a pull request.
+7. Create and push a Git tag for the release, from `main`.
+8. Verify the GitHub Actions publish job succeeds.
+
+`HISTORY.rst` is rendered as the second half of the PyPI long description and a
+published version cannot be re-uploaded, so step 1 has to be right before the
+tag exists. Rename `Unreleased` to the version and its date, and open a fresh
+`Unreleased` heading above it.
 
 ## Check the current computed version
 
@@ -44,17 +51,22 @@ Build the distributions:
 uv build
 ```
 
-Create the release tag:
+Land the work on `main`. Branch protection on `main` requires signed commits
+and one approving review, and forbids force pushes, so `git push origin main` is
+rejected for commits made without a signing key. Merge the pull request with the
+GitHub merge button instead, which signs the merge commit with GitHub's own key:
 
 ```bash
-git tag 1.0.3
+git push origin your-branch
 ```
 
-Push the branch and the tag:
+Then tag the merge commit from an up-to-date `main`:
 
 ```bash
-git push origin main
-git push origin 1.0.3
+git switch main
+git pull
+git tag 1.2.0
+git push origin 1.2.0
 ```
 
 Once the tag is pushed, GitHub Actions should publish the package to PyPI using the configured `PYPI_TOKEN_TEEMI` secret.
@@ -65,7 +77,10 @@ Publishing is controlled by:
 
 - [`.github/workflows/main.yml`](./.github/workflows/main.yml)
 
-The publish step runs only when the pushed ref is a tag.
+The publish step runs only when the pushed ref is a tag, and only from the
+Python 3.11 matrix entry. Note that nothing requires the tagged commit to be on
+`main`: the workflow triggers on any push, so a tag pushed from a feature branch
+publishes that branch to PyPI. Always tag from `main`.
 
 ## UV-based developer workflow
 

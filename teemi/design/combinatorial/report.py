@@ -661,12 +661,19 @@ def plan(
             validated, records, footprints, layout, conditions
         )
     except FootprintError as exc:
-        return _stopped(validated, "no_footprint", str(exc), part_id=exc.part_id)
+        return _stopped(
+            validated,
+            "no_footprint",
+            str(exc),
+            established=tuple(flag_notes) + layout.diagnostics,
+            part_id=exc.part_id,
+        )
     except JunctionError as exc:
         return _stopped(
             validated,
             "impossible_junction",
             str(exc),
+            established=tuple(flag_notes) + layout.diagnostics,
             junction_id=exc.junction_id,
         )
 
@@ -770,19 +777,29 @@ def plan(
 
 
 def _stopped(
-    spec: Optional[DesignSpec], code: str, message: str, **location: str
+    spec: Optional[DesignSpec],
+    code: str,
+    message: str,
+    *,
+    established: Tuple[Diagnostic, ...] = (),
+    **location: str,
 ) -> DesignResult:
-    """A result that says why the pipeline could not start.
+    """A result that says why the pipeline stopped.
 
     An unparseable spec or an unreadable part is bad *input*, not an infeasible
-    design, so nothing downstream ran and there is nothing to report but the
-    reason.
+    design, so nothing downstream ran and the reason is all there is.
+
+    The two later stops -- no footprint, an impossible junction -- happen after
+    the slot flags and the layout have been decided, and those decisions pass
+    in as ``established``.  Dropping them reported a part that could not be
+    amplified without the line saying why that part was being amplified at all,
+    which is the half of the explanation naming the number to change.  They
+    come first, before the stop that ended the run.
     """
     return DesignResult(
         spec=spec,
-        diagnostics=(
-            Diagnostic(severity="critical", code=code, message=message, **location),
-        ),
+        diagnostics=established
+        + (Diagnostic(severity="critical", code=code, message=message, **location),),
     )
 
 

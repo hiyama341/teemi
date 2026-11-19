@@ -291,6 +291,85 @@ def test_a_part_too_long_to_ride_in_the_tails_is_amplified_instead():
     assert len(result.pcrs) == 3
 
 
+def test_a_part_longer_than_the_homology_is_amplified_instead():
+    """The second limit on an ``in_tail`` part, and the one that used to raise.
+
+    ``in_tail_max_bp`` is raised to 80 so it is not the limit under test: at 60
+    bp the part clears the physical cap and fails only the 30 bp homology,
+    because what rides in the tails is spent out of the homology rather than
+    added to it.  This used to reach :class:`JunctionError` and come back as
+    ``impossible_junction`` with nothing designed -- no variants, no PCRs, a
+    library lost to a number the design could simply have declined.
+    """
+    raw = in_tail_spec(dna(60, 15))
+    raw["constraints"] = {"in_tail_max_bp": 80}
+
+    result = cb.plan(raw, sources=SourceResolver(), offline=True)
+    codes = [d.code for d in result.diagnostics]
+    assert "in_tail_too_long" not in codes, "80 bp of cap, so not that limit"
+
+    note = next(d for d in result.diagnostics if d.code == "in_tail_over_homology")
+    assert note.severity == "warning"
+    assert note.part_id == "k"
+    assert "60 bp" in note.message and "homology_length is only 30" in note.message
+    assert "-" not in note.message, "a shortfall is reported as a positive number"
+
+    assert not any(d.code == "impossible_junction" for d in result.errors)
+    assert result.variants[0].fragment_ids == ("a", "k", "b"), "its own PCR after all"
+    assert len(result.pcrs) == 3
+
+
+def test_a_part_over_the_homology_and_too_short_to_amplify_says_both():
+    """The case that has no good answer, reported as two facts rather than one.
+
+    A 31 bp part is past a 30 bp homology, so it cannot ride in the tails; and
+    31 bp is too short for pydna to find a 57 C footprint in, so it cannot be
+    its own fragment either.  The design genuinely cannot be built at this
+    homology, and the only remedy is a bigger one.
+
+    Both lines are needed to see that.  ``no_footprint`` alone names a part
+    that the user never asked to amplify, and the layout note is what says why
+    it was being amplified -- so a stop carries what was established before it.
+    """
+    result = cb.plan(
+        in_tail_spec(dna(31, 17)), sources=SourceResolver(), offline=True
+    )
+    assert not result.feasible
+    assert [d.code for d in result.errors] == ["no_footprint"]
+
+    codes = [d.code for d in result.diagnostics]
+    assert codes == ["in_tail_over_homology", "no_footprint"], (
+        "the explanation comes before the failure it explains"
+    )
+
+
+def test_a_part_exactly_the_length_of_the_homology_still_rides_in_the_tails():
+    """Budget zero is a real junction, so the guard is strictly greater-than.
+
+    At 30 bp into a 30 bp homology the two neighbours supply none of it: both
+    amplicons carry the part in full and the homology *is* the part.  That
+    assembles, so declining it would be inventing a floor on how much of the
+    overlap the neighbours have to own.
+
+    ``primer_len_max`` is raised because a 30 bp tail plus a footprint is past
+    teemi's default 60 -- which is the cap FLOW already sends 90 for, and is a
+    fact about oligo length rather than about the budget being zero.
+    """
+    raw = in_tail_spec(dna(30, 18))
+    raw["constraints"] = {"primer_len_max": 90}
+
+    validated = load_spec(raw)
+    records = SourceResolver().resolve_spec(validated)
+    layout = plan_layout(validated, records)
+    assert [slot_id for slot_id, _, tail in layout.slots if tail] == ["at_k"]
+    assert layout.diagnostics == (), "nothing to decline"
+
+    result = cb.plan(raw, sources=SourceResolver(), offline=True)
+    assert result.feasible, [d.message for d in result.errors]
+    assert result.variants[0].fragment_ids == ("a", "b"), "still one fewer PCR"
+    assert len(result.pcrs) == 2
+
+
 def test_an_in_tail_part_needs_no_footprint_of_its_own():
     """A 9 bp Kozak is no template, so nothing anneals to it.
 
