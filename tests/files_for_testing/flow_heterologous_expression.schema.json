@@ -306,7 +306,7 @@
         },
         "drop_start": {
           "type": "boolean",
-          "description": "Drop this part's own start codon - a CDS downstream of a signal peptide keeps only one ATG across the fusion. Meaningful only where the type is translated: selection_marker, fluorescent_protein, signal_peptide, cds, linker_peptide, nls_tag."
+          "description": "Drop this part's own start codon - a CDS downstream of a signal peptide keeps only one ATG across the fusion. Meaningful only where the part has a start codon of its own: selection_marker, fluorescent_protein, signal_peptide, cds, nls_tag. A peptide linker is translated and has neither codon of its own, so it is not one of them."
         },
         "drop_stop": {
           "type": "boolean",

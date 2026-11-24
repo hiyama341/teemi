@@ -60,16 +60,32 @@ __all__ = [
     "plan_flow",
 ]
 
-#: The part types a start or stop codon means anything for, as FLOW's own
-#: ``drop_start`` description lists them.  A ``drop_`` flag on anything else is
-#: reported: it is not wrong to send, but nothing will come of it.
+#: The part types a ``drop_`` flag means anything for, as FLOW's own
+#: ``drop_start`` description lists them: the ones that have a start or stop
+#: codon OF THEIR OWN.
+#:
+#: THE NAME IS OLDER THAN THE DISTINCTION IT DRAWS.  A peptide linker is
+#: translated and is not in here, because it lies inside a fusion that opens
+#: and closes around it: LINK_EAAAK4, the only one FLOW ships, is 60 nt of
+#: (EAAAK)4 opening on GAG and closing on AAG.  "Is translated" and "has a
+#: codon of its own" are different claims, and this set has only ever been
+#: asked the second one.  The spelling is kept because it is exported.
+#:
+#: A ``drop_`` flag on a type outside this set is reported, and what comes of
+#: it is NOT NOTHING, which this comment used to say.  ``apply_slot_flags``
+#: works from the DesignSpec, which carries no part type at all, so it trims
+#: three bases off any part whose own ends happen to match and reports only
+#: when they do not: ``drop_stop`` on FLANK_A1 -- 498 nt of platform flank
+#: ending TGA, in tests/files_for_testing/flow_parts_used.json, which FLOW's
+#: own library now calls DIVERSIFY_A1 -- hands back 495 nt and no diagnostic.
+#: ``from_flow`` is the only place the type is known, which is what the note
+#: below is for.
 TRANSLATED_TYPES = frozenset(
     {
         "selection_marker",
         "fluorescent_protein",
         "signal_peptide",
         "cds",
-        "linker_peptide",
         "nls_tag",
     }
 )
@@ -365,9 +381,19 @@ def from_flow(
             if getattr(slot, flag)
         }
         if (slot.drop_start or slot.drop_stop) and slot.type not in TRANSLATED_TYPES:
+            # ONE SENTENCE, BECAUSE OWNERSHIP IS THE PREDICATE AND NOT
+            # TRANSLATION. This fires on the eleven types the Literal above
+            # holds and this set does not, and the peptide linker is one of
+            # them and IS translated -- so "which is not translated", which is
+            # what this said, was false of one of its own eleven. Branching
+            # instead, on a second set copied from FLOW's ``internalToFusion``,
+            # would put that falsehood back for whichever translated type was
+            # added to the Literal and forgotten in the copy; a hand-kept copy
+            # going stale is the whole of why this line is being written.
             notes.append(
-                f"{slot.id}: drop_start/drop_stop on a {slot.type}, which is not "
-                "translated, so there is no codon of its own to drop"
+                f"{slot.id}: drop_start/drop_stop on a {slot.type}, which "
+                "neither opens nor closes a reading frame, so there is no "
+                "codon of its own to drop"
             )
 
         if slot.id in fill:

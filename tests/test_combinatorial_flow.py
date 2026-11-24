@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -42,6 +43,14 @@ PLASMID = FIXTURES / "flow_example_invivo_plasmid.json"
 INTEGRATION = FIXTURES / "flow_example_genomic_integration.json"
 PARTS = FIXTURES / "flow_parts_used.json"
 
+# COPIES OF FLOW'S OWN FILES, AND NOT ALL OF THEM CURRENT. Nothing syncs them:
+# the schema here is several FLOW commits behind, its four assembly bounds among
+# the differences, and some ids have moved on -- FLANK_A1 is DIVERSIFY_A1
+# upstream. ONE DIVERGENCE IS DELIBERATE: pos5 of the integration document keeps
+# drop_start and drop_stop on its peptide linker, which FLOW's shipped example
+# dropped once its panel stopped offering them. The document is still legal to
+# send, and it is the one `from_flow`'s note answers.
+
 
 def document(path: Path) -> dict:
     return json.loads(path.read_text())
@@ -56,6 +65,28 @@ def library() -> dict:
 # --------------------------------------------------------------------------- #
 # The mirror against the schema
 # --------------------------------------------------------------------------- #
+
+
+def test_the_codon_flag_types_are_the_ones_the_schema_names():
+    """``TRANSLATED_TYPES`` is that sentence typed out, so this checks the typing.
+
+    The set is a hand-copy of ``drop_start``'s description -- its own comment
+    says where it came from -- and the copy went stale once already: the
+    description was narrowed to the part types that have a codon of their own
+    and the set kept all six the old sentence listed, the peptide linker among
+    them. Nothing noticed, because one side of the comparison is prose.
+
+    The five are read OUT OF THE SENTENCE rather than written down here. A third
+    copy of the list, pinned in this file, would be a third thing to forget.
+    """
+    description = json.loads(SCHEMA.read_text())["$defs"]["construct_part"][
+        "properties"
+    ]["drop_start"]["description"]
+    named = re.search(
+        r"has a start codon of its own: ([a-z_]+(?:, [a-z_]+)*)\.", description
+    )
+    assert named is not None, description
+    assert {name.strip() for name in named.group(1).split(",")} == set(TRANSLATED_TYPES)
 
 
 def _first_library_source(raw: dict) -> dict:
@@ -274,13 +305,50 @@ def test_a_retired_part_id_fails_loudly(library):
 
 
 def test_a_drop_flag_on_an_untranslated_type_is_reported(library):
-    """A note, not an error: it is not wrong to send, but nothing comes of it."""
+    """A note, not an error: nothing in a promoter is a codon to begin with."""
     raw = document(INTEGRATION)
     assert raw["construct"][1]["type"] == "promoter"
     assert raw["construct"][1]["type"] not in TRANSLATED_TYPES
     raw["construct"][1]["drop_start"] = True
     _, notes = from_flow(raw, library=library, fill={"pos4": library["FP_MRFP1"]})
-    assert any("not" in n and "translated" in n for n in notes), notes
+    # ITS OWN NOTE, not any(...) over all of them. pos5 of this document
+    # carries both flags too, so a matcher loose enough to be satisfied by the
+    # linker's note would stop failing the day this branch did.
+    said = [n for n in notes if n.startswith("pos2: drop_start/drop_stop")]
+    assert len(said) == 1, notes
+    assert "neither opens nor closes a reading frame" in said[0]
+
+
+def test_a_drop_flag_on_a_linker_is_reported_and_not_called_untranslated(library):
+    """The one type outside the set that is translated all the same.
+
+    pos5 carries both flags already, which is why this document is the right
+    one to ask: FLOW's own shipped example dropped the two keys once its panel
+    stopped offering them, and this copy keeps them because the document is
+    still legal to send and is the one the note answers.
+
+    The last assertion is the point. The note said "is not translated" of every
+    type it fired on, and of this one type that is false -- LINK_EAAAK4 is read
+    through, in frame, between pos4's CDS and pos6's fluorescent protein. What
+    it does not have is a codon of its own.
+    """
+    # The premise, from the library rather than from the comment that states it.
+    linker = library["LINK_EAAAK4"].upper()
+    assert len(linker) == 60
+    assert linker[:3] == "GAG" and linker[-3:] == "AAG"
+    assert not [
+        i for i in range(0, 60, 3) if linker[i : i + 3] in ("TAA", "TAG", "TGA")
+    ]
+
+    raw = document(INTEGRATION)
+    assert raw["construct"][4]["id"] == "pos5"
+    assert raw["construct"][4]["type"] == "linker_peptide"
+    assert raw["construct"][4]["type"] not in TRANSLATED_TYPES
+    _, notes = from_flow(raw, library=library, fill={"pos4": library["FP_MRFP1"]})
+    said = [n for n in notes if n.startswith("pos5: drop_start/drop_stop")]
+    assert len(said) == 1, notes
+    assert "neither opens nor closes a reading frame" in said[0]
+    assert "translated" not in said[0]
 
 
 def test_the_oligos_are_reported_as_not_assembled(library):

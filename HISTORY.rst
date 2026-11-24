@@ -4,6 +4,28 @@ History
 Unreleased
 ~~~~~~~~~~
 
+- ``TRANSLATED_TYPES`` no longer holds ``linker_peptide``, and a ``drop_start``
+  or ``drop_stop`` flag on a peptide linker is now reported rather than passing
+  in silence. The set is FLOW's ``drop_start`` description typed out by hand,
+  and that description now names the five part types that have a start or stop
+  codon OF THEIR OWN rather than the six that are translated: a linker is
+  translated and has neither, because the fusion it lies inside opens and closes
+  around it. ``LINK_EAAAK4``, the only linker FLOW ships, is 60 nt of (EAAAK)4
+  -- it opens on ``GAG``, closes on ``AAG`` and carries no stop anywhere. Code
+  importing ``TRANSLATED_TYPES`` to ask whether a type is translated gets a
+  different answer for ``linker_peptide``; the name is kept because it is
+  exported, and its comment now says the name is older than the distinction it
+  draws.
+- ``from_flow``'s note for a ``drop_`` flag that has no codon to act on no
+  longer says the part "is not translated". That was true of a promoter and
+  false of a linker, which was the one type it could not describe. It now says
+  the part neither opens nor closes a reading frame, which is true of all eleven
+  types it can fire on. Nothing is trimmed differently: ``apply_slot_flags``
+  works from the ``DesignSpec``, which carries no part type, and its behaviour
+  is unchanged -- it removes three bases from any part whose own ends match and
+  reports ``drop_start_codon_absent`` or ``drop_end_codon_absent`` only when
+  they do not.
+
 1.2.0 (2026-11-19)
 ~~~~~~~~~~~~~~~~~~
 
