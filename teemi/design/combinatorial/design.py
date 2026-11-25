@@ -1324,7 +1324,10 @@ def _pydna_candidate(
         maxlink=(
             len(junction.ordered) - 1
             if junction.ordered
-            else spec.constraints.in_tail_max_bp
+            # At least the interposed length, or pydna would decline to absorb
+            # a fold the layout has already decided on and leave it standing as
+            # a fragment nothing was designed to join.
+            else max(spec.in_tail_limit(), len(junction.interposed))
         ),
     )
     forward = str(tailed[-1].forward_primer.seq)
@@ -1614,8 +1617,9 @@ class Layout:
     ``in_tail``
         No PCR.  The sequence is built into the two flanking primers, so the
         construct still contains it while one fewer reaction is run.  Needs the
-        part to fit both the tail budget (``in_tail_max_bp``) and the homology
-        it is spent out of (``homology_length``).
+        part to fit both the homology it is spent out of
+        (``homology_length``) and the tail budget, which is derived rather
+        than guessed -- see :meth:`DesignSpec.in_tail_limit`.
 
     ``ordered``
         No PCR and no primers of its own: the part is bought as a synthetic
@@ -1625,8 +1629,8 @@ class Layout:
         no primer pair will amplify it, long enough that folding it into the
         tails would blow the oligo budget.  Signal peptides live here.
 
-    The mode needs the sequences -- a part past ``in_tail_max_bp`` cannot ride
-    in a tail -- so it is decided once, in :func:`plan_layout`, and everything
+    The mode needs the sequences -- a part past the tail budget cannot ride in
+    a tail -- so it is decided once, in :func:`plan_layout`, and everything
     downstream reads it rather than re-deriving it.
     """
 
@@ -1700,16 +1704,21 @@ def plan_layout(
 ) -> Layout:
     """Decide which ``in_tail`` requests the primer budget can actually honour.
 
-    Two different limits, both of them real.  ``in_tail_max_bp`` is what a
-    primer tail will physically carry, and is pydna's ``maxlink``.
-    ``homology_length`` is what the overlap has to *spend*: an ``in_tail`` part
-    sits inside the homology rather than being added to it, so a part longer
-    than the whole homology leaves the two neighbours less than nothing to
-    supply.  A part has to clear both.  They are independent fields whose
-    defaults sit close together (``in_tail_max_bp`` 40 against
-    ``homology_length`` 35), so the physical cap is usually the one that bites
-    and the second limit only surfaces once a design lowers its homology --
-    or, at those defaults, for a part between 36 and 40 bp.
+    Two different limits, both of them real.  The first is what the two primers
+    will physically carry, which is :meth:`DesignSpec.in_tail_limit` --
+    *derived* from ``primer_len_max``, ``homology_length`` and the footprints,
+    and capped further by ``in_tail_max_bp`` when the caller set one.  The
+    second is ``homology_length`` itself, which is what the overlap has to
+    *spend*: an ``in_tail`` part sits inside the homology rather than being
+    added to it, so a part longer than the whole homology leaves the two
+    neighbours less than nothing to supply.  A part has to clear both, and at
+    teemi's defaults the homology is the one that bites (35 bp against a
+    derived 49).
+
+    The limits are checked in that order because the homology is the more
+    fundamental of the two -- it is about the overlap's accounting and holds
+    whatever the oligos cost -- so a part that fails both is reported against
+    it rather than against a budget it was never going to reach.
 
     **Both failures demote to ``ordered``, not to amplified.**  Amplifying is
     not an option for the parts that trigger these limits, which is the whole
@@ -1740,7 +1749,8 @@ def plan_layout(
         for position in spec.positions
         if position.in_tail or position.ordered
     }
-    limit = spec.constraints.in_tail_max_bp
+    limit = spec.in_tail_limit()
+    asked_cap = spec.constraints.in_tail_max_bp
     homology = spec.primer_design.junction.homology_length
     slots: List[Tuple[str, Tuple[Part, ...], SlotMode]] = []
     notes: List[Diagnostic] = []
@@ -1750,23 +1760,6 @@ def plan_layout(
             slots.append((slot_id, parts, mode))
             continue
         length = len(records[parts[0].id])
-        if length > limit:
-            notes.append(
-                Diagnostic(
-                    severity="warning",
-                    code="in_tail_too_long",
-                    message=(
-                        f"{slot_id}: in_tail was asked for but the part is "
-                        f"{length} bp, past in_tail_max_bp {limit}; it would be "
-                        "added to both flanking primers, so it is ordered as a "
-                        "synthetic fragment instead and assembled without a PCR "
-                        "of its own"
-                    ),
-                    part_id=parts[0].id,
-                )
-            )
-            slots.append((slot_id, parts, "ordered"))
-            continue
         if length > homology:
             # Strictly greater: at length == homology the budget is zero, which
             # is a real junction -- both amplicons carry the part in full and
@@ -1783,6 +1776,43 @@ def plan_layout(
                         "rather than added to it, so this part is "
                         f"{length - homology} bp more than the whole homology; "
                         "it is ordered as a synthetic fragment instead and "
+                        "assembled without a PCR of its own"
+                    ),
+                    part_id=parts[0].id,
+                )
+            )
+            slots.append((slot_id, parts, "ordered"))
+            continue
+        if length > limit:
+            # Two different ceilings reach this branch, and they are told apart
+            # because their remedies are different numbers in the spec: an
+            # explicit in_tail_max_bp is a cap the caller chose and can raise,
+            # while the derived bound is what the oligos will carry and moves
+            # only with primer_len_max, homology_length or the footprints.
+            explicit = asked_cap is not None and length > asked_cap
+            notes.append(
+                Diagnostic(
+                    severity="warning",
+                    code="in_tail_too_long",
+                    message=(
+                        f"{slot_id}: in_tail was asked for but the part is "
+                        f"{length} bp, past "
+                        + (
+                            f"in_tail_max_bp {asked_cap}"
+                            if explicit
+                            else (
+                                f"the {limit} bp the primer budget can carry "
+                                f"(2 * primer_len_max "
+                                f"{spec.constraints.primer_len_max} less "
+                                f"homology_length {homology} less two "
+                                f"footprints of at least "
+                                f"{spec.primer_design.footprint_len_min}; the "
+                                "two tails have an invariant total, so no "
+                                "split makes the longer one shorter than half "
+                                "of it)"
+                            )
+                        )
+                        + "; it is ordered as a synthetic fragment instead and "
                         "assembled without a PCR of its own"
                     ),
                     part_id=parts[0].id,

@@ -282,19 +282,26 @@ def test_the_product_matches_what_pydna_assembly_fragments_builds():
     assert str(products[0].seq) == mine == a + KOZAK + b
 
 
-def test_a_part_too_long_to_ride_in_the_tails_is_ordered_instead():
+def test_a_part_past_an_explicit_in_tail_cap_is_ordered_instead():
     """FLOW's schema says as much about teemi's maxlink: a request, not a command.
 
     And the answer to a declined request is a PURCHASE, not an extra PCR.  A
     part asked into the tails is short by construction, so "amplify it after
     all" is the one answer it usually cannot be given -- which is what
     :func:`test_the_case_that_used_to_lose_the_whole_library` below is about.
+
+    The homology is 60 here so the part clears it: this test is about the cap
+    the caller set, and the message names that number because raising it is the
+    remedy.
     """
-    result = cb.plan(
-        in_tail_spec(dna(60, 15)), sources=SourceResolver(), offline=True
-    )
+    raw = in_tail_spec(dna(50, 15))
+    raw["primer_design"]["junction"]["homology_length"] = 60
+    raw["constraints"] = {"primer_len_max": 100, "in_tail_max_bp": 40}
+
+    result = cb.plan(raw, sources=SourceResolver(), offline=True)
     note = next(d for d in result.diagnostics if d.code == "in_tail_too_long")
     assert note.severity == "warning"
+    assert "in_tail_max_bp 40" in note.message
     assert "ordered as a synthetic fragment" in note.message
 
     variant = result.variants[0]
@@ -302,8 +309,108 @@ def test_a_part_too_long_to_ride_in_the_tails_is_ordered_instead():
     assert variant.ordered_ids == ("k",)
     assert len(result.pcrs) == 2
     assert [f.part_id for f in result.ordered] == ["k"]
-    assert result.ordered[0].length_bp == 60
+    assert result.ordered[0].length_bp == 50
     assert result.ordered[0].because == "in_tail_too_long"
+
+
+def test_a_part_past_what_the_primers_can_carry_is_ordered_instead():
+    """The limit a constant cannot express, and the one 40 bp gets wrong twice.
+
+    The two tailed primers have an invariant total length -- ``P + L + f_fwd +
+    f_rev``, with no ``t_f`` in it -- so no split makes the longer of them
+    shorter than half of that, and half of that has to clear
+    ``primer_len_max``.  At a 60 bp homology and the default 60 nt cap that
+    leaves 24 bp, so a 50 bp part provably cannot fold however the split falls.
+
+    ``in_tail_max_bp`` is ``None``, which is how a caller says "use the derived
+    bound and stop guessing".  The message gives the number and where it came
+    from, because the remedy is a different field from the one the explicit cap
+    points at.
+    """
+    raw = in_tail_spec(dna(50, 15))
+    raw["primer_design"]["junction"]["homology_length"] = 60
+    raw["constraints"] = {"in_tail_max_bp": None}
+    validated = load_spec(raw)
+    assert validated.in_tail_limit() == 2 * 60 - 60 - 2 * 18 == 24
+
+    result = cb.plan(raw, sources=SourceResolver(), offline=True)
+    note = next(d for d in result.diagnostics if d.code == "in_tail_too_long")
+    assert "24 bp the primer budget can carry" in note.message
+    assert "in_tail_max_bp" not in note.message, "not the cap that bit"
+    assert "invariant total" in note.message
+    assert result.variants[0].ordered_ids == ("k",)
+
+
+def test_the_derived_bound_overrides_a_cap_set_above_it():
+    """A cap above what the oligos carry is not a permission.
+
+    40 bp is the historical default and is *too permissive* at a 50 bp
+    homology: the derived bound there is 34, so 38 bp used to fold and then
+    breach ``primer_len_max`` on a primer nobody asked for.  Now it is bought.
+    """
+    raw = in_tail_spec(dna(38, 15))
+    raw["primer_design"]["junction"]["homology_length"] = 50
+    raw["constraints"] = {"in_tail_max_bp": 40}
+    validated = load_spec(raw)
+    assert validated.in_tail_limit() == 34, "the derived bound, not the 40 asked"
+
+    result = cb.plan(raw, sources=SourceResolver(), offline=True)
+    assert result.variants[0].ordered_ids == ("k",)
+    assert "in_tail_max_bp" not in next(
+        d for d in result.diagnostics if d.code == "in_tail_too_long"
+    ).message
+
+
+def test_the_derived_bound_also_allows_a_fold_a_constant_refused():
+    """The same constant is *too conservative* in the other direction.
+
+    At a 45 bp homology with ``primer_len_max`` 100 the oligos can carry 45 bp,
+    so a 42 bp part folds into two primers of 63 nt and 64 nt -- well inside
+    the cap.  The default 40 refuses it, which is the cost of a constant where
+    the truth is a function; ``in_tail_max_bp: null`` is how to stop paying it.
+    """
+    raw = in_tail_spec(dna(42, 15))
+    raw["primer_design"]["junction"]["homology_length"] = 45
+    raw["constraints"] = {"primer_len_max": 100, "in_tail_max_bp": None}
+    validated = load_spec(raw)
+    assert validated.in_tail_limit() == 2 * 100 - 45 - 2 * 18 == 119
+
+    result = cb.plan(
+        raw, sources=SourceResolver(), offline=True, include_designs=True
+    )
+    assert result.feasible, [d.message for d in result.errors]
+    assert result.variants[0].ordered_ids == (), "folded, not bought"
+    assert result.ordered == ()
+    assert result.variants[0].verification.verdict == "verified"
+
+    refused = dict(raw)
+    refused["constraints"] = {"primer_len_max": 100, "in_tail_max_bp": 40}
+    assert cb.plan(
+        refused, sources=SourceResolver(), offline=True
+    ).variants[0].ordered_ids == ("k",), "the constant refuses what fits"
+
+
+def test_the_fold_bound_is_reached_exactly_when_the_part_is_the_homology():
+    """At ``L == P`` the split has one value, so the bound is tight there.
+
+    Both tails are then the whole part and the longest oligo is
+    ``P + max(f_fwd, f_rev)`` exactly -- no split to trade with, nothing to
+    estimate.  Measured: 68 bp of part into 100 nt of cap against a 32 nt
+    reverse footprint gives a 100 nt oligo, and one base more would not fit.
+    """
+    raw = in_tail_spec(dna(68, 15))
+    raw["primer_design"]["junction"]["homology_length"] = 68
+    raw["constraints"] = {"primer_len_max": 100, "in_tail_max_bp": None}
+
+    result = cb.plan(raw, sources=SourceResolver(), offline=True)
+    assert result.variants[0].ordered_ids == (), "folds"
+    longest = max(result.primers, key=lambda p: len(p.sequence))
+    footprints = {f.part_id: f for f in result.footprints}
+    assert len(longest.sequence) == 68 + max(
+        len(footprints["b"].forward), len(footprints["a"].reverse)
+    )
+    assert len(longest.sequence) == 100, "the cap, reached and not passed"
+    assert not [d for d in result.errors if d.code == "primer_len_max"]
 
 
 def test_a_part_longer_than_the_homology_is_ordered_instead():
@@ -850,7 +957,7 @@ def test_the_default_path_is_pydnas_own_output_base_for_base():
     tailed = assembly_fragments(
         amplicons,
         overlap=result.spec.primer_design.junction.homology_length,
-        maxlink=result.spec.constraints.in_tail_max_bp,
+        maxlink=result.spec.in_tail_limit(),
     )
     assert junction.chosen.forward_primer == str(tailed[-1].forward_primer.seq)
     assert junction.chosen.reverse_primer == str(tailed[0].reverse_primer.seq)
