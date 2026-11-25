@@ -437,6 +437,7 @@ def write_bundle(
     part_info: Optional[Mapping[str, Mapping[str, object]]] = None,
     request: Optional[Mapping[str, object]] = None,
     run: Optional[Mapping[str, object]] = None,
+    scale: Optional[str] = None,
     overwrite: bool = False,
 ) -> Path:
     """Write the whole build to one folder and return it.
@@ -470,6 +471,14 @@ def write_bundle(
     :func:`run_json` adds the versions it can measure.  Omitted, there is no
     ``09_run.json``, because a run record that could only say "some teemi,
     some day" is not one.
+
+    ``scale`` is IDT's synthesis-scale code for the order sheet.  Omitted,
+    every oligo gets the cheapest scale its own length can be synthesised at,
+    which is the only correct answer when an order holds oligos of different
+    lengths; it is here at all so that a caller who needs more DNA than a PCR
+    does, or the purification that only the larger scales offer, can say so
+    without rebuilding the sheet by hand.  See
+    :func:`teemi.design.combinatorial.idt.tube_frame`.
 
     ``request`` is the document as the caller received it -- a FLOW document,
     say -- archived unchanged.  The spec beside it is what teemi made of that
@@ -545,7 +554,9 @@ def write_bundle(
     # what is in the order -- which is asserted on SEQUENCES, because an oligo
     # is identified by its sequence and the right count of the wrong molecules
     # is exactly what a count would pass.
-    idt.tube_frame(result).to_csv(primers / "oligo_order_idt.csv", index=False)
+    idt.tube_frame(result, scale=scale).to_csv(
+        primers / "oligo_order_idt.csv", index=False
+    )
     (primers / "primers.fasta").write_text(idt.primers_fasta(result))
     plates = idt.plate_frames(result)
     omit = ()
@@ -575,7 +586,9 @@ def write_bundle(
     for path in figures:
         path.unlink()
 
-    (root / BUNDLE_PATHS["summary"]).write_text(build_summary(result, part_info, run=run))
+    (root / BUNDLE_PATHS["summary"]).write_text(
+        build_summary(result, part_info, run=run, scale=scale)
+    )
     return root
 
 
@@ -586,6 +599,7 @@ def write_bundle_zip(
     part_info: Optional[Mapping[str, Mapping[str, object]]] = None,
     request: Optional[Mapping[str, object]] = None,
     run: Optional[Mapping[str, object]] = None,
+    scale: Optional[str] = None,
 ) -> Path:
     """:func:`write_bundle` into a temporary folder, zipped, for handing over.
 
@@ -605,6 +619,7 @@ def write_bundle_zip(
             part_info=part_info,
             request=request,
             run=run,
+            scale=scale,
         )
         with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
             for path in sorted(folder.rglob("*")):
@@ -697,6 +712,7 @@ def build_summary(
     part_info: Optional[Mapping[str, Mapping[str, object]]] = None,
     *,
     run: Optional[Mapping[str, object]] = None,
+    scale: Optional[str] = None,
 ) -> str:
     """The page to read first: what this build is, and what to look at twice.
 
@@ -708,6 +724,10 @@ def build_summary(
     ``run``'s date is printed under the heading.  The archive's filename
     carries it too, but a filename is lost the moment someone unzips the folder
     or renames it, and this is the page they actually read.
+
+    ``scale`` is the one :func:`write_bundle` wrote the order sheet with, so
+    that what this page says about scales and what the sheet's own column holds
+    cannot disagree.  It is read, not re-decided.
     """
     if result.spec is None:
         return "no design: " + "; ".join(d.message for d in result.diagnostics) + "\n"
@@ -741,10 +761,25 @@ def build_summary(
     if primers:
         plates = idt.plate_count(len(primers))
         where = f"{BUNDLE_PATHS['primers']}/oligo_order_idt.csv"
-        lines.append(
-            f"  as tubes: {where}  "
-            f"({idt.DEFAULT_SCALE}, {idt.DEFAULT_PURIFICATION})"
-        )
+        # Said as a mix rather than as one code, because it is one: IDT's
+        # scales are length-limited and this order can span two of them.  A
+        # single number here is what let a 25nm row for a 65-mer go unread.
+        mix = idt.scale_mix(result, scale=scale)
+        if len(mix) == 1:
+            lines.append(
+                f"  as tubes: {where}  "
+                f"({mix[0][0]}, {idt.DEFAULT_PURIFICATION})"
+            )
+        else:
+            lines.append(f"  as tubes: {where}")
+            lines.append(
+                "    "
+                + ", ".join(f"{count} at {code}" for code, count in mix)
+                + f" ({idt.DEFAULT_PURIFICATION}) -- a scale takes only its own"
+            )
+            lines.append(
+                "    range of lengths, so a long oligo costs a larger one"
+            )
         if len(primers) < idt.IDT_PLATE_MINIMUM:
             # Said with both numbers rather than as advice, the way a breached
             # bound is reported: the plate file is still written, because a

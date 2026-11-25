@@ -23,8 +23,8 @@ the whole chain where a typo becomes a tube of the wrong DNA.
 IDT takes bulk oligos in two shapes and this module builds both:
 
 * **tubes** -- ``Name, Sequence, Scale, Purification``, pasted into the bulk
-  entry form.  The scale and purification codes are IDT's own (``25nm``,
-  ``STD``).
+  entry form.  The scale and purification codes are IDT's own, and the scale
+  is PER ROW because IDT's scales are length-limited: see :data:`IDT_SCALES`.
 * **a plate** -- ``Well Position, Name, Sequence``, uploaded as a workbook with
   one worksheet per plate.  Scale and purification are absent because they are
   chosen once for the whole plate in IDT's form, not per well.
@@ -41,7 +41,8 @@ order matters more than it looks: see :func:`plate_frames`.
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, List, Sequence, Tuple
+from collections import Counter
+from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple
 
 if TYPE_CHECKING:  # pragma: no cover - import cycle at runtime, types only
     import pandas as pd
@@ -50,10 +51,14 @@ __all__ = [
     "IDT_PLATE_COLUMNS",
     "IDT_TUBE_COLUMNS",
     "IDT_PLATE_MINIMUM",
+    "IDT_SCALES",
+    "IDT_STANDARD_MAX",
     "DEFAULT_SCALE",
     "DEFAULT_PURIFICATION",
     "well_positions",
     "oligo_name",
+    "scale_for_length",
+    "scale_mix",
     "tube_frame",
     "plate_frames",
     "primers_fasta",
@@ -103,8 +108,51 @@ IDT_PLATE_MINIMUM = 24
 #: here cannot collide.
 IDT_NAME_MAX = 50
 
+#: IDT's standard DNA oligo scales: IDT's own ordering code, then the shortest
+#: and the longest oligo that scale will synthesise, smallest scale first.
+#:
+#: READ OFF IDT'S OWN ORDER PAGE on 2026-11-25 --
+#: https://eu.idtdna.com/pages/products/custom-dna-rna/dna-oligos/custom-dna-oligos
+#: -- where the same three ranges are given twice, once in the tube price table
+#: and again in the yield guarantees below it.
+#:
+#: CITED, unlike :data:`IDT_PLATE_MINIMUM` and :data:`IDT_NAME_MAX` above, and
+#: that is not inconsistency: a plate minimum is a floor, so being wrong about
+#: it is one-sided and cheap.  These are not.  Too high an upper bound writes a
+#: scale IDT will not fill and the order comes back as a question days later;
+#: too low buys a dearer scale than the oligo needed.  A 25 nmol row for a
+#: 65-mer is exactly that first failure, and it is what this table exists to
+#: stop -- the three shipped fixtures all top out at 59 nt, so nothing here
+#: noticed for as long as that was the only DNA anyone tried.
+#:
+#: THE MINIMUM IS PART OF THE RANGE, not decoration.  25 nmol starts at 15
+#: bases, so a 12-mer is unorderable at the smallest scale despite sitting far
+#: under its 60-base cap, and the scale that takes it is the next one up.
+#:
+#: 1, 2, 5 and 10 umole are LEFT OUT.  They synthesise the same 5-100 bases as
+#: 250 nmol at several times the price, so no length can reach for one and an
+#: entry each would be a row :func:`scale_for_length` could never choose.  They
+#: buy more DNA, not longer DNA, and how much DNA is the caller's to ask for:
+#: :func:`tube_frame` takes a ``scale`` for that.
+IDT_SCALES = (
+    ("25nm", 15, 60),
+    ("100nm", 10, 90),
+    ("250nm", 5, 100),
+)
+
+#: The longest oligo any standard scale takes.  Past this is Ultramer
+#: territory, which this module does not order -- see :func:`scale_for_length`.
+IDT_STANDARD_MAX = max(high for _, _, high in IDT_SCALES)
+
+#: The shortest oligo any standard scale takes.
+IDT_STANDARD_MIN = min(low for _, low, _ in IDT_SCALES)
+
 #: IDT's codes for the smallest synthesis scale and for no purification.
-DEFAULT_SCALE = "25nm"
+#:
+#: The smallest scale is no longer what goes on every row -- that was the bug;
+#: :func:`scale_for_length` decides per oligo -- so this is the foot of the
+#: ladder, read off it rather than written again so the two cannot drift.
+DEFAULT_SCALE = IDT_SCALES[0][0]
 DEFAULT_PURIFICATION = "STD"
 
 #: Characters IDT's own sample templates use.  Anything else is folded to an
@@ -183,10 +231,104 @@ def _rows(result) -> List[Tuple[str, str]]:
     return [(oligo_name(p), str(p.sequence).upper()) for p in result.primers]
 
 
+def scale_for_length(length: int) -> str:
+    """The cheapest standard scale IDT will make a ``length``-mer at.
+
+    SMALLEST FIRST, and the first range that *contains* the length wins rather
+    than the first whose cap clears it.  The scales overlap -- 100 nmol starts
+    below 25 nmol and reaches further -- and the cheapest is the one with the
+    narrowest range, so walking up the ladder stops at the least DNA that can
+    be bought for the length asked.  Checking only the cap would put a 12-mer
+    at 25 nmol, which starts at 15.
+
+    Raises for a length no standard scale takes, and that is the point rather
+    than an inconvenience: the alternative is a ``Scale`` cell IDT cannot fill,
+    which fails at the vendor days later instead of here.  Past
+    :data:`IDT_STANDARD_MAX` an oligo needs an Ultramer, a different product
+    this module does not order.
+    """
+    for code, low, high in IDT_SCALES:
+        if low <= length <= high:
+            return code
+    if length > IDT_STANDARD_MAX:
+        raise ValueError(
+            f"{length} nt is past {IDT_STANDARD_MAX}, the longest oligo IDT's "
+            "standard scales take; it needs an Ultramer, which this order "
+            "sheet cannot buy"
+        )
+    raise ValueError(
+        f"{length} nt is under {IDT_STANDARD_MIN}, the shortest oligo IDT's "
+        "standard scales take"
+    )
+
+
+def _scales(result, scale: Optional[str]) -> List[str]:
+    """The ``Scale`` column: one code per row, in order-sheet order.
+
+    ``None`` lets each oligo's own length choose, which is the whole point of
+    the ladder.  An explicit code is written on every row and CHECKED against
+    the ladder where it is a code this module knows -- the failure being fixed
+    here is a scale written on a row too long to hold it, and a caller can
+    write one just as a hard-coded default could.
+
+    A code the ladder does not list goes through UNCHECKED.  Ultramers, a
+    modified oligo's scale, whatever IDT adds next: those are real orders, and
+    a module that refused every code it had not been taught would be worse than
+    one that trusts a caller who knows something it does not.
+    """
+    rows = _rows(result)
+    if scale is None:
+        out: List[str] = []
+        for name, sequence in rows:
+            try:
+                out.append(scale_for_length(len(sequence)))
+            except ValueError as exc:
+                raise ValueError(f"oligo {name}: {exc}") from exc
+        return out
+    known = {code: (low, high) for code, low, high in IDT_SCALES}
+    if scale in known:
+        low, high = known[scale]
+        over = sorted(
+            {len(sequence) for _, sequence in rows if not low <= len(sequence) <= high}
+        )
+        if over:
+            raise ValueError(
+                f"scale {scale!r} takes {low}-{high} nt, but this order holds "
+                f"oligos of {', '.join(f'{n} nt' for n in over)}; pass "
+                "scale=None to let each oligo's length choose its scale"
+            )
+    return [scale] * len(rows)
+
+
+def scale_mix(result, *, scale: Optional[str] = None) -> Tuple[Tuple[str, int], ...]:
+    """``(scale, count)`` over the whole order, smallest scale first.
+
+    What the summary says out loud, so that an order spanning two scales is
+    visible as one before anybody pastes it into a form and reads a single
+    number off the total.  Built from the same :func:`_scales` the sheet's own
+    column is, so the count here and the cells there are one decision made
+    once rather than two that can disagree.
+
+    A scale the ladder does not list sorts last; there is no price order to put
+    it in.
+    """
+    counts = Counter(_scales(result, scale))
+    ladder = [code for code, _, _ in IDT_SCALES]
+    return tuple(
+        sorted(
+            counts.items(),
+            key=lambda kv: (
+                ladder.index(kv[0]) if kv[0] in ladder else len(ladder),
+                kv[0],
+            ),
+        )
+    )
+
+
 def tube_frame(
     result,
     *,
-    scale: str = DEFAULT_SCALE,
+    scale: Optional[str] = None,
     purification: str = DEFAULT_PURIFICATION,
 ) -> "pd.DataFrame":
     """The order as tubes, for IDT's bulk entry form.
@@ -196,11 +338,19 @@ def tube_frame(
     by the time it got here, because the design identifies an oligo by its
     sequence and not by its name.
 
-    ``scale`` and ``purification`` are IDT's codes and are written on every
-    row, since the form takes them per oligo.  The defaults are the smallest
-    scale and no purification, which is what a PCR primer needs; purification
-    at IDT requires a scale of at least 100 nmol, so the two defaults cannot be
-    changed independently without checking that pairing.
+    ``scale`` is IDT's code, and LEFT ALONE IT IS PER ROW: each oligo at the
+    cheapest scale its own length can be made at.  One code on every row was
+    the earlier behaviour and it was wrong, because IDT's scales are
+    length-limited and an order holds oligos of different lengths -- 25 nmol
+    stops at 60 bases, a tailed junction primer runs past that routinely, and
+    such a row is an order IDT will not fill.  Pass a code to put that code on
+    every row instead, checked against the ladder: see :func:`_scales`.
+
+    ``purification`` is written on every row, since unlike scale it is not
+    length-bound.  The default is none, which is what a PCR primer needs, and
+    it cannot usefully be raised on its own: IDT offers no purification at all
+    at 25 nmol -- every column of its purification table is N/A on that row --
+    so asking for one also means naming a ``scale`` of at least ``100nm``.
     """
     import pandas as pd
 
@@ -209,7 +359,7 @@ def tube_frame(
         {
             IDT_TUBE_COLUMNS[0]: [name for name, _ in rows],
             IDT_TUBE_COLUMNS[1]: [sequence for _, sequence in rows],
-            IDT_TUBE_COLUMNS[2]: [scale] * len(rows),
+            IDT_TUBE_COLUMNS[2]: _scales(result, scale),
             IDT_TUBE_COLUMNS[3]: [purification] * len(rows),
         },
         columns=list(IDT_TUBE_COLUMNS),

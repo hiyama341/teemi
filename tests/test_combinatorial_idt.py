@@ -5,6 +5,7 @@
 """Tests for :mod:`teemi.design.combinatorial.idt`, the vendor order shapes."""
 
 import json
+from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -14,11 +15,15 @@ from teemi.design.combinatorial.idt import (
     DEFAULT_SCALE,
     IDT_NAME_MAX,
     IDT_PLATE_COLUMNS,
+    IDT_SCALES,
+    IDT_STANDARD_MAX,
     IDT_TUBE_COLUMNS,
     oligo_name,
     plate_count,
     plate_frames,
     primers_fasta,
+    scale_for_length,
+    scale_mix,
     tube_frame,
     well_positions,
 )
@@ -177,10 +182,21 @@ def test_the_first_fragments_pair_lands_stacked(linear):
     assert first["Name"].tolist()[1].startswith("002_")
 
 
-def test_the_scale_and_purification_are_written_on_every_row(linear):
-    frame = tube_frame(linear)
-    assert set(frame["Scale"]) == {DEFAULT_SCALE}
-    assert set(frame["Purification"]) == {DEFAULT_PURIFICATION}
+def test_purification_is_written_on_every_row(linear):
+    """Purification is one choice for the order.  The scale is not: see below."""
+    assert set(tube_frame(linear)["Purification"]) == {DEFAULT_PURIFICATION}
+
+
+def test_this_fixtures_oligos_all_fit_the_smallest_scale(linear):
+    """Every oligo here is under 60 nt, so this order really is one scale.
+
+    Asserted rather than left implicit because it is the reason a hard-coded
+    ``25nm`` went unnoticed for so long: no shipped fixture holds an oligo
+    IDT's smallest scale would refuse, so the column was right for every
+    design in this suite and wrong for the first long one anybody ordered.
+    """
+    assert max(len(p.sequence) for p in linear.primers) <= 60
+    assert set(tube_frame(linear)["Scale"]) == {DEFAULT_SCALE}
 
 
 # -- overflow and emptiness -------------------------------------------------
@@ -221,6 +237,120 @@ def test_an_empty_order_gives_no_plates():
     """Not one empty plate: IDT would refuse it and openpyxl cannot write it."""
     assert plate_frames(_fake(0)) == []
     assert tube_frame(_fake(0)).empty
+
+
+# -- the synthesis scale ----------------------------------------------------
+
+
+def _of_lengths(*lengths):
+    """A plan whose oligos are exactly as long as a scale test needs."""
+
+    class P:
+        def __init__(self, i, n):
+            self.label = f"{i:03d}"
+            self.id = f"oligo{i}"
+            self.sequence = "A" * n
+            self.uses = ("x",)
+
+    return _Plan([P(i, n) for i, n in enumerate(lengths, start=1)])
+
+
+def test_the_ladder_is_the_one_on_idts_order_page():
+    """Written out, not derived: a constant asserted against itself proves
+    nothing.  These are the ranges printed in IDT's tube price table."""
+    assert IDT_SCALES == (("25nm", 15, 60), ("100nm", 10, 90), ("250nm", 5, 100))
+    assert IDT_STANDARD_MAX == 100
+
+
+@pytest.mark.parametrize(
+    "length,expected",
+    [
+        (15, "25nm"),
+        (60, "25nm"),
+        (61, "100nm"),
+        (65, "100nm"),
+        (81, "100nm"),
+        (90, "100nm"),
+        (91, "250nm"),
+        (100, "250nm"),
+        # Under 25 nmol's 15-base floor, so the cheapest scale that will take
+        # it is the next one up.  Checking only the cap answers 25nm here,
+        # which is why the floor is in the table at all.
+        (14, "100nm"),
+        (10, "100nm"),
+        (9, "250nm"),
+        (5, "250nm"),
+    ],
+)
+def test_a_length_picks_the_cheapest_scale_that_takes_it(length, expected):
+    assert scale_for_length(length) == expected
+
+
+def test_a_long_oligo_is_not_sold_at_the_smallest_scale():
+    """THE BUG: a 25nm row for a 65-mer is an order IDT will not fill.
+
+    65 and 81 are the lengths that actually shipped on a 25nm row.
+    """
+    frame = tube_frame(_of_lengths(40, 65, 81))
+    assert frame["Scale"].tolist() == ["25nm", "100nm", "100nm"]
+
+
+def test_an_oligo_past_the_standard_scales_is_refused():
+    """Past 100 nt no standard scale applies, so no sheet is written.
+
+    The oligo is NAMED, because "118 nt" on its own does not say which tube to
+    go and look at in a sixteen-oligo order.
+    """
+    with pytest.raises(ValueError, match="Ultramer") as caught:
+        tube_frame(_of_lengths(40, 118))
+    assert "002" in str(caught.value)
+    assert "118 nt" in str(caught.value)
+
+
+def test_an_oligo_under_every_floor_is_refused():
+    with pytest.raises(ValueError, match="under 5"):
+        tube_frame(_of_lengths(4))
+
+
+def test_an_explicit_scale_too_small_for_the_order_is_refused():
+    """A caller can write the same wrong cell the hard-coded default did, so
+    the override is checked too, and the message says what to pass instead."""
+    with pytest.raises(ValueError, match=r"'25nm' takes 15-60 nt"):
+        tube_frame(_of_lengths(40, 65), scale="25nm")
+
+
+def test_an_explicit_scale_that_fits_goes_on_every_row():
+    assert tube_frame(_of_lengths(40, 65), scale="100nm")["Scale"].tolist() == [
+        "100nm",
+        "100nm",
+    ]
+
+
+def test_a_scale_the_ladder_does_not_know_is_trusted():
+    """Ultramers and modified-oligo scales are real orders.  A module that
+    refused every code it had not been taught would be the worse gatekeeper:
+    this one checks what it knows and passes on what it does not."""
+    assert tube_frame(_of_lengths(118, 150), scale="4nmU")["Scale"].tolist() == [
+        "4nmU",
+        "4nmU",
+    ]
+
+
+def test_the_mix_counts_what_the_sheet_holds():
+    """The summary's line and the sheet's column are one decision made once."""
+    order = _of_lengths(40, 44, 65, 81, 95)
+    assert scale_mix(order) == (("25nm", 2), ("100nm", 2), ("250nm", 1))
+    assert dict(scale_mix(order)) == dict(
+        Counter(tube_frame(order)["Scale"].tolist())
+    )
+
+
+def test_the_mix_is_cheapest_scale_first_whatever_order_the_oligos_come_in():
+    assert [code for code, _ in scale_mix(_of_lengths(95, 65, 40))] == [
+        "25nm",
+        "100nm",
+        "250nm",
+    ]
 
 
 # -- FASTA ------------------------------------------------------------------

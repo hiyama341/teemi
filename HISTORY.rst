@@ -4,6 +4,45 @@ History
 Unreleased
 ~~~~~~~~~~
 
+- The IDT order sheet now writes each oligo's synthesis scale from its own
+  length, instead of ``25nm`` on every row. IDT's 25 nmol scale synthesises
+  15-60 bases, so every oligo longer than 60 nt was going out on a row IDT
+  cannot fill -- a tailed junction primer passes 60 nt routinely, and such an
+  order comes back as a question days later rather than failing where it was
+  built. ``idt.IDT_SCALES`` is the ladder it chooses from, read off IDT's own
+  order page on 2026-11-25 and cited there with the URL: ``25nm`` 15-60 bases,
+  ``100nm`` 10-90, ``250nm`` 5-100. The first range that CONTAINS the length
+  wins rather than the first whose cap clears it, because a minimum is as much
+  part of a range as a maximum: a 12-mer is not orderable at 25 nmol, which
+  starts at 15, so a short oligo moves UP to ``100nm``. No shipped fixture has
+  an oligo over 59 nt, which is why one hard-coded code was right for every
+  design in the test suite and wrong for the first long one anybody ordered; a
+  test now asserts the fixtures stay inside the smallest scale, so it fails if
+  that stops being true. Nothing is priced differently --
+  ``objective.price_per_base`` and ``DesignResult.price`` are untouched, and a
+  scale says what IDT will make, not what the design is charged for.
+- An oligo past 100 nt now RAISES rather than going out at a scale that cannot
+  hold it, so a bundle containing one is not written at all. 100 nt is the
+  longest any standard scale takes (``idt.IDT_STANDARD_MAX``); past it an
+  oligo needs an Ultramer, a different product this sheet cannot order. An
+  oligo under 5 nt raises for the same reason at the other end of the ladder.
+  The message names the oligo, because a length on its own does not say which
+  tube to go and look at in a sixteen-oligo order.
+- ``write_bundle``, ``write_bundle_zip`` and ``build_summary`` take ``scale=``,
+  IDT's code for one scale to put on every row, for a caller who needs more
+  DNA than a PCR does or the purification only the larger scales offer -- IDT
+  offers none at all at 25 nmol. Omitted, each oligo's length chooses, which
+  is the behaviour above. Given a code the ladder lists, it is CHECKED against
+  the order's lengths and refused if any oligo falls outside it, because a
+  caller can write the same unfillable cell a hard-coded default did. A code
+  the ladder does not list -- an Ultramer scale, a modified oligo's -- goes
+  through unchecked, since refusing every code this module has not been taught
+  would be the worse failure. ``01_SUMMARY.txt``'s "as tubes" line now reports
+  the mix it actually wrote, ``13 at 25nm, 3 at 100nm``, where it used to name
+  a single code; an order that really is all one scale reads as it did.
+  ``idt.DEFAULT_SCALE`` is now read off the foot of the ladder rather than
+  written out again, and means the smallest scale rather than the scale every
+  row gets.
 - ``TRANSLATED_TYPES`` no longer holds ``linker_peptide``, and a ``drop_start``
   or ``drop_stop`` flag on a peptide linker is now reported rather than passing
   in silence. The set is FLOW's ``drop_start`` description typed out by hand,
