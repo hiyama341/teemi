@@ -865,10 +865,12 @@ def _ordered_fragments(
     Built from the layout rather than from the variants, so a fragment is
     reported once however many constructs contain it -- the same reasoning the
     primer table is deduplicated by molecule under.  ``because`` carries which
-    request produced it, since an ``ordered`` slot the spec asked for and an
-    ``in_tail`` slot the budget could not honour are the same purchase arrived
-    at two different ways, and only the second is worth re-reading the
-    diagnostics for.
+    request produced it: ``"asked"`` for a slot the spec marked ``ordered``,
+    and otherwise the diagnostic code that pulled the slot in -- which today
+    means ``in_tail_folded_into_ordered``, an ``in_tail`` slot sitting against
+    an ordered one, since two synthetic fragments side by side share no
+    sequence and have to be bought as a single piece.  A fold that will not fit
+    is never one of these: it is reported as an error and left folded.
     """
     asked = {position.id for position in spec.positions if position.ordered}
     reasons = {

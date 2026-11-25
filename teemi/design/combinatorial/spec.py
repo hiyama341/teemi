@@ -161,8 +161,15 @@ class Position(_Frozen):
 
     in_tail: bool = False
     """Build this part into the flanking primer tails instead of amplifying it.
-    A request, not a command: a part too long to fit the primer budget comes
-    back as an :attr:`ordered` fragment with a warning saying so."""
+
+    There is no limit from ``homology_length``: a part longer than the whole
+    overlap folds, with the overlap then sitting inside the part.  The only
+    limit is how long an oligo the fold costs, and
+    :meth:`DesignSpec.in_tail_limit` derives it.  A part past that comes back as
+    an ERROR naming the remedies -- a larger ``primer_len_max``, a shorter
+    ``homology_length``, or :attr:`ordered` on the slot -- and stays folded, so
+    the over-length primer is reported too.  Nothing is bought on the caller's
+    behalf."""
 
     ordered: bool = False
     """Buy this part as a synthetic double-stranded fragment and assemble it
@@ -340,29 +347,26 @@ class Constraints(_Frozen):
     homodimer_dg_min: float = Field(default=-6.0, le=0.0)
     heterodimer_dg_min: float = Field(default=-6.0, le=0.0)
     three_prime_dimer_dg_min: float = Field(default=-9.0, le=0.0)
-    in_tail_max_bp: Optional[int] = Field(default=40, ge=0)
-    """An EXTRA cap on what may ride in the primer tails, or ``None`` for none.
+    in_tail_max_bp: Optional[int] = Field(default=None, ge=0)
+    """An EXTRA cap on what may ride in the primer tails; ``None`` for none.
 
-    pydna's ``assembly_fragments`` calls this ``maxlink`` and defaults it to 40,
-    which is where the number comes from, and it is kept as the default so a
-    spec written against earlier versions plans the same way.
+    ``None`` is the default and means "use the derived bound", which is
+    :meth:`DesignSpec.in_tail_limit` -- the real limit, stated and measured
+    there.  Set an integer only to fold LESS than the oligos could carry.
 
-    **It is not the real bound, and a constant cannot be.**  What a fold
-    actually costs is derived -- see :meth:`DesignSpec.in_tail_limit`, which
-    states the geometry and the arithmetic.  Briefly: the two tailed primers
-    have an invariant total length, so no split can make the longer of them
-    shorter than half of it, and the ceiling that half has to clear is
-    ``primer_len_max``.  The limit is therefore a function of
-    ``primer_len_max``, ``homology_length`` and the two neighbours' Tm-driven
-    footprints -- which at ``homology_length`` 50 and ``primer_len_max`` 60
-    comes out at 34 bp, so 40 lets through a fold that provably cannot be
-    ordered; and at ``homology_length`` 45 with ``primer_len_max`` 100 comes out
-    at 45, so 40 refuses one that comfortably could.
+    It used to default to 40, copied from pydna's ``maxlink``, and a constant
+    cannot be this limit.  What a fold costs is the two tails, whose combined
+    length is ``homology_length + part`` whatever the split, so the ceiling is a
+    function of ``primer_len_max``, ``homology_length`` and the two neighbours'
+    Tm-driven footprints.  At ``homology_length`` 50 with ``primer_len_max`` 60
+    that comes out at 34, so 40 let through a fold whose primer then breached
+    ``primer_len_max``; at ``homology_length`` 30 with ``primer_len_max`` 100 it
+    comes out at 114, so 40 refused the 54 bp signal peptide this package exists
+    to build -- which folds into a 61 nt oligo.
 
-    ``None`` says to use the derived bound alone, which is the setting for a
-    caller who does not want to guess.  Whatever is set here, the derived bound
-    still applies on top of it: a cap above what the oligos can carry is not a
-    permission the synthesiser will honour."""
+    Whatever is set here, the derived bound still applies on top of it: a cap
+    above what the oligos can carry is not a permission the synthesiser will
+    honour."""
 
     structure_tm_margin_c: float = Field(default=0.0, ge=-20.0, le=40.0)
     """How close a hairpin or dimer may melt to where the primer must anneal.
@@ -623,11 +627,15 @@ class DesignSpec(_Frozen):
         ``f_rev`` and a downstream one whose forward footprint is ``f_fwd``,
         gives two tailed primers:
 
-            len(forward) = t_f + P + f_fwd
-            len(reverse) = t_r + P + f_rev     with t_f + t_r = L - P
+            len(forward) = t_f + f_fwd
+            len(reverse) = t_r + f_rev     with t_f + t_r = L + P
 
-        so ``len(forward) + len(reverse) = P + L + f_fwd + f_rev``, which does
-        not contain ``t_f`` **at all**.  The split moves length from one primer
+        where ``t_f`` and ``t_r`` are whole tails -- each one reaches back
+        across its share of the part and on into the neighbour beyond it, and
+        together they span the part once and the homology once, which is why
+        their total is ``L + P`` and not ``L``.  So
+        ``len(forward) + len(reverse) = P + L + f_fwd + f_rev``, which does not
+        contain ``t_f`` **at all**.  The split moves length from one primer
         to the other and cannot remove any, so the shortest the longer of the
         two can be is half the total:
 
@@ -637,23 +645,32 @@ class DesignSpec(_Frozen):
 
             P <= 2 * primer_len_max - L - f_fwd - f_rev
 
-        which is what this returns.  At ``L == P`` the split has one value and
-        the bound is reached exactly as ``P + max(f_fwd, f_rev)``; measured at
-        ``primer_len_max`` 100 with a 32 nt reverse footprint, 68 bp folds to a
-        100 nt oligo and 69 would not fit.
+        which is what this returns.  There is no special case anywhere in it --
+        no length of part, and no relation between ``P`` and ``L``, gets its own
+        rule -- because the total above holds for every split there is.
+        Measured over 108 combinations of ``P``, ``L`` and the two footprints:
+        no split's longest oligo ever came in under ``ceil(total / 2)``, and
+        where the balancing split was reachable the sweep landed on it exactly.
 
         A NECESSARY CONDITION, not a sufficient one, for two reasons.  The
         footprints default to ``footprint_len_min`` here because the layout is
         decided before they are designed, and a real footprint is only ever
         longer -- so a part under this bound may still not fit, and that breach
         is reported exactly, by primer and by number, against
-        ``primer_len_max``.  And where the balancing split falls outside what
-        the two neighbours can supply, the clamped optimum is longer than half
-        the total.  Pass the real footprint lengths to get the exact bound.
+        ``primer_len_max``.  And the bound is the minimax over splits, which
+        only a search reaches: the default path takes pydna's own even split of
+        the geometry and so pays up to half the footprints' difference on top
+        (measured: 7 nt of it at footprints of 18 and 32), while a balancing
+        split outside what the two neighbours can supply is clamped and longer
+        again.  Pass the real footprint lengths to tighten it.
 
-        Says nothing about ``homology_length`` as a limit in its own right: a
-        part longer than the whole homology has nothing to be spent out of,
-        which is a separate fact with a separate diagnostic.
+        ``homology_length`` is in the formula but is NOT a separate limit, and
+        reading it as one was a real defect: a part longer than the whole
+        homology is perfectly foldable, because the overlap does not have to
+        contain the part.  Once the part is the longer of the two, the homology
+        sits inside THE PART -- both amplicons share L bases of the part itself
+        and neither neighbour contributes any of the overlap.  See
+        :attr:`~teemi.design.combinatorial.design.Junction.tail_total`.
         """
         footprint = self.primer_design.footprint_len_min
         forward = footprint if forward_footprint is None else forward_footprint

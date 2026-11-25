@@ -1052,12 +1052,31 @@ class Candidate:
         return not self.violations
 
     @property
+    def unorderable(self) -> int:
+        """How many of this split's primers are too long to be synthesised.
+
+        The one bound here that is not a matter of degree.  Every other breach
+        -- a dimer, a hairpin, a GC fraction -- is a primer that can be made
+        and might still work; a primer past ``primer_len_max`` cannot be
+        bought at all, so no amount of thermodynamic merit redeems it.  That is
+        why this is read before :attr:`total_overshoot` when no split is
+        feasible: the overshoots are in mixed units and would otherwise let a
+        2 nt length breach look smaller than a 12 kcal/mol dimer.
+        """
+        return sum(
+            1
+            for violation in self.violations
+            if violation.constraint == "primer_len_max"
+        )
+
+    @property
     def total_overshoot(self) -> float:
         """Sum of the breach magnitudes.
 
         Mixed units (nt, C, kcal/mol, fraction) on purpose: it exists only to
         order infeasible candidates so the one reported is the closest to
-        working, and is never compared against a bound.
+        working, and is never compared against a bound.  Read after
+        :attr:`unorderable`, which is why the mixing is harmless.
         """
         return sum(violation.overshoot for violation in self.violations)
 
@@ -1094,12 +1113,17 @@ class Junction:
     interposed: str = ""
     """Sequence that sits between the two parts without being amplified.
 
-    An ``in_tail`` slot's part.  It is *inside* the homology, not added to it:
-    ``homology_length`` stays the number of bases the two amplicons share, and
-    what rides in the tails spends part of that budget, exactly as pydna's
-    ``assembly_fragments`` accounts for a fragment shorter than its ``maxlink``.
-    Asking for 40 bp of homology gives 40, whether or not a Kozak sequence sits
-    in the middle of it."""
+    An ``in_tail`` slot's part.  It is never ADDED to the homology:
+    ``homology_length`` stays the number of bases the two amplicons share,
+    exactly as pydna's ``assembly_fragments`` accounts for a fragment shorter
+    than its ``maxlink``.  Asking for 40 bp of homology gives 40, whether or not
+    a Kozak sequence sits in the middle of it.
+
+    Which of the two contains the other depends on the lengths, and neither has
+    to: the overlap is wherever the two amplicons happen to meet, so a part
+    shorter than ``homology_length`` sits inside the overlap, and a part longer
+    than it has the overlap inside ITSELF.  What is fixed is
+    :attr:`tail_total`, the two tails' combined length."""
 
     ordered: str = ""
     """A synthetic fragment sitting between the two parts, assembled as-is.
@@ -1131,50 +1155,91 @@ class Junction:
         return f"{self.upstream.part_id}{ID_SEPARATOR}{self.downstream.part_id}"
 
     @property
-    def budget(self) -> int:
-        """How much of the homology the two parts themselves must supply.
+    def tail_total(self) -> int:
+        """``t_f + t_r``: the two tails' combined length, which the split cannot change.
 
-        ``homology_length`` less whatever rides in the tails, so the split is
-        searched over what is left rather than over the whole.
+        ``homology_length`` PLUS whatever rides in the tails, and it is the one
+        number the whole fold geometry turns on.
+
+        Why a sum and not a budget.  Write the product as A, then the interposed
+        part of length P, then B.  The upstream amplicon reaches some way into
+        P (or past it, into B); the downstream amplicon starts some way back
+        into P (or before it, in A); and they have to share exactly ``L``
+        bases.  Whatever those two cut points are, the upstream reverse primer's
+        tail is the first ``t_r`` bases of ``P + B`` and the downstream forward
+        primer's tail is the last ``t_f`` bases of ``A + P`` -- and the overlap
+        being L forces
+
+            t_f + t_r = P + L
+
+        with no freedom left.  The split moves length from one primer to the
+        other and can never remove any, so the shortest the LONGER of the two
+        can be is half of this.
+
+        THE CASE THIS GETS RIGHT AND A BUDGET DID NOT.  Read as a budget --
+        ``L - P``, what the two parts have left to supply -- a part longer than
+        the whole homology comes out negative and the junction looks impossible.
+        It is not.  A part longer than the homology simply means the homology
+        sits inside THE PART rather than the part sitting inside the homology:
+        both cut points fall within P, the two amplicons share L bases of the
+        part itself, and neither neighbour contributes any of the overlap.  A
+        54 bp signal peptide at 30 bp of homology folds into two tails of 84 bp
+        between them, and pydna has always built it; it was this arithmetic
+        that refused to ask.
         """
-        return self.homology_length - len(self.interposed)
+        return self.homology_length + len(self.interposed)
 
     def primers(self, t_f: int) -> Tuple[str, str]:
         """``(forward primer of B, reverse primer of A)`` for this split.
 
+        ``t_f`` is the whole forward tail and ``t_r = tail_total - t_f`` the
+        whole reverse one, each measured in bases of the product: the forward
+        tail is the last ``t_f`` bases of ``upstream + interposed`` and the
+        reverse tail is the reverse complement of the first ``t_r`` bases of
+        ``interposed + downstream``.  Either tail may lie wholly inside the
+        interposed part, wholly outside it, or across the boundary, and the
+        same two expressions cover all three.
+
         The tail goes on the 5' side of each primer and the footprint stays at
         the 3' end, which is the end that has to anneal and extend.
         """
-        t_r = self.budget - t_f
+        t_r = self.tail_total - t_f
         forward = (
-            _suffix(self.upstream_seq, t_f)
-            + self.interposed
+            _suffix(self.upstream_seq + self.interposed, t_f)
             + self.downstream.forward
         )
         reverse = (
             str(
-                Seq(self.interposed + self.downstream_seq[:t_r]).reverse_complement()
+                Seq(
+                    (self.interposed + self.downstream_seq)[:t_r]
+                ).reverse_complement()
             )
             + self.upstream.reverse
         )
         return forward, reverse
 
     def homology(self, t_f: int) -> str:
-        """The bases the two amplicons will share.
+        """The bases the two amplicons will share: exactly ``homology_length``.
 
-        ``homology_length`` of it comes from the two parts; anything riding in
-        the tails sits in the middle and lengthens it.
+        L means L.  Where those bases come from depends on the lengths -- some
+        of each neighbour when the interposed part is shorter than the homology,
+        and the part alone once it is longer -- but there are always exactly L
+        of them, which is what the spec asked for.
         """
-        return (
-            _suffix(self.upstream_seq, t_f)
-            + self.interposed
-            + self.downstream_seq[: self.budget - t_f]
-        )
+        start = len(self.upstream_seq) + len(self.interposed) - t_f
+        whole = self.upstream_seq + self.interposed + self.downstream_seq
+        return whole[start : start + self.homology_length]
 
     def split_range(self) -> Tuple[int, int]:
-        """The ``t_f`` values the two parts are long enough to supply."""
-        low = max(0, self.budget - len(self.downstream_seq))
-        high = min(self.budget, len(self.upstream_seq))
+        """The ``t_f`` values the two neighbours are long enough to supply.
+
+        A tail can run back no further than the start of ``upstream`` and
+        forward no further than the end of ``downstream``, which is the only
+        thing bounding the split once :attr:`tail_total` is fixed.
+        """
+        total = self.tail_total
+        low = max(0, total - len(self.interposed) - len(self.downstream_seq))
+        high = min(total, len(self.upstream_seq) + len(self.interposed))
         return low, high
 
 
@@ -1291,11 +1356,11 @@ def _pydna_candidate(
     it, whatever ``tune_overhangs`` says, because there is nothing to search:
     both tails are pinned at ``homology_length`` by the fragment.  pydna's
     ``assembly_fragments`` is told not to absorb that fragment, by a ``maxlink``
-    below its length, and then gives each neighbour the full-length tail its
+    of 0, and then gives each neighbour the full-length tail its
     docstring promises for an ``Amplicon`` next to a ``Dseqrecord``.  Verified
     against it rather than imitated: ``t_f`` and ``t_r`` come back as L each,
-    which sums to 2L and not to ``budget``, because two tails of L is what an
-    ordered fragment costs.
+    which sums to 2L and not to :attr:`Junction.tail_total`, because two tails
+    of L is what an ordered fragment costs.
     """
     upstream = pcr(
         Primer(junction.upstream.forward),
@@ -1316,19 +1381,23 @@ def _pydna_candidate(
         fragments,
         overlap=junction.homology_length,
         # The one knob that decides whether pydna absorbs the fragment in the
-        # middle or leaves it standing.  Below its length it stands, and the
-        # two neighbours get a full ``overlap`` tail each instead of half of
-        # one; that is exactly what an ordered fragment is, so the maxlink is
-        # taken from the fragment rather than from the spec.  ``maxlink=0``
-        # would do as well and is less obviously about this fragment.
-        maxlink=(
-            len(junction.ordered) - 1
-            if junction.ordered
-            # At least the interposed length, or pydna would decline to absorb
-            # a fold the layout has already decided on and leave it standing as
-            # a fragment nothing was designed to join.
-            else max(spec.in_tail_limit(), len(junction.interposed))
-        ),
+        # middle or leaves it standing: below its length it stands, and the two
+        # neighbours get a full ``overlap`` tail each instead of half of one,
+        # which is exactly what an ordered fragment is.
+        #
+        # AS SMALL AS SAYS IT, because ``assembly_fragments`` absorbs *every*
+        # fragment with ``len(f) <= maxlink`` -- its own two neighbours
+        # included, whatever their type.  Anything larger than this one
+        # fragment needs therefore silently folds a short NEIGHBOUR into ITS
+        # neighbours, leaving that part with two bare footprints for primers
+        # and no PCR product.  Measured: a maxlink taken from the spec's fold
+        # limit came to 104 bp at a 40 bp homology and ``primer_len_max`` 90,
+        # swallowed a real 60 bp linker part and lost the construct.  So
+        # ``len(interposed)`` absorbs exactly the fold the layout decided on,
+        # and ``0`` absorbs nothing at all -- which is what both the ordered
+        # case and the no-middle case want, and is immune to how short a
+        # neighbour is.  The fold limit belongs to the layout, not here.
+        maxlink=len(junction.interposed),
     )
     forward = str(tailed[-1].forward_primer.seq)
     reverse = str(tailed[0].reverse_primer.seq)
@@ -1434,32 +1503,25 @@ def design_junction(
     bounds it breached attached, because an unbuildable junction that names its
     problem is worth more than a missing one.
 
-    :class:`JunctionError` is for a junction that cannot exist at all, which is
-    two separate things.  Either what rides in the tails is longer than the
-    whole homology, so there is no budget to split; or the two parts are
-    together too short to supply the budget there is.  They are reported apart
-    because their remedies differ: the first is a number in the spec, the
-    second is the choice of parts.  Printing the two part lengths against a
-    negative budget pointed at the parts for a failure that was neither of
-    theirs.
+    :class:`JunctionError` is for a junction that cannot exist at all, and there
+    is now only one way that happens: the two neighbours are together too short
+    to reach across the overlap, so no split of :attr:`Junction.tail_total` has
+    anywhere to sit.
 
-    :func:`plan_layout` catches the first case earlier and orders the part as a
-    synthetic fragment instead, so a spec that went through it does not arrive
-    here.  A hand-built :class:`Junction` still can.
+    A part longer than the whole homology USED to raise here as well, on the
+    reasoning that it left the two neighbours a negative budget to supply.  That
+    reasoning was wrong: see :attr:`Junction.tail_total`.  A part longer than the
+    homology means the homology sits inside the part, both amplicons share L
+    bases of the part itself, and the junction is perfectly ordinary -- so the
+    error, and the layout check in front of it, are gone.
     """
-    if junction.budget < 0:
-        raise JunctionError(
-            f"{len(junction.interposed)} bp riding in the tails is longer than "
-            f"homology_length {junction.homology_length}, so there is none of it "
-            "left for the two parts to supply",
-            junction_id=junction.id,
-        )
     low, high = junction.split_range()
     if low > high:
         raise JunctionError(
             f"{len(junction.upstream_seq)} bp and {len(junction.downstream_seq)} bp "
-            f"cannot supply the {junction.budget} bp of homology left after "
-            f"{len(junction.interposed)} bp riding in the tails"
+            f"cannot reach across {junction.tail_total} bp of tails "
+            f"({junction.homology_length} bp of homology plus "
+            f"{len(junction.interposed)} bp riding in them)"
             if junction.interposed
             else f"cannot supply homology_length {junction.homology_length}",
             junction_id=junction.id,
@@ -1493,13 +1555,13 @@ def design_junction(
             raise JunctionError(
                 f"a no_tail flag pins the split at t_f={junction.forced_t_f}, "
                 f"which these two parts cannot supply (only {low}..{high} of "
-                f"{junction.budget} bp is available)",
+                f"{junction.tail_total} bp is available)",
                 junction_id=junction.id,
             )
         order: Tuple[int, ...] = (junction.forced_t_f,)
         built_by: Literal["pydna", "sweep", "forced"] = "forced"
     else:
-        order = _split_order(search.order, junction.budget)
+        order = _split_order(search.order, junction.tail_total)
         built_by = "sweep"
     candidates: List[Candidate] = []
     for t_f in order:
@@ -1511,7 +1573,7 @@ def design_junction(
         candidates.append(
             Candidate(
                 t_f=t_f,
-                t_r=junction.budget - t_f,
+                t_r=junction.tail_total - t_f,
                 forward_primer=forward,
                 reverse_primer=reverse,
                 forward_structures=forward_structures,
@@ -1552,9 +1614,13 @@ def design_junction(
             else feasible[0]
         )
     else:
+        # Orderability first: a split whose primers can be made and merely
+        # dimerise is nearer to working than one that needs an oligo no vendor
+        # will synthesise, however small the length breach looks beside a dG.
         chosen = min(
             candidates,
             key=lambda candidate: (
+                candidate.unorderable,
                 len(candidate.violations),
                 candidate.total_overshoot,
                 candidate.cost,
@@ -1616,10 +1682,11 @@ class Layout:
 
     ``in_tail``
         No PCR.  The sequence is built into the two flanking primers, so the
-        construct still contains it while one fewer reaction is run.  Needs the
-        part to fit both the homology it is spent out of
-        (``homology_length``) and the tail budget, which is derived rather
-        than guessed -- see :meth:`DesignSpec.in_tail_limit`.
+        construct still contains it while one fewer reaction is run.  There is
+        no limit from ``homology_length`` -- a part longer than the whole
+        overlap folds, with the overlap then sitting inside the part -- only
+        from how long an oligo the result is, which is derived rather than
+        guessed; see :meth:`DesignSpec.in_tail_limit`.
 
     ``ordered``
         No PCR and no primers of its own: the part is bought as a synthetic
@@ -1704,45 +1771,40 @@ def plan_layout(
 ) -> Layout:
     """Decide which ``in_tail`` requests the primer budget can actually honour.
 
-    Two different limits, both of them real.  The first is what the two primers
-    will physically carry, which is :meth:`DesignSpec.in_tail_limit` --
-    *derived* from ``primer_len_max``, ``homology_length`` and the footprints,
-    and capped further by ``in_tail_max_bp`` when the caller set one.  The
-    second is ``homology_length`` itself, which is what the overlap has to
-    *spend*: an ``in_tail`` part sits inside the homology rather than being
-    added to it, so a part longer than the whole homology leaves the two
-    neighbours less than nothing to supply.  A part has to clear both, and at
-    teemi's defaults the homology is the one that bites (35 bp against a
-    derived 49).
+    ONE limit, and it is about oligo length.  What a fold costs is the two
+    tails, whose combined length is ``homology_length + part`` whatever the
+    split -- see :attr:`Junction.tail_total` -- so the longer of the two primers
+    cannot be shorter than half of that plus a footprint.  Requiring that to
+    clear ``primer_len_max`` is the whole of it, and
+    :meth:`DesignSpec.in_tail_limit` is the arithmetic.
 
-    The limits are checked in that order because the homology is the more
-    fundamental of the two -- it is about the overlap's accounting and holds
-    whatever the oligos cost -- so a part that fails both is reported against
-    it rather than against a budget it was never going to reach.
+    ``homology_length`` is NOT a second limit, and reading it as one was the
+    defect this function used to carry.  A part longer than the whole homology
+    was refused on the grounds that it left the two neighbours a negative budget
+    to supply -- but the overlap does not have to contain the part.  Once the
+    part is longer than the homology the homology sits inside THE PART: both
+    amplicons share L bases of the part itself and neither neighbour
+    contributes any of it.  pydna's ``assembly_fragments`` has always built
+    exactly this, and the check in front of it was what refused to ask.  A 54 bp
+    signal peptide at 30 bp of homology folds into a 61 nt longest oligo; a
+    93 bp one into 81 nt.
 
-    **Both failures demote to ``ordered``, not to amplified.**  Amplifying is
-    not an option for the parts that trigger these limits, which is the whole
-    trouble: a part short enough to be asked into the tails is usually too
-    short to design a primer pair onto.  A 54 bp signal peptide demoted to its
-    own fragment came back from ``pcr`` as *"No PCR product! Template 54 bp
-    linear limit=13: No forward primers anneal"*, and the whole library with
-    it.  Buying it as a synthetic fragment always works, needs no primers of
-    its own, and costs one purchase rather than one impossible reaction.  Both
-    demotions are warnings rather than errors for the same reason the old ones
-    were: a request nobody has to honour literally should not take a library
-    down to nothing.
+    NOTHING IS BOUGHT HERE.  A part that cannot fold inside ``primer_len_max``
+    is reported as an error naming both remedies -- a larger ``primer_len_max``,
+    or ``ordered`` on the slot to buy it as a synthetic fragment -- and the slot
+    stays ``in_tail``, so the over-length primer is reported too, by primer and
+    by number.  Choosing to buy DNA on the caller's behalf is not a demotion
+    this function is entitled to make.
 
-    An ``ordered`` flag written in the spec is honoured as written -- neither
-    limit applies to it, since nothing is being folded into a tail -- and so
-    is a plain amplified slot, which was never a request about tails at all.
+    An ``ordered`` flag written in the spec is honoured as written: no limit
+    here applies to it, since nothing is being folded into a tail.
 
     One more rule, and it is about runs.  Consecutive non-amplified slots share
     one junction, so they are built together; and a run that contains an
     ``ordered`` slot is bought as **one** synthetic fragment, which pulls any
     ``in_tail`` slot in that run into it.  Two synthetic fragments side by side
-    would share no sequence and could not be joined, and an in_tail part next
-    to one would have to be added on top of a full-length tail.  Folding the
-    run into a single piece is the buildable reading, and it is reported.
+    would share no sequence and could not be joined.  Folding the run into a
+    single piece is the buildable reading, and it is reported.
     """
     modes = {
         position.id: ("in_tail" if position.in_tail else "ordered")
@@ -1751,7 +1813,6 @@ def plan_layout(
     }
     limit = spec.in_tail_limit()
     asked_cap = spec.constraints.in_tail_max_bp
-    homology = spec.primer_design.junction.homology_length
     slots: List[Tuple[str, Tuple[Part, ...], SlotMode]] = []
     notes: List[Diagnostic] = []
     for slot_id, parts in spec.ordered_slots():
@@ -1760,29 +1821,6 @@ def plan_layout(
             slots.append((slot_id, parts, mode))
             continue
         length = len(records[parts[0].id])
-        if length > homology:
-            # Strictly greater: at length == homology the budget is zero, which
-            # is a real junction -- both amplicons carry the part in full and
-            # the homology IS the part.  Refusing that would be inventing a
-            # floor on how much of the overlap the two neighbours must own.
-            notes.append(
-                Diagnostic(
-                    severity="warning",
-                    code="in_tail_over_homology",
-                    message=(
-                        f"{slot_id}: in_tail was asked for but the part is "
-                        f"{length} bp and homology_length is only {homology}; "
-                        "what rides in the tails is spent out of the homology "
-                        "rather than added to it, so this part is "
-                        f"{length - homology} bp more than the whole homology; "
-                        "it is ordered as a synthetic fragment instead and "
-                        "assembled without a PCR of its own"
-                    ),
-                    part_id=parts[0].id,
-                )
-            )
-            slots.append((slot_id, parts, "ordered"))
-            continue
         if length > limit:
             # Two different ceilings reach this branch, and they are told apart
             # because their remedies are different numbers in the spec: an
@@ -1790,9 +1828,12 @@ def plan_layout(
             # while the derived bound is what the oligos will carry and moves
             # only with primer_len_max, homology_length or the footprints.
             explicit = asked_cap is not None and length > asked_cap
+            homology = spec.primer_design.junction.homology_length
+            footprint = spec.primer_design.footprint_len_min
+            needed = math.ceil((length + homology) / 2) + footprint
             notes.append(
                 Diagnostic(
-                    severity="warning",
+                    severity="error",
                     code="in_tail_too_long",
                     message=(
                         f"{slot_id}: in_tail was asked for but the part is "
@@ -1801,25 +1842,29 @@ def plan_layout(
                             f"in_tail_max_bp {asked_cap}"
                             if explicit
                             else (
-                                f"the {limit} bp the primer budget can carry "
+                                f"the {limit} bp the two tails can carry "
                                 f"(2 * primer_len_max "
                                 f"{spec.constraints.primer_len_max} less "
                                 f"homology_length {homology} less two "
-                                f"footprints of at least "
-                                f"{spec.primer_design.footprint_len_min}; the "
-                                "two tails have an invariant total, so no "
-                                "split makes the longer one shorter than half "
-                                "of it)"
+                                f"footprints of at least {footprint}; the two "
+                                "tails have an invariant total, so no split "
+                                "makes the longer one shorter than half of it)"
                             )
                         )
-                        + "; it is ordered as a synthetic fragment instead and "
-                        "assembled without a PCR of its own"
+                        + "; it is still folded into the tails, so expect an "
+                        "over-length primer below.  Either raise "
+                        + (
+                            "in_tail_max_bp"
+                            if explicit
+                            else f"primer_len_max to {needed}"
+                        )
+                        + f", lower homology_length, or set ordered on "
+                        f"{slot_id} to buy the part as a synthetic fragment "
+                        "instead"
                     ),
                     part_id=parts[0].id,
                 )
             )
-            slots.append((slot_id, parts, "ordered"))
-            continue
         slots.append((slot_id, parts, "in_tail"))
     slots, run_notes = _fold_runs(slots, circular=spec.design.topology == "circular")
     return Layout(slots=tuple(slots), diagnostics=tuple(notes) + run_notes)
@@ -1993,7 +2038,7 @@ def junctions_for_spec(
                 else _forced_split(
                     slot_of.get(upstream_id),
                     slot_of.get(downstream_id),
-                    homology_length - len(middle),
+                    homology_length + len(middle),
                 )
             ),
         )
@@ -2052,16 +2097,21 @@ def _between(
 
 
 def _forced_split(
-    upstream: Optional[Position], downstream: Optional[Position], budget: int
+    upstream: Optional[Position], downstream: Optional[Position], tail_total: int
 ) -> Optional[int]:
     """The split a ``no_tail`` flag pins this junction to, if either does.
+
+    One flag leaves one tail bare, which pins the whole of
+    :attr:`Junction.tail_total` on the other -- including anything riding in the
+    tails, since that has to reach the product somehow and there is only one
+    primer left to carry it.
 
     A pad carries no flags, hence the ``Optional`` on both sides.  Flags facing
     each other across one junction are refused in the spec, so at most one of
     these can fire.
     """
     if upstream is not None and upstream.no_tail_rev:
-        return budget
+        return tail_total
     if downstream is not None and downstream.no_tail_fwd:
         return 0
     return None
