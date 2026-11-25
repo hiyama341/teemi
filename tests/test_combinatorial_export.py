@@ -1036,3 +1036,129 @@ def test_the_layout_can_drop_a_line_for_a_file_that_was_not_written():
     without = bundle_layout(["primers"], omit=(plate,))
     assert plate not in without, "omit= did not drop the line"
     assert tubes in without, "omit= took the rest of the entry with it"
+
+
+#: A library with a part bought as synthetic dsDNA rather than amplified: a 54
+#: bp signal peptide, which no primer pair will amplify and which is past the
+#: homology it would have to fold into.  ``primer_len_max`` is ANNEAL's 100,
+#: because a bought fragment costs each neighbour a full-length tail.
+def _ordered_raw():
+    import random
+
+    def dna(n, seed):
+        rng = random.Random(seed)
+        return "".join(rng.choice("ACGT") for _ in range(n))
+
+    def slot(part_id, sequence, **flags):
+        return {
+            "id": f"at_{part_id}",
+            "parts": [
+                {"id": part_id, "source": {"type": "inline", "sequence": sequence}}
+            ],
+            **flags,
+        }
+
+    return {
+        "design": {"name": "with a bought fragment", "topology": "linear"},
+        "positions": [
+            slot("pro", dna(500, 41)),
+            slot("sp", dna(54, 42), ordered=True),
+            slot("fp", dna(700, 43)),
+        ],
+        "primer_design": {"target_tm": 57.0, "junction": {"homology_length": 30}},
+        "constraints": {"primer_len_max": 100},
+    }
+
+
+@pytest.fixture(scope="module")
+def with_fragment():
+    return plan(
+        _ordered_raw(),
+        sources=SourceResolver(),
+        offline=True,
+        include_designs=True,
+    )
+
+
+def test_the_bundle_writes_the_fragments_to_buy_and_names_them_in_its_map(
+    with_fragment, tmp_path
+):
+    """A second order, in the folder and in the map, and only when there is one.
+
+    Written beside ``parts.csv`` because a synthetic fragment is something to
+    SOURCE: it is not an oligo, so putting it in ``02_primers`` would offer it
+    to the bulk oligo form that will not take it.
+    """
+    assert with_fragment.feasible, [d.message for d in with_fragment.errors]
+    folder = write_bundle(with_fragment, tmp_path / "build")
+    csv = folder / BUNDLE_PATHS["parts"] / "synthetic_fragments.csv"
+    fasta = folder / BUNDLE_PATHS["parts"] / "synthetic_fragments.fasta"
+    assert csv.is_file() and fasta.is_file()
+
+    layout = (folder / BUNDLE_PATHS["layout"]).read_text()
+    assert "synthetic_fragments.csv" in layout
+    assert "synthetic_fragments.fasta" in layout
+
+    rows = pd.read_csv(csv)
+    assert list(rows["part_id"]) == ["sp"]
+    assert int(rows["length_bp"].iloc[0]) == 54
+    assert rows["sequence(5'-3')"].iloc[0] == str(
+        _ordered_raw()["positions"][1]["parts"][0]["source"]["sequence"]
+    )
+    assert fasta.read_text().startswith(">sp 54 bp\n")
+
+
+def test_a_bundle_with_nothing_to_synthesise_does_not_promise_a_fragment_sheet(
+    linear, tmp_path
+):
+    """The same conditional the spec and the run record have, for one reason:
+    an empty sheet beside the oligos reads as "nothing to buy here" where
+    "nothing of this kind at all" is the fact."""
+    assert linear.ordered == ()
+    folder = write_bundle(linear, tmp_path / "build")
+    assert not (folder / BUNDLE_PATHS["parts"] / "synthetic_fragments.csv").exists()
+    layout = (folder / BUNDLE_PATHS["layout"]).read_text()
+    assert "synthetic_fragments" not in layout
+
+
+def test_the_summary_orders_the_fragments_as_their_own_category(
+    with_fragment, tmp_path
+):
+    """Someone reading the oligo count alone would order two thirds of this build.
+
+    So the fragment gets its own lines under WHAT TO ORDER, saying it is not an
+    oligo, how long it is, why it is being bought, and that no price is given
+    -- an oligo price per base is not a fragment quote.
+    """
+    folder = write_bundle(with_fragment, tmp_path / "build")
+    summary = (folder / BUNDLE_PATHS["summary"]).read_text()
+    assert "AND 1 synthetic dsDNA fragment" in summary
+    assert "NOT oligos" in summary
+    assert "sp" in summary and "54 bp" in summary
+    assert "spec asked for it" in summary
+    assert "no price is given here" in summary
+    assert "no primers and no PCR" in summary
+
+    # And it is nowhere in the oligo order itself.
+    order = pd.read_csv(folder / BUNDLE_PATHS["primers"] / "oligo_order_idt.csv")
+    sequence = _ordered_raw()["positions"][1]["parts"][0]["source"]["sequence"]
+    assert all(sequence not in str(row) for row in order["Sequence"])
+    assert len(order) == len(with_fragment.primers)
+
+
+def test_the_parts_table_says_a_bought_part_is_obtained_by_synthesis(
+    with_fragment, tmp_path
+):
+    """Zero reactions is also what a part that failed to design looks like.
+
+    So the table says which it is, and the bought part is in the sourcing list
+    at all -- reading it off ``fragment_ids`` alone dropped it out entirely,
+    since that field is the PCR list.
+    """
+    folder = write_bundle(with_fragment, tmp_path / "build")
+    parts = pd.read_csv(folder / BUNDLE_PATHS["parts"] / "parts.csv")
+    row = parts[parts["part_id"] == "sp"].iloc[0]
+    assert int(row["reactions"]) == 0
+    assert int(row["in_constructs"]) == 1
+    assert row["obtained_by"] == "synthesis"
+    assert parts[parts["part_id"] == "pro"].iloc[0]["obtained_by"] == "pcr"

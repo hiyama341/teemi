@@ -182,6 +182,9 @@ def test_to_dict_carries_what_a_caller_reads(result):
         "junctions",
         "primers",
         "pcrs",
+        # The second shopping list: what to buy as dsDNA rather than amplify.
+        # Its own key, because an oligo count that included it would be wrong.
+        "ordered_fragments",
         "diagnostics",
     }
     assert payload["variants"][0]["id"] == result.variants[0].id

@@ -142,10 +142,13 @@ class Pad(Part):
 class Position(_Frozen):
     """One slot of the library; the variants are the product of the positions.
 
-    The six flags are *slot-level* facts, following FLOW's ``construct_part``:
+    The flags are *slot-level* facts, following FLOW's ``construct_part``:
     they describe the place on the DNA, not the sequence that fills it, so
     several alternatives at one position cannot disagree about which strand the
     position sits on or whether its start codon survives the fusion.
+
+    :attr:`in_tail` and :attr:`ordered` are the two that change what is
+    *bought*: everything else here is amplified, one PCR per slot.
     """
 
     id: Slug
@@ -159,7 +162,21 @@ class Position(_Frozen):
     in_tail: bool = False
     """Build this part into the flanking primer tails instead of amplifying it.
     A request, not a command: a part too long to fit the primer budget comes
-    back as its own fragment with a warning saying so."""
+    back as an :attr:`ordered` fragment with a warning saying so."""
+
+    ordered: bool = False
+    """Buy this part as a synthetic double-stranded fragment and assemble it
+    as-is, with no PCR of its own.
+
+    The third thing a slot can be, beside amplified and :attr:`in_tail`, and
+    the only one that works for a part too short to design primers onto *and*
+    too long to fold into the tails.  Its two neighbours each carry a full
+    ``homology_length`` tail taken from this part -- pydna's documented
+    geometry for ``Amplicon`` next to ``Dseqrecord`` -- so the part is joined
+    without ever being a template.
+
+    Needs the same two things ``in_tail`` needs, and for the same reason: a
+    neighbour on both sides, and exactly one part at the slot."""
 
     no_tail_fwd: bool = False
     """Omit the homology tail on this part's forward primer, which is the one
@@ -459,42 +476,60 @@ class DesignSpec(_Frozen):
     def _check_flags(self) -> None:
         """What the slot flags need in order to mean anything.
 
-        ``in_tail`` removes a slot from the fragment list and splices it into
-        the junction between its neighbours, so it needs neighbours on both
-        sides and a single, known sequence: with variants, which junction you
-        get would depend on the choice made at a slot that is not a fragment.
+        ``in_tail`` and ``ordered`` both remove a slot from the *amplified*
+        list and leave it to the junction between its neighbours -- folded into
+        their two primer tails, or bought as a synthetic fragment those two
+        tails reach across.  Either way the slot needs neighbours on both sides
+        and a single, known sequence: with variants, which junction you get
+        would depend on the choice made at a slot that is not amplified.  They
+        are also mutually exclusive, since one says fold this into the tails
+        and the other says do not.
+
         ``no_tail_fwd`` and ``no_tail_rev`` each pin a junction's split to one
         end, so facing each other across one junction they ask for both ends at
         once.
         """
         for position in self.positions:
-            if not position.in_tail:
+            if position.in_tail and position.ordered:
+                raise ValueError(
+                    f"position {position.id!r} is both in_tail and ordered; "
+                    "in_tail folds the part into its neighbours' primer tails "
+                    "and ordered keeps it as a fragment of its own, so they "
+                    "cannot both hold"
+                )
+            if not (position.in_tail or position.ordered):
                 continue
             if len(position.parts) != 1:
+                flag = "in_tail" if position.in_tail else "ordered"
                 raise ValueError(
-                    f"position {position.id!r} is in_tail with "
-                    f"{len(position.parts)} variants; an in_tail slot rides in "
-                    "its neighbours' primer tails, so it must have exactly one "
-                    "part"
+                    f"position {position.id!r} is {flag} with "
+                    f"{len(position.parts)} variants; a {flag} slot is not "
+                    "amplified, so the junction between its neighbours would "
+                    "depend on it and it must have exactly one part"
                 )
+        unamplified = {
+            p.id for p in self.positions if p.in_tail or p.ordered
+        }
         slots = [
             slot_id
             for slot_id, _ in self.ordered_slots()
-            if slot_id not in {p.id for p in self.positions if p.in_tail}
+            if slot_id not in unamplified
         ]
         if len(slots) < 2:
             raise ValueError(
-                "fewer than two fragments are left once the in_tail slots are "
-                "built into the tails; there is nothing to join"
+                "fewer than two fragments are left to amplify once the "
+                "in_tail and ordered slots are taken out; there is nothing to "
+                "join"
             )
         order = [slot_id for slot_id, _ in self.ordered_slots()]
         by_id = {position.id: position for position in self.positions}
-        in_tail_ids = {p.id for p in self.positions if p.in_tail}
+        in_tail_ids = unamplified
         if self.design.topology == "linear":
             for edge in (order[0], order[-1]):
                 if edge in in_tail_ids:
+                    flag = "ordered" if by_id[edge].ordered else "in_tail"
                     raise ValueError(
-                        f"position {edge!r} is in_tail at the end of a linear "
+                        f"position {edge!r} is {flag} at the end of a linear "
                         "design, where there is no neighbour on both sides to "
                         "carry it"
                     )

@@ -108,6 +108,7 @@ __all__ = [
     "folded_fraction",
     "BLOCKING_BOUNDS",
     "Severity",
+    "SlotMode",
     "Violation",
     "Diagnostic",
     "FootprintError",
@@ -124,6 +125,8 @@ __all__ = [
     "design_junction",
     "junctions_for_spec",
     "Variant",
+    "Layout",
+    "plan_layout",
     "variants",
     "adjacent_part_pairs",
     "OligoPair",
@@ -189,6 +192,19 @@ PRIMER3_TEMP_C = 37.0
 INF = float("inf")
 
 Severity = Literal["info", "warning", "error", "critical"]
+
+#: How one slot reaches the product, and therefore what is bought for it.
+#:
+#: ``amplified`` is one PCR and two primers.  ``in_tail`` is no PCR: the
+#: sequence is folded into the two flanking primers.  ``ordered`` is no PCR and
+#: no primers either: the part is bought as a synthetic double-stranded
+#: fragment and assembled as-is, with each neighbour carrying a full
+#: ``homology_length`` tail taken from it.
+#:
+#: Three values rather than a ``rides_in_tail`` boolean because the boolean's
+#: false branch meant "amplified", and that is the one answer a part too short
+#: to amplify cannot be given.  See :class:`Layout`.
+SlotMode = Literal["amplified", "in_tail", "ordered"]
 
 #: The one bound whose breach means the design cannot be built as specified.
 #:
@@ -499,10 +515,11 @@ def design_footprints(
 ) -> Tuple[Dict[str, Footprints], Tuple[Diagnostic, ...]]:
     """Footprints for every amplified part and pad, plus the bounds they breach.
 
-    Only the amplified ones.  A part riding in its neighbours' primer tails is
-    never a template, so no primer anneals to it and asking for a footprint
-    would refuse a 9 bp Kozak sequence for being too short to do something it
-    was never going to do.
+    Only the amplified ones.  A part riding in its neighbours' primer tails, or
+    bought as a synthetic fragment, is never a template -- no primer anneals to
+    it -- so asking for a footprint would refuse a 9 bp Kozak sequence, or a 54
+    bp signal peptide, for being too short to do something it was never going
+    to do.
 
     Raises :class:`FootprintError` for a part no primer can anneal to -- shorter
     than ``footprint_len_min``, or one pydna cannot design against.  That is
@@ -511,7 +528,7 @@ def design_footprints(
     """
     amplified = {
         part.id
-        for _, parts in (layout or Layout.from_spec(spec)).fragments
+        for _, parts in (layout or Layout.from_spec(spec)).amplified
         for part in parts
     }
     footprints: Dict[str, Footprints] = {}
@@ -1084,6 +1101,22 @@ class Junction:
     Asking for 40 bp of homology gives 40, whether or not a Kozak sequence sits
     in the middle of it."""
 
+    ordered: str = ""
+    """A synthetic fragment sitting between the two parts, assembled as-is.
+
+    The other way a slot reaches the product without being amplified, and the
+    opposite accounting from :attr:`interposed`: the fragment is *not* inside
+    the homology, because it is a molecule of its own.  Each of the two parts
+    gets a full ``homology_length`` tail taken from it -- the upstream part's
+    reverse primer carries the reverse complement of its first L bases, the
+    downstream part's forward primer carries its last L bases -- which is
+    pydna's documented geometry for an ``Amplicon`` adjacent to a
+    ``Dseqrecord`` it is told not to absorb.  There is no split to search: both
+    tails are fixed at L by the fragment itself.
+
+    Mutually exclusive with :attr:`interposed`, which :func:`plan_layout`
+    guarantees by making every run of non-amplified slots homogeneous."""
+
     forced_t_f: Optional[int] = None
     """The only split allowed here, when a ``no_tail`` flag pins it.
 
@@ -1162,6 +1195,12 @@ class JunctionDesign:
     #: inside :attr:`homology`, which is why that can be longer than
     #: :attr:`homology_length`.
     interposed: str = ""
+    #: The synthetic fragment that sits between the two parts, if any.  Not
+    #: inside :attr:`homology`: it *is* what :attr:`homology` holds for such a
+    #: junction, because the two joins are its first and last
+    #: :attr:`homology_length` bases and there is no single shared stretch
+    #: between the two amplicons to report instead.
+    ordered: str = ""
     #: Who built these primers.  ``pydna`` is
     #: ``pydna.design.assembly_fragments`` and the default; ``sweep`` is this
     #: module's own search, which ``tune_overhangs`` turns on; ``forced`` is one
@@ -1191,6 +1230,7 @@ class JunctionDesign:
             "downstream_id": self.downstream_id,
             "homology_length": self.homology_length,
             "interposed": self.interposed,
+            "ordered": self.ordered,
             "designed_by": self.designed_by,
             "unavoidable": [list(pair) for pair in self.unavoidable],
             "homology": self.homology,
@@ -1246,6 +1286,16 @@ def _pydna_candidate(
     The split is read back off the primers pydna returned rather than computed:
     it distributes a linker as half to each side, so the tail lengths are not
     something to predict.
+
+    This is also the only path for a junction with an ``ordered`` fragment in
+    it, whatever ``tune_overhangs`` says, because there is nothing to search:
+    both tails are pinned at ``homology_length`` by the fragment.  pydna's
+    ``assembly_fragments`` is told not to absorb that fragment, by a ``maxlink``
+    below its length, and then gives each neighbour the full-length tail its
+    docstring promises for an ``Amplicon`` next to a ``Dseqrecord``.  Verified
+    against it rather than imitated: ``t_f`` and ``t_r`` come back as L each,
+    which sums to 2L and not to ``budget``, because two tails of L is what an
+    ordered fragment costs.
     """
     upstream = pcr(
         Primer(junction.upstream.forward),
@@ -1258,21 +1308,40 @@ def _pydna_candidate(
         Dseqrecord(junction.downstream_seq),
     )
     fragments: List[object] = [upstream]
-    if junction.interposed:
-        fragments.append(Dseqrecord(junction.interposed))
+    middle = junction.interposed or junction.ordered
+    if middle:
+        fragments.append(Dseqrecord(middle))
     fragments.append(downstream)
     tailed = assembly_fragments(
         fragments,
         overlap=junction.homology_length,
-        maxlink=spec.constraints.in_tail_max_bp,
+        # The one knob that decides whether pydna absorbs the fragment in the
+        # middle or leaves it standing.  Below its length it stands, and the
+        # two neighbours get a full ``overlap`` tail each instead of half of
+        # one; that is exactly what an ordered fragment is, so the maxlink is
+        # taken from the fragment rather than from the spec.  ``maxlink=0``
+        # would do as well and is less obviously about this fragment.
+        maxlink=(
+            len(junction.ordered) - 1
+            if junction.ordered
+            else spec.constraints.in_tail_max_bp
+        ),
     )
     forward = str(tailed[-1].forward_primer.seq)
     reverse = str(tailed[0].reverse_primer.seq)
-    homology = _shared_run(
-        str(tailed[0].seq),
-        str(tailed[-1].seq),
-        junction.homology_length + len(junction.interposed) + 8,
-    )
+    if junction.ordered:
+        # Not ``_shared_run``: there is no single stretch the two amplicons
+        # share.  They each share L bases with the fragment between them --
+        # its first L and its last L -- and on a fragment shorter than 2L
+        # those two overlap in the middle, which is what a run measured
+        # between the amplicons would find and report as the homology.
+        homology = junction.ordered
+    else:
+        homology = _shared_run(
+            str(tailed[0].seq),
+            str(tailed[-1].seq),
+            junction.homology_length + len(junction.interposed) + 8,
+        )
     forward_structures = oligo_structures(forward, conditions)
     reverse_structures = oligo_structures(reverse, conditions)
     return Candidate(
@@ -1371,9 +1440,9 @@ def design_junction(
     negative budget pointed at the parts for a failure that was neither of
     theirs.
 
-    :func:`plan_layout` catches the first case earlier and demotes the part to
-    its own fragment, so a spec that went through it does not arrive here.  A
-    hand-built :class:`Junction` still can.
+    :func:`plan_layout` catches the first case earlier and orders the part as a
+    synthetic fragment instead, so a spec that went through it does not arrive
+    here.  A hand-built :class:`Junction` still can.
     """
     if junction.budget < 0:
         raise JunctionError(
@@ -1394,9 +1463,15 @@ def design_junction(
         )
     settings = spec.primer_design.junction
     search = settings.split_search
-    if not settings.tune_overhangs and junction.forced_t_f is None:
+    if junction.ordered or (
+        not settings.tune_overhangs and junction.forced_t_f is None
+    ):
         # pydna's own tails.  Nothing is searched, so there is one candidate and
         # the homology is whatever it built; both are read back off the result.
+        #
+        # An ordered fragment comes here whatever the spec asked for, because
+        # the fragment pins both tails at the full homology_length and there is
+        # no split left to sweep or to force.
         chosen, homology = _pydna_candidate(junction, spec, conditions)
         return JunctionDesign(
             id=junction.id,
@@ -1407,6 +1482,7 @@ def design_junction(
             chosen=chosen,
             profile=((chosen.t_f, chosen.cost),),
             interposed=junction.interposed,
+            ordered=junction.ordered,
             designed_by="pydna",
         )
     if junction.forced_t_f is not None:
@@ -1510,58 +1586,112 @@ class Variant:
 
     :attr:`parts` is the whole construct, :attr:`fragments` only what is
     amplified.  They differ by the ``in_tail`` slots, which end up in the
-    product via the primer tails and therefore belong to the first and not the
+    product via the primer tails, and by the :attr:`ordered` ones, which are
+    bought as synthetic fragments -- both belong to the first and not the
     second.
     """
 
     id: str
     parts: Tuple[Part, ...]
     fragments: Tuple[Part, ...] = ()
+    #: The parts bought as synthetic double-stranded fragments, in assembly
+    #: order.  A subsequence of :attr:`parts` and disjoint from
+    #: :attr:`fragments`: these are assembled without being amplified, so they
+    #: are fragments of the *assembly* and not of the PCR list.
+    ordered: Tuple[Part, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
 class Layout:
-    """Which slots are amplified, and what rides in the tails between them.
+    """How each slot reaches the product: amplified, in a tail, or bought.
 
-    An ``in_tail`` slot is not a fragment: its sequence is built into the two
-    flanking primers instead, so the construct still contains it while one
-    fewer PCR is run.  That decision needs the sequences -- a part past
-    ``in_tail_max_bp`` is amplified after all -- so it is made once, here, and
-    everything downstream reads it rather than re-deriving it.
+    Three modes, and the difference between them is what you *buy*:
+
+    ``amplified``
+        One PCR, two primers.  The default, and the only mode for a part long
+        enough to be a template.
+
+    ``in_tail``
+        No PCR.  The sequence is built into the two flanking primers, so the
+        construct still contains it while one fewer reaction is run.  Needs the
+        part to fit both the tail budget (``in_tail_max_bp``) and the homology
+        it is spent out of (``homology_length``).
+
+    ``ordered``
+        No PCR and no primers of its own: the part is bought as a synthetic
+        double-stranded fragment and assembled as-is, with each neighbour
+        carrying a full ``homology_length`` tail taken from it.  This is the
+        mode for a part that fits neither of the other two -- short enough that
+        no primer pair will amplify it, long enough that folding it into the
+        tails would blow the oligo budget.  Signal peptides live here.
+
+    The mode needs the sequences -- a part past ``in_tail_max_bp`` cannot ride
+    in a tail -- so it is decided once, in :func:`plan_layout`, and everything
+    downstream reads it rather than re-deriving it.
     """
 
-    #: ``(slot_id, candidate parts, rides_in_tail)`` in assembly order.
-    slots: Tuple[Tuple[str, Tuple[Part, ...], bool], ...]
+    #: ``(slot_id, candidate parts, mode)`` in assembly order.
+    slots: Tuple[Tuple[str, Tuple[Part, ...], SlotMode], ...]
     diagnostics: Tuple[Diagnostic, ...] = ()
 
     @classmethod
     def from_spec(cls, spec: DesignSpec) -> "Layout":
         """The layout the spec asks for, before the sequences are known.
 
-        Honours every ``in_tail`` flag as written.  :func:`plan_layout` is the
-        one that can also decline a request, because only it has the lengths.
+        Honours every ``in_tail`` and ``ordered`` flag as written.
+        :func:`plan_layout` is the one that can also decline an ``in_tail``
+        request, because only it has the lengths.
         """
-        asked = {position.id for position in spec.positions if position.in_tail}
+        asked = {
+            position.id: ("in_tail" if position.in_tail else "ordered")
+            for position in spec.positions
+            if position.in_tail or position.ordered
+        }
         return cls(
             slots=tuple(
-                (slot_id, parts, slot_id in asked)
+                (slot_id, parts, asked.get(slot_id, "amplified"))
                 for slot_id, parts in spec.ordered_slots()
             )
         )
 
     @property
-    def fragments(self) -> Tuple[Tuple[str, Tuple[Part, ...]], ...]:
-        """The slots that become their own PCR."""
+    def amplified(self) -> Tuple[Tuple[str, Tuple[Part, ...]], ...]:
+        """The slots that become their own PCR.
+
+        What the library is the product of, what gets footprints, and what the
+        junctions run between -- an ``in_tail`` or ``ordered`` slot sits
+        *inside* a junction rather than ending one.
+        """
         return tuple(
-            (slot_id, parts) for slot_id, parts, tail in self.slots if not tail
+            (slot_id, parts)
+            for slot_id, parts, mode in self.slots
+            if mode == "amplified"
+        )
+
+    @property
+    def ordered(self) -> Tuple[Tuple[str, Tuple[Part, ...]], ...]:
+        """The slots bought as synthetic fragments."""
+        return tuple(
+            (slot_id, parts)
+            for slot_id, parts, mode in self.slots
+            if mode == "ordered"
         )
 
     def interposed(self, records: Mapping[str, Dseqrecord]) -> Dict[str, str]:
         """Slot id -> the sequence it contributes to its neighbours' tails."""
+        return self._sequences(records, "in_tail")
+
+    def ordered_sequences(self, records: Mapping[str, Dseqrecord]) -> Dict[str, str]:
+        """Slot id -> the sequence to have synthesised."""
+        return self._sequences(records, "ordered")
+
+    def _sequences(
+        self, records: Mapping[str, Dseqrecord], mode: "SlotMode"
+    ) -> Dict[str, str]:
         return {
             slot_id: str(records[parts[0].id].seq)
-            for slot_id, parts, tail in self.slots
-            if tail
+            for slot_id, parts, slot_mode in self.slots
+            if slot_mode == mode
         }
 
 
@@ -1581,19 +1711,43 @@ def plan_layout(
     and the second limit only surfaces once a design lowers its homology --
     or, at those defaults, for a part between 36 and 40 bp.
 
-    Both failures demote rather than raise.  One more PCR is a design; the
-    :class:`JunctionError` the second one used to reach instead took the whole
-    library down to nothing, which is a worse answer to a request nobody has
-    to honour literally.
+    **Both failures demote to ``ordered``, not to amplified.**  Amplifying is
+    not an option for the parts that trigger these limits, which is the whole
+    trouble: a part short enough to be asked into the tails is usually too
+    short to design a primer pair onto.  A 54 bp signal peptide demoted to its
+    own fragment came back from ``pcr`` as *"No PCR product! Template 54 bp
+    linear limit=13: No forward primers anneal"*, and the whole library with
+    it.  Buying it as a synthetic fragment always works, needs no primers of
+    its own, and costs one purchase rather than one impossible reaction.  Both
+    demotions are warnings rather than errors for the same reason the old ones
+    were: a request nobody has to honour literally should not take a library
+    down to nothing.
+
+    An ``ordered`` flag written in the spec is honoured as written -- neither
+    limit applies to it, since nothing is being folded into a tail -- and so
+    is a plain amplified slot, which was never a request about tails at all.
+
+    One more rule, and it is about runs.  Consecutive non-amplified slots share
+    one junction, so they are built together; and a run that contains an
+    ``ordered`` slot is bought as **one** synthetic fragment, which pulls any
+    ``in_tail`` slot in that run into it.  Two synthetic fragments side by side
+    would share no sequence and could not be joined, and an in_tail part next
+    to one would have to be added on top of a full-length tail.  Folding the
+    run into a single piece is the buildable reading, and it is reported.
     """
-    asked = {position.id for position in spec.positions if position.in_tail}
+    modes = {
+        position.id: ("in_tail" if position.in_tail else "ordered")
+        for position in spec.positions
+        if position.in_tail or position.ordered
+    }
     limit = spec.constraints.in_tail_max_bp
     homology = spec.primer_design.junction.homology_length
-    slots: List[Tuple[str, Tuple[Part, ...], bool]] = []
+    slots: List[Tuple[str, Tuple[Part, ...], SlotMode]] = []
     notes: List[Diagnostic] = []
     for slot_id, parts in spec.ordered_slots():
-        if slot_id not in asked:
-            slots.append((slot_id, parts, False))
+        mode: SlotMode = modes.get(slot_id, "amplified")
+        if mode != "in_tail":
+            slots.append((slot_id, parts, mode))
             continue
         length = len(records[parts[0].id])
         if length > limit:
@@ -1604,13 +1758,14 @@ def plan_layout(
                     message=(
                         f"{slot_id}: in_tail was asked for but the part is "
                         f"{length} bp, past in_tail_max_bp {limit}; it would be "
-                        "added to both flanking primers, so it is amplified as "
-                        "its own fragment instead"
+                        "added to both flanking primers, so it is ordered as a "
+                        "synthetic fragment instead and assembled without a PCR "
+                        "of its own"
                     ),
                     part_id=parts[0].id,
                 )
             )
-            slots.append((slot_id, parts, False))
+            slots.append((slot_id, parts, "ordered"))
             continue
         if length > homology:
             # Strictly greater: at length == homology the budget is zero, which
@@ -1627,46 +1782,121 @@ def plan_layout(
                         "what rides in the tails is spent out of the homology "
                         "rather than added to it, so this part is "
                         f"{length - homology} bp more than the whole homology; "
-                        "it is amplified as its own fragment instead"
+                        "it is ordered as a synthetic fragment instead and "
+                        "assembled without a PCR of its own"
                     ),
                     part_id=parts[0].id,
                 )
             )
-            slots.append((slot_id, parts, False))
+            slots.append((slot_id, parts, "ordered"))
             continue
-        slots.append((slot_id, parts, True))
-    return Layout(slots=tuple(slots), diagnostics=tuple(notes))
+        slots.append((slot_id, parts, "in_tail"))
+    slots, run_notes = _fold_runs(slots, circular=spec.design.topology == "circular")
+    return Layout(slots=tuple(slots), diagnostics=tuple(notes) + run_notes)
+
+
+def _fold_runs(
+    slots: Sequence[Tuple[str, Tuple[Part, ...], "SlotMode"]], *, circular: bool
+) -> Tuple[List[Tuple[str, Tuple[Part, ...], "SlotMode"]], Tuple[Diagnostic, ...]]:
+    """Make every run of non-amplified slots homogeneous.
+
+    A run between two amplified neighbours is built as one thing -- one pair of
+    tails, or one synthetic fragment -- so a run cannot be half of each.  Any
+    run holding at least one ``ordered`` slot becomes wholly ordered, since the
+    alternative is two unjoinable synthetic pieces or a tail carrying a part on
+    top of a full-length homology.  A promoted slot is reported with the part
+    it was promoted next to, because the person who asked for ``in_tail`` is
+    now buying DNA.
+    """
+    out = [list(slot) for slot in slots]
+    notes: List[Diagnostic] = []
+    indices = range(len(out))
+    runs: List[List[int]] = []
+    current: List[int] = []
+    for index in indices:
+        if out[index][2] == "amplified":
+            if current:
+                runs.append(current)
+                current = []
+            continue
+        current.append(index)
+    if current:
+        runs.append(current)
+    # A circular design's first and last runs touch, so they are one run.
+    if (
+        circular
+        and len(runs) > 1
+        and runs[0][0] == 0
+        and runs[-1][-1] == len(out) - 1
+    ):
+        runs[0] = runs[-1] + runs[0]
+        runs.pop()
+    for run in runs:
+        if not any(out[index][2] == "ordered" for index in run):
+            continue
+        anchor = next(
+            out[index][1][0].id for index in run if out[index][2] == "ordered"
+        )
+        for index in run:
+            if out[index][2] != "in_tail":
+                continue
+            out[index][2] = "ordered"
+            notes.append(
+                Diagnostic(
+                    severity="warning",
+                    code="in_tail_folded_into_ordered",
+                    message=(
+                        f"{out[index][0]}: in_tail was asked for but it sits "
+                        f"next to {anchor}, which is ordered as a synthetic "
+                        "fragment; the two are adjacent in the construct, so "
+                        "they are bought as one fragment rather than one of "
+                        "them riding on top of the other's full-length tail"
+                    ),
+                    part_id=out[index][1][0].id,
+                )
+            )
+    return [tuple(slot) for slot in out], tuple(notes)  # type: ignore[misc]
 
 
 def variants(spec: DesignSpec, layout: Optional[Layout] = None) -> Tuple[Variant, ...]:
     """The library: the product of the positions, pads in place.
 
     :attr:`Variant.parts` is the whole construct in order, including whatever
-    rides in the tails, because that is what the product has to come out equal
-    to.  :attr:`Variant.fragments` is only what gets amplified.
+    rides in the tails or is bought as a synthetic fragment, because that is
+    what the product has to come out equal to.  :attr:`Variant.fragments` is
+    only what gets amplified; :attr:`Variant.ordered` is what gets bought.
     """
     layout = layout or Layout.from_spec(spec)
-    fragment_slots = layout.fragments
+    amplified = layout.amplified
     return tuple(
         _variant(spec, layout, combination)
-        for combination in itertools.product(*(parts for _, parts in fragment_slots))
+        for combination in itertools.product(*(parts for _, parts in amplified))
     )
 
 
 def _variant(
     spec: DesignSpec, layout: Layout, chosen: Tuple[Part, ...]
 ) -> Variant:
-    """Put one combination of fragments back into the full construct order."""
+    """Put one combination of amplified fragments back into construct order."""
     picks = iter(chosen)
     order: List[Part] = []
-    for _, parts, tail in layout.slots:
-        order.append(parts[0] if tail else next(picks))
+    ordered: List[Part] = []
+    for _, parts, mode in layout.slots:
+        if mode == "amplified":
+            order.append(next(picks))
+            continue
+        # An in_tail or ordered slot has exactly one part, which the spec
+        # enforces precisely so that this does not depend on a choice.
+        order.append(parts[0])
+        if mode == "ordered":
+            ordered.append(parts[0])
     return Variant(
         id=ID_SEPARATOR.join(
             part.id for part in order if not isinstance(part, Pad)
         ),
         parts=tuple(order),
         fragments=chosen,
+        ordered=tuple(ordered),
     )
 
 
@@ -1679,10 +1909,10 @@ def adjacent_part_pairs(
     between two parts is the same junction whatever else the variant contains,
     so it is designed once and reused by every variant that contains it.
 
-    Adjacency is between *fragments*: an ``in_tail`` slot does not break one, it
-    sits inside it.
+    Adjacency is between *amplified* slots: an ``in_tail`` or ``ordered`` slot
+    does not break one, it sits inside it.
     """
-    slots = (layout or Layout.from_spec(spec)).fragments
+    slots = (layout or Layout.from_spec(spec)).amplified
     adjacencies = list(zip(slots, slots[1:]))
     if spec.design.topology == "circular":
         adjacencies.append((slots[-1], slots[0]))
@@ -1704,65 +1934,91 @@ def junctions_for_spec(
     """Design each unique adjacency once, keyed by its part-id pair."""
     homology_length = spec.primer_design.junction.homology_length
     layout = layout or Layout.from_spec(spec)
-    between = _interposed_between(spec, layout, records)
+    interposed, ordered = _between(spec, layout, records)
     slot_of = {
         part.id: position
         for position in spec.positions
         for part in position.parts
     }
-    return {
-        (upstream_id, downstream_id): design_junction(
-            Junction(
-                upstream=footprints[upstream_id],
-                downstream=footprints[downstream_id],
-                upstream_seq=str(records[upstream_id].seq),
-                downstream_seq=str(records[downstream_id].seq),
-                homology_length=homology_length,
-                interposed=between.get((upstream_id, downstream_id), ""),
-                forced_t_f=_forced_split(
+
+    def junction_for(upstream_id: str, downstream_id: str) -> Junction:
+        key = (upstream_id, downstream_id)
+        middle = interposed.get(key, "")
+        synthetic = ordered.get(key, "")
+        return Junction(
+            upstream=footprints[upstream_id],
+            downstream=footprints[downstream_id],
+            upstream_seq=str(records[upstream_id].seq),
+            downstream_seq=str(records[downstream_id].seq),
+            homology_length=homology_length,
+            interposed=middle,
+            ordered=synthetic,
+            # A no_tail flag asks for one of the two tails to be left bare,
+            # which an ordered fragment has already decided: both tails are the
+            # full homology, taken from the fragment.  Nothing is pinned here
+            # rather than pinning something that cannot be honoured.
+            forced_t_f=(
+                None
+                if synthetic
+                else _forced_split(
                     slot_of.get(upstream_id),
                     slot_of.get(downstream_id),
-                    homology_length
-                    - len(between.get((upstream_id, downstream_id), "")),
-                ),
+                    homology_length - len(middle),
+                )
             ),
-            spec,
-            conditions,
+        )
+
+    return {
+        (upstream_id, downstream_id): design_junction(
+            junction_for(upstream_id, downstream_id), spec, conditions
         )
         for upstream_id, downstream_id in adjacent_part_pairs(spec, layout)
     }
 
 
-def _interposed_between(
+def _between(
     spec: DesignSpec, layout: Layout, records: Mapping[str, Dseqrecord]
-) -> Dict[Tuple[str, str], str]:
-    """What rides in the tails of each fragment adjacency.
+) -> Tuple[Dict[Tuple[str, str], str], Dict[Tuple[str, str], str]]:
+    """``(what rides in the tails, what is ordered)`` per amplified adjacency.
 
-    Consecutive ``in_tail`` slots concatenate in order, so two short elements
-    between the same pair of fragments both end up in the product once.
+    Consecutive non-amplified slots concatenate in order, so two short elements
+    between the same pair of amplified fragments both end up in the product
+    once -- as one pair of tails, or as one synthetic fragment.  Which of the
+    two a run is has already been settled by :func:`plan_layout`, which makes
+    every run homogeneous, so a run contributes to exactly one of the two maps.
     """
     riding = layout.interposed(records)
+    synthetic = layout.ordered_sequences(records)
     order = list(layout.slots)
     if spec.design.topology == "circular":
         order = order + order[: len(order)]
-    between: Dict[Tuple[str, str], str] = {}
-    pending: List[str] = []
+    interposed: Dict[Tuple[str, str], str] = {}
+    ordered: Dict[Tuple[str, str], str] = {}
+    pending: List[Tuple[SlotMode, str]] = []
     previous: Optional[Tuple[str, Tuple[Part, ...]]] = None
     seen = 0
-    for slot_id, parts, tail in order:
-        if tail:
-            pending.append(riding[slot_id])
+    for slot_id, parts, mode in order:
+        if mode != "amplified":
+            pending.append(
+                (mode, riding[slot_id] if mode == "in_tail" else synthetic[slot_id])
+            )
             continue
         if previous is not None:
+            target = (
+                ordered
+                if any(kind == "ordered" for kind, _ in pending)
+                else interposed
+            )
+            sequence = "".join(sequence for _, sequence in pending)
             for part_a in previous[1]:
                 for part_b in parts:
-                    between[(part_a.id, part_b.id)] = "".join(pending)
+                    target[(part_a.id, part_b.id)] = sequence
         previous = (slot_id, parts)
         pending = []
         seen += 1
-        if seen > len(layout.fragments):
+        if seen > len(layout.amplified):
             break
-    return between
+    return interposed, ordered
 
 
 def _forced_split(
@@ -1815,9 +2071,10 @@ def variant_oligos(
     last fragment's reverse primer are the bare footprints, with no tail; in a
     circular one the last fragment joins the first and every primer is tailed.
 
-    Only the fragments: an ``in_tail`` part has no PCR of its own, and its
-    sequence reaches the product through the tails of the two primers either
-    side of it.
+    Only the amplified fragments.  An ``in_tail`` part has no PCR of its own
+    and its sequence reaches the product through the tails of the two primers
+    either side of it; an ``ordered`` part has no PCR and no primers at all,
+    because it is bought as a fragment and only ever assembled.
     """
     parts = variant.fragments or variant.parts
     count = len(parts)
