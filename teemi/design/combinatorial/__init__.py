@@ -98,6 +98,8 @@ from teemi.design.combinatorial.report import (
     plan,
     primer_dataframe,
     primer_uses_dataframe,
+    synthetic_fragment_dataframe,
+    synthetic_fragments_fasta,
     variant_overview_dataframe,
 )
 from teemi.design.combinatorial.simulate import Verification
@@ -113,6 +115,10 @@ __all__ = [
     "primer_uses_dataframe",
     "pcr_dataframe",
     "pcr_worklist_dataframe",
+    # The second order: what to BUY as dsDNA rather than amplify.  Beside the
+    # oligo tables and not inside them, because it is a different purchase.
+    "synthetic_fragment_dataframe",
+    "synthetic_fragments_fasta",
     "tube_frame",
     "plate_frames",
     "primers_fasta",

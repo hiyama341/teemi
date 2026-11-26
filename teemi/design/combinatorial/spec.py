@@ -142,10 +142,13 @@ class Pad(Part):
 class Position(_Frozen):
     """One slot of the library; the variants are the product of the positions.
 
-    The six flags are *slot-level* facts, following FLOW's ``construct_part``:
+    The flags are *slot-level* facts, following FLOW's ``construct_part``:
     they describe the place on the DNA, not the sequence that fills it, so
     several alternatives at one position cannot disagree about which strand the
     position sits on or whether its start codon survives the fusion.
+
+    :attr:`in_tail` and :attr:`ordered` are the two that change what is
+    *bought*: everything else here is amplified, one PCR per slot.
     """
 
     id: Slug
@@ -158,8 +161,29 @@ class Position(_Frozen):
 
     in_tail: bool = False
     """Build this part into the flanking primer tails instead of amplifying it.
-    A request, not a command: a part too long to fit the primer budget comes
-    back as its own fragment with a warning saying so."""
+
+    There is no limit from ``homology_length``: a part longer than the whole
+    overlap folds, with the overlap then sitting inside the part.  The only
+    limit is how long an oligo the fold costs, and
+    :meth:`DesignSpec.in_tail_limit` derives it.  A part past that comes back as
+    an ERROR naming the remedies -- a larger ``primer_len_max``, a shorter
+    ``homology_length``, or :attr:`ordered` on the slot -- and stays folded, so
+    the over-length primer is reported too.  Nothing is bought on the caller's
+    behalf."""
+
+    ordered: bool = False
+    """Buy this part as a synthetic double-stranded fragment and assemble it
+    as-is, with no PCR of its own.
+
+    The third thing a slot can be, beside amplified and :attr:`in_tail`, and
+    the only one that works for a part too short to design primers onto *and*
+    too long to fold into the tails.  Its two neighbours each carry a full
+    ``homology_length`` tail taken from this part -- pydna's documented
+    geometry for ``Amplicon`` next to ``Dseqrecord`` -- so the part is joined
+    without ever being a template.
+
+    Needs the same two things ``in_tail`` needs, and for the same reason: a
+    neighbour on both sides, and exactly one part at the slot."""
 
     no_tail_fwd: bool = False
     """Omit the homology tail on this part's forward primer, which is the one
@@ -323,12 +347,26 @@ class Constraints(_Frozen):
     homodimer_dg_min: float = Field(default=-6.0, le=0.0)
     heterodimer_dg_min: float = Field(default=-6.0, le=0.0)
     three_prime_dimer_dg_min: float = Field(default=-9.0, le=0.0)
-    in_tail_max_bp: int = Field(default=40, ge=0)
-    """Longest part that may ride in the primer tails rather than be amplified.
+    in_tail_max_bp: Optional[int] = Field(default=None, ge=0)
+    """An EXTRA cap on what may ride in the primer tails; ``None`` for none.
 
-    pydna's ``assembly_fragments`` calls this ``maxlink`` and defaults it to 40,
-    which is where the number comes from.  Above it the part comes back as its
-    own fragment with a warning."""
+    ``None`` is the default and means "use the derived bound", which is
+    :meth:`DesignSpec.in_tail_limit` -- the real limit, stated and measured
+    there.  Set an integer only to fold LESS than the oligos could carry.
+
+    It used to default to 40, copied from pydna's ``maxlink``, and a constant
+    cannot be this limit.  What a fold costs is the two tails, whose combined
+    length is ``homology_length + part`` whatever the split, so the ceiling is a
+    function of ``primer_len_max``, ``homology_length`` and the two neighbours'
+    Tm-driven footprints.  At ``homology_length`` 50 with ``primer_len_max`` 60
+    that comes out at 34, so 40 let through a fold whose primer then breached
+    ``primer_len_max``; at ``homology_length`` 30 with ``primer_len_max`` 100 it
+    comes out at 114, so 40 refused the 54 bp signal peptide this package exists
+    to build -- which folds into a 61 nt oligo.
+
+    Whatever is set here, the derived bound still applies on top of it: a cap
+    above what the oligos can carry is not a permission the synthesiser will
+    honour."""
 
     structure_tm_margin_c: float = Field(default=0.0, ge=-20.0, le=40.0)
     """How close a hairpin or dimer may melt to where the primer must anneal.
@@ -459,42 +497,60 @@ class DesignSpec(_Frozen):
     def _check_flags(self) -> None:
         """What the slot flags need in order to mean anything.
 
-        ``in_tail`` removes a slot from the fragment list and splices it into
-        the junction between its neighbours, so it needs neighbours on both
-        sides and a single, known sequence: with variants, which junction you
-        get would depend on the choice made at a slot that is not a fragment.
+        ``in_tail`` and ``ordered`` both remove a slot from the *amplified*
+        list and leave it to the junction between its neighbours -- folded into
+        their two primer tails, or bought as a synthetic fragment those two
+        tails reach across.  Either way the slot needs neighbours on both sides
+        and a single, known sequence: with variants, which junction you get
+        would depend on the choice made at a slot that is not amplified.  They
+        are also mutually exclusive, since one says fold this into the tails
+        and the other says do not.
+
         ``no_tail_fwd`` and ``no_tail_rev`` each pin a junction's split to one
         end, so facing each other across one junction they ask for both ends at
         once.
         """
         for position in self.positions:
-            if not position.in_tail:
+            if position.in_tail and position.ordered:
+                raise ValueError(
+                    f"position {position.id!r} is both in_tail and ordered; "
+                    "in_tail folds the part into its neighbours' primer tails "
+                    "and ordered keeps it as a fragment of its own, so they "
+                    "cannot both hold"
+                )
+            if not (position.in_tail or position.ordered):
                 continue
             if len(position.parts) != 1:
+                flag = "in_tail" if position.in_tail else "ordered"
                 raise ValueError(
-                    f"position {position.id!r} is in_tail with "
-                    f"{len(position.parts)} variants; an in_tail slot rides in "
-                    "its neighbours' primer tails, so it must have exactly one "
-                    "part"
+                    f"position {position.id!r} is {flag} with "
+                    f"{len(position.parts)} variants; a {flag} slot is not "
+                    "amplified, so the junction between its neighbours would "
+                    "depend on it and it must have exactly one part"
                 )
+        unamplified = {
+            p.id for p in self.positions if p.in_tail or p.ordered
+        }
         slots = [
             slot_id
             for slot_id, _ in self.ordered_slots()
-            if slot_id not in {p.id for p in self.positions if p.in_tail}
+            if slot_id not in unamplified
         ]
         if len(slots) < 2:
             raise ValueError(
-                "fewer than two fragments are left once the in_tail slots are "
-                "built into the tails; there is nothing to join"
+                "fewer than two fragments are left to amplify once the "
+                "in_tail and ordered slots are taken out; there is nothing to "
+                "join"
             )
         order = [slot_id for slot_id, _ in self.ordered_slots()]
         by_id = {position.id: position for position in self.positions}
-        in_tail_ids = {p.id for p in self.positions if p.in_tail}
+        in_tail_ids = unamplified
         if self.design.topology == "linear":
             for edge in (order[0], order[-1]):
                 if edge in in_tail_ids:
+                    flag = "ordered" if by_id[edge].ordered else "in_tail"
                     raise ValueError(
-                        f"position {edge!r} is in_tail at the end of a linear "
+                        f"position {edge!r} is {flag} at the end of a linear "
                         "design, where there is no neighbour on both sides to "
                         "carry it"
                     )
@@ -558,6 +614,79 @@ class DesignSpec(_Frozen):
                 "accept='argmin' with all-zero objective weights would pick an "
                 "arbitrary split"
             )
+
+    def in_tail_limit(
+        self,
+        forward_footprint: Optional[int] = None,
+        reverse_footprint: Optional[int] = None,
+    ) -> int:
+        """The longest part this spec can fold into the tails, derived.
+
+        THE GEOMETRY.  A part of length ``P`` riding in the tails at homology
+        ``L``, between an upstream neighbour whose reverse footprint is
+        ``f_rev`` and a downstream one whose forward footprint is ``f_fwd``,
+        gives two tailed primers:
+
+            len(forward) = t_f + f_fwd
+            len(reverse) = t_r + f_rev     with t_f + t_r = L + P
+
+        where ``t_f`` and ``t_r`` are whole tails -- each one reaches back
+        across its share of the part and on into the neighbour beyond it, and
+        together they span the part once and the homology once, which is why
+        their total is ``L + P`` and not ``L``.  So
+        ``len(forward) + len(reverse) = P + L + f_fwd + f_rev``, which does not
+        contain ``t_f`` **at all**.  The split moves length from one primer
+        to the other and cannot remove any, so the shortest the longer of the
+        two can be is half the total:
+
+            min over splits of max(len) >= ceil((P + L + f_fwd + f_rev) / 2)
+
+        Requiring that to clear ``primer_len_max`` rearranges to
+
+            P <= 2 * primer_len_max - L - f_fwd - f_rev
+
+        which is what this returns.  There is no special case anywhere in it --
+        no length of part, and no relation between ``P`` and ``L``, gets its own
+        rule -- because the total above holds for every split there is.
+        Measured over 108 combinations of ``P``, ``L`` and the two footprints:
+        no split's longest oligo ever came in under ``ceil(total / 2)``, and
+        where the balancing split was reachable the sweep landed on it exactly.
+
+        A NECESSARY CONDITION, not a sufficient one, for two reasons.  The
+        footprints default to ``footprint_len_min`` here because the layout is
+        decided before they are designed, and a real footprint is only ever
+        longer -- so a part under this bound may still not fit, and that breach
+        is reported exactly, by primer and by number, against
+        ``primer_len_max``.  And the bound is the minimax over splits, which
+        only a search reaches: the default path takes pydna's own even split of
+        the geometry and so pays up to half the footprints' difference on top
+        (measured: 7 nt of it at footprints of 18 and 32), while a balancing
+        split outside what the two neighbours can supply is clamped and longer
+        again.  Pass the real footprint lengths to tighten it.
+
+        ``homology_length`` is in the formula but is NOT a separate limit, and
+        reading it as one was a real defect: a part longer than the whole
+        homology is perfectly foldable, because the overlap does not have to
+        contain the part.  Once the part is the longer of the two, the homology
+        sits inside THE PART -- both amplicons share L bases of the part itself
+        and neither neighbour contributes any of the overlap.  See
+        :attr:`~teemi.design.combinatorial.design.Junction.tail_total`.
+        """
+        footprint = self.primer_design.footprint_len_min
+        forward = footprint if forward_footprint is None else forward_footprint
+        reverse = footprint if reverse_footprint is None else reverse_footprint
+        derived = (
+            2 * self.constraints.primer_len_max
+            - self.primer_design.junction.homology_length
+            - forward
+            - reverse
+        )
+        capped = (
+            derived
+            if self.constraints.in_tail_max_bp is None
+            else min(derived, self.constraints.in_tail_max_bp)
+        )
+        return max(0, capped)
 
     def ordered_slots(self) -> Tuple[Tuple[str, Tuple[Part, ...]], ...]:
         """Fragments in assembly order: ``(slot_id, candidate parts)`` per slot.

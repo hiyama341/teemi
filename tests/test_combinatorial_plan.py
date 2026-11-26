@@ -59,6 +59,10 @@ def test_the_public_surface_is_small_and_complete():
             "variant_overview_dataframe",
             "primer_dataframe",
             "pcr_dataframe",
+            # The second order: synthetic dsDNA fragments, which are not oligos
+            # and so are deliberately absent from the primer tables.
+            "synthetic_fragment_dataframe",
+            "synthetic_fragments_fasta",
             "write_genbank_files",
             "write_assembly_figures",
             "DesignSpec",

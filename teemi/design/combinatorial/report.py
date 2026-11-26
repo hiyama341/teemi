@@ -63,6 +63,7 @@ from teemi.design.combinatorial.design import (
     Footprints,
     JunctionDesign,
     JunctionError,
+    Layout,
     OligoPair,
     OligoStructures,
     PairStructures,
@@ -94,11 +95,14 @@ __all__ = [
     "InfeasibleDesignError",
     "PrimerRecord",
     "PcrRecord",
+    "SyntheticFragment",
     "VariantPlan",
     "DesignResult",
     "plan",
     "variant_overview_dataframe",
     "primer_dataframe",
+    "synthetic_fragment_dataframe",
+    "synthetic_fragments_fasta",
     "pcr_dataframe",
     "pcr_worklist_dataframe",
     "whole_ties_down",
@@ -451,6 +455,51 @@ class PcrRecord:
 
 
 @dataclass(frozen=True, slots=True)
+class SyntheticFragment:
+    """One part bought as synthetic double-stranded DNA rather than amplified.
+
+    A **purchase of a different kind from an oligo**, and the reason this is its
+    own record rather than a row in the primer table.  An oligo is priced per
+    base, ordered by the hundred, and arrives single-stranded in a tube; a
+    synthetic fragment is quoted by the vendor against its length and sequence
+    and arrives ready to put in the assembly.  Putting the two in one table
+    would make the oligo count and the oligo price wrong, and would offer a
+    fragment to a bulk-oligo form that will not take it.
+
+    No price, deliberately.  ``objective.price_per_base`` is an oligo price;
+    vendors quote fragments by length tier, against the sequence, so a number
+    derived from the oligo price here would read as a quote and be wrong.  The
+    length and the sequence are what a quote is asked for with, and they are
+    both here.
+    """
+
+    part_id: str
+    #: The position the fragment sits at, by name if the spec gave one.
+    position: str
+    sequence: str
+    #: Which slot mode request produced it: ``asked`` when the spec said
+    #: ``ordered``, or the diagnostic code of the ``in_tail`` request that
+    #: could not be honoured.
+    because: str
+    #: How many of the library's constructs contain it.
+    in_constructs: int = 0
+
+    @property
+    def length_bp(self) -> int:
+        return len(self.sequence)
+
+    def to_dict(self) -> dict:
+        return {
+            "part_id": self.part_id,
+            "position": self.position,
+            "length_bp": self.length_bp,
+            "in_constructs": self.in_constructs,
+            "because": self.because,
+            "sequence": self.sequence,
+        }
+
+
+@dataclass(frozen=True, slots=True)
 class VariantPlan:
     """One member of the library: what it is made of and whether it assembles.
 
@@ -471,6 +520,10 @@ class VariantPlan:
     #: numbered.  Assigned in the order the variants come out of the spec, so
     #: it is stable for a given spec.
     number: int = 0
+    #: The parts of this construct bought as synthetic fragments: assembled,
+    #: but with no PCR and no primers, so they are deliberately NOT in
+    #: :attr:`fragment_ids`, which is the PCR list.
+    ordered_ids: Tuple[str, ...] = ()
 
     @property
     def label(self) -> str:
@@ -483,6 +536,7 @@ class VariantPlan:
             "id": self.id,
             "choices": [list(choice) for choice in self.choices],
             "fragment_ids": list(self.fragment_ids),
+            "ordered_ids": list(self.ordered_ids),
             "length_bp": self.length_bp,
             "verification": self.verification.to_dict(),
         }
@@ -499,6 +553,9 @@ class DesignResult:
     primers: Tuple[PrimerRecord, ...] = ()
     pcrs: Tuple[PcrRecord, ...] = ()
     variants: Tuple[VariantPlan, ...] = ()
+    #: The parts to buy as synthetic double-stranded DNA, one record each.
+    #: A second shopping list beside :attr:`primers`, not part of it.
+    ordered: Tuple[SyntheticFragment, ...] = ()
 
     @property
     def errors(self) -> Tuple[Diagnostic, ...]:
@@ -578,6 +635,19 @@ class DesignResult:
                 f"  {len(self.primers)} primers (longest {longest} nt), "
                 f"{len(self.pcrs)} PCRs, "
                 f"{self.price:.0f} {self.spec.objective.currency}",
+                # A second purchase, on its own line and without a price: an
+                # oligo price per base is not a fragment quote.
+                *(
+                    [
+                        f"  {len(self.ordered)} synthetic fragments ("
+                        + ", ".join(
+                            f"{f.part_id} {f.length_bp} bp" for f in self.ordered
+                        )
+                        + "), quoted by the vendor"
+                    ]
+                    if self.ordered
+                    else []
+                ),
                 "  assembly: "
                 + ", ".join(
                     f"{n} {verdict}" for verdict, n in sorted(verdicts.items())
@@ -617,6 +687,7 @@ class DesignResult:
             "junctions": [j.to_dict() for j in self.junctions],
             "primers": [p.to_dict() for p in self.primers],
             "pcrs": [p.to_dict() for p in self.pcrs],
+            "ordered_fragments": [f.to_dict() for f in self.ordered],
             "diagnostics": [d.to_dict() for d in self.diagnostics],
         }
 
@@ -766,6 +837,7 @@ def plan(
 
     return DesignResult(
         spec=validated,
+        ordered=_ordered_fragments(validated, layout, records, library),
         diagnostics=(
             tuple(flag_notes)
             + layout.diagnostics
@@ -779,6 +851,49 @@ def plan(
         primers=primers,
         pcrs=pcrs,
         variants=plans,
+    )
+
+
+def _ordered_fragments(
+    spec: DesignSpec,
+    layout: Layout,
+    records: Mapping[str, Dseqrecord],
+    library: Sequence[Variant],
+) -> Tuple[SyntheticFragment, ...]:
+    """The second shopping list: what to have synthesised, one record each.
+
+    Built from the layout rather than from the variants, so a fragment is
+    reported once however many constructs contain it -- the same reasoning the
+    primer table is deduplicated by molecule under.  ``because`` carries which
+    request produced it: ``"asked"`` for a slot the spec marked ``ordered``,
+    and otherwise the diagnostic code that pulled the slot in -- which today
+    means ``in_tail_folded_into_ordered``, an ``in_tail`` slot sitting against
+    an ordered one, since two synthetic fragments side by side share no
+    sequence and have to be bought as a single piece.  A fold that will not fit
+    is never one of these: it is reported as an error and left folded.
+    """
+    asked = {position.id for position in spec.positions if position.ordered}
+    reasons = {
+        note.part_id: note.code
+        for note in layout.diagnostics
+        if note.part_id is not None
+    }
+    names: Dict[str, str] = {}
+    for position in spec.positions:
+        for part in position.parts:
+            names[part.id] = position.name or position.id
+    counts = Counter(
+        part_id for variant in library for part_id in (p.id for p in variant.ordered)
+    )
+    return tuple(
+        SyntheticFragment(
+            part_id=parts[0].id,
+            position=names.get(parts[0].id, slot_id),
+            sequence=str(records[parts[0].id].seq),
+            because="asked" if slot_id in asked else reasons.get(parts[0].id, "asked"),
+            in_constructs=counts.get(parts[0].id, 0),
+        )
+        for slot_id, parts in layout.ordered
     )
 
 
@@ -1260,6 +1375,10 @@ def _variant_plans(
                 fragment_ids=tuple(
                     part.id for part in (variant.fragments or variant.parts)
                 ),
+                # Not in fragment_ids: an ordered part is assembled but never
+                # amplified, so counting it as a fragment would put a PCR in
+                # every table that reads that field.
+                ordered_ids=tuple(part.id for part in variant.ordered),
                 length_bp=verification.expected_bp,
                 verification=verification,
                 construct=(
@@ -1427,6 +1546,47 @@ def variant_overview_dataframe(result: DesignResult) -> pd.DataFrame:
             }
             for variant in result.variants
         ]
+    )
+
+
+def synthetic_fragment_dataframe(result: DesignResult) -> pd.DataFrame:
+    """The fragments to have synthesised, one row per distinct molecule.
+
+    The second order sheet, and it is not the primer table with a column added:
+    there is no Tm, no structure, no footprint and no price, because none of
+    those is what a fragment is quoted or judged on.  ``because`` says whether
+    the spec asked for it or an ``in_tail`` request could not be honoured.
+
+    Empty with the same columns when nothing is ordered, so a caller writing it
+    out always gets a readable header rather than a blank file.
+    """
+    columns = [
+        "part_id",
+        "position",
+        "length_bp",
+        "in_constructs",
+        "because",
+        "sequence(5'-3')",
+    ]
+    rows = [
+        {
+            "part_id": fragment.part_id,
+            "position": fragment.position,
+            "length_bp": fragment.length_bp,
+            "in_constructs": fragment.in_constructs,
+            "because": fragment.because,
+            "sequence(5'-3')": fragment.sequence,
+        }
+        for fragment in result.ordered
+    ]
+    return pd.DataFrame(rows, columns=columns)
+
+
+def synthetic_fragments_fasta(result: DesignResult) -> str:
+    """The same fragments as FASTA, for a vendor form that takes no CSV."""
+    return "".join(
+        f">{fragment.part_id} {fragment.length_bp} bp\n{fragment.sequence}\n"
+        for fragment in result.ordered
     )
 
 

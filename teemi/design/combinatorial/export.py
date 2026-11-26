@@ -215,7 +215,18 @@ BUNDLE_ORDER = (
     (
         "parts",
         "04_parts",
-        (("/parts.csv", "what to source, how often each is used, and what is known"),),
+        (
+            ("/parts.csv", "what to source, how often each is used, and what is known"),
+            (
+                "/synthetic_fragments.csv",
+                "the parts to BUY as dsDNA rather than amplify: send these to a "
+                "synthesis vendor for a quote",
+            ),
+            (
+                "/synthetic_fragments.fasta",
+                "the same fragments as FASTA, for a form that takes no CSV",
+            ),
+        ),
     ),
     (
         "constructs",
@@ -547,6 +558,25 @@ def write_bundle(
         root / BUNDLE_PATHS["parts"] / "parts.csv", index=False
     )
 
+    # The second order, which is not oligos.  Written only when there is one:
+    # an empty fragment sheet beside the primers reads as "nothing to buy here"
+    # where "nothing of this kind at all" is the fact, so the two lines come
+    # out of the map instead.
+    fragments = getattr(result, "ordered", ())
+    omit_fragments: Tuple[str, ...] = ()
+    if fragments:
+        _frame(result, "fragments").to_csv(
+            root / BUNDLE_PATHS["parts"] / "synthetic_fragments.csv", index=False
+        )
+        (root / BUNDLE_PATHS["parts"] / "synthetic_fragments.fasta").write_text(
+            _fragments_fasta(result)
+        )
+    else:
+        omit_fragments = (
+            f"{BUNDLE_PATHS['parts']}/synthetic_fragments.csv",
+            f"{BUNDLE_PATHS['parts']}/synthetic_fragments.fasta",
+        )
+
     # The order, in the two shapes a vendor's form takes.  Built from the same
     # `result.primers` the sheet above is, so the three cannot disagree about
     # what is in the order -- which is asserted on SEQUENCES, because an oligo
@@ -566,7 +596,9 @@ def write_bundle(
         # the map rather than the whole shelf.
         omit = (f"{BUNDLE_PATHS['primers']}/oligo_order_idt_plate.xlsx",)
 
-    (root / BUNDLE_PATHS["layout"]).write_text(bundle_layout(written, omit=omit))
+    (root / BUNDLE_PATHS["layout"]).write_text(
+        bundle_layout(written, omit=omit + omit_fragments)
+    )
 
     designs = list(result.designs)
     constructs = root / BUNDLE_PATHS["constructs"]
@@ -638,6 +670,7 @@ def _frame(result, kind: str, full: bool = False):
         pcr_worklist_dataframe,
         primer_dataframe,
         primer_uses_dataframe,
+        synthetic_fragment_dataframe,
         variant_overview_dataframe,
     )
 
@@ -647,8 +680,17 @@ def _frame(result, kind: str, full: bool = False):
         return pcr_worklist_dataframe(result)
     if kind == "overview":
         return variant_overview_dataframe(result)
+    if kind == "fragments":
+        return synthetic_fragment_dataframe(result)
     build = primer_dataframe if kind == "primer" else pcr_dataframe
     return build(result, full=full)
+
+
+def _fragments_fasta(result) -> str:
+    """The synthetic fragments as FASTA, imported here like the frames are."""
+    from teemi.design.combinatorial.report import synthetic_fragments_fasta
+
+    return synthetic_fragments_fasta(result)
 
 
 def _parts_frame(result, part_info: Optional[Mapping[str, Mapping[str, object]]]):
@@ -665,11 +707,17 @@ def _parts_frame(result, part_info: Optional[Mapping[str, Mapping[str, object]]]
     payload = result.to_dict()
     footprints = {f["part_id"]: f for f in payload["footprints"]}
     reactions = Counter(pcr["part_id"] for pcr in payload["pcrs"])
+    # Both lists: a part bought as a synthetic fragment is in the construct and
+    # is something to source, but it has no reaction of its own, so leaving it
+    # to fragment_ids alone dropped it out of the sourcing table entirely.
     in_variants = Counter(
         part_id
         for variant in payload["variants"]
-        for part_id in variant["fragment_ids"]
+        for part_id in variant["fragment_ids"] + variant.get("ordered_ids", [])
     )
+    ordered_ids = {
+        fragment["part_id"] for fragment in payload.get("ordered_fragments", [])
+    }
     positions: Dict[str, str] = {}
     lengths: Dict[str, int] = {}
     if result.spec is not None:
@@ -686,6 +734,9 @@ def _parts_frame(result, part_info: Optional[Mapping[str, Mapping[str, object]]]
             "position": positions.get(part_id, ""),
             "reactions": reactions.get(part_id, 0),
             "in_constructs": in_variants.get(part_id, 0),
+            # Said rather than inferred from "0 reactions", which is also what
+            # a part that failed to design looks like.
+            "obtained_by": "synthesis" if part_id in ordered_ids else "pcr",
         }
         footprint = footprints.get(part_id)
         if footprint:
@@ -792,6 +843,39 @@ def build_summary(
                 if longest["length_nt"] > 60
                 else ""
             )
+        )
+
+    # The second category, and it is a different purchase, not more oligos:
+    # double-stranded DNA, quoted by length and sequence rather than priced per
+    # base, and it goes to a synthesis form and not to the bulk oligo one.  Its
+    # own heading because someone reading "WHAT TO ORDER" and seeing only the
+    # oligo count would order two thirds of the build.
+    fragments = list(getattr(result, "ordered", ()))
+    if fragments:
+        lines += [
+            "",
+            f"  AND {len(fragments)} synthetic dsDNA "
+            f"{'fragment' if len(fragments) == 1 else 'fragments'}, "
+            f"{sum(f.length_bp for f in fragments)} bp in all -- NOT oligos",
+        ]
+        for fragment in fragments:
+            why = (
+                "spec asked for it"
+                if fragment.because == "asked"
+                else f"in_tail could not be honoured ({fragment.because})"
+            )
+            lines.append(
+                f"     {fragment.part_id[:30]:30s} {fragment.length_bp:4d} bp  "
+                f"in {fragment.in_constructs} constructs  -- {why}"
+            )
+        lines.append(
+            f"  as dsDNA: {BUNDLE_PATHS['parts']}/synthetic_fragments.csv  "
+            "(quoted by the vendor against length and sequence, so no price is "
+            "given here)"
+        )
+        lines.append(
+            "  these have no primers and no PCR: they are assembled as bought, "
+            "with each neighbour's tail reaching across them."
         )
 
     lines += [

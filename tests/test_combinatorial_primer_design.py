@@ -207,13 +207,17 @@ def test_a_junction_the_parts_cannot_supply_is_an_error():
     assert "cannot supply" in str(caught.value)
 
 
-def test_a_tail_longer_than_the_homology_blames_the_homology_not_the_parts():
-    """The two numbers that matter are the tail's and the homology's.
+def test_a_tail_longer_than_the_homology_is_designed_not_refused():
+    """The defect, at the unit level: this used to raise.
 
-    A negative budget is not a fact about the two parts -- 400 bp neighbours
-    fail it exactly as 10 bp ones do -- so naming their lengths sent everyone
-    to measure the wrong thing.  :func:`plan_layout` demotes this case before
-    it gets here, so reaching it at all means a hand-built junction.
+    ``Junction`` once carried a ``budget`` of ``homology_length - interposed``
+    and refused the junction when it went negative, on the grounds that the two
+    neighbours were left owing bases of the overlap.  They are not: once the
+    interposed part is longer than the overlap, the overlap sits inside the
+    part and the neighbours contribute none of it.  There is no budget now --
+    :attr:`Junction.tail_total` is the two tails' combined length, which is
+    ``homology_length + interposed`` and is never negative -- and a junction
+    one base past the old limit designs like any other.
     """
     spec, records, footprints, _ = _resolved()
     homology = spec.primer_design.junction.homology_length
@@ -221,16 +225,80 @@ def test_a_tail_longer_than_the_homology_blames_the_homology_not_the_parts():
         _junction(spec, records, footprints),
         interposed="A" * (homology + 1),
     )
-    assert junction.budget == -1
-    with pytest.raises(D.JunctionError) as caught:
-        D.design_junction(junction, spec)
-    assert caught.value.junction_id == "a1__b1"
+    assert not hasattr(junction, "budget"), "the accounting that was wrong"
+    assert junction.tail_total == 2 * homology + 1
 
-    message = str(caught.value)
-    assert f"{homology + 1} bp riding in the tails" in message
-    assert f"homology_length {homology}" in message
-    assert "-1" not in message, "a negative budget is not a number to report"
-    assert str(len(junction.upstream_seq)) not in message, "not the parts' fault"
+    design = D.design_junction(junction, spec)
+    assert len(design.homology) == homology, "still exactly what was asked for"
+    assert design.chosen.t_f + design.chosen.t_r == junction.tail_total
+    assert design.interposed == "A" * (homology + 1)
+
+    # Both tails together span the interposed part once and the homology once,
+    # so every base of the part is on one oligo or the other.
+    whole = junction.upstream_seq + junction.interposed + junction.downstream_seq
+    start = len(junction.upstream_seq) + len(junction.interposed) - design.chosen.t_f
+    assert design.homology == whole[start : start + homology]
+
+
+def test_pydna_is_told_to_absorb_the_fold_and_nothing_else():
+    """``maxlink`` is about the middle fragment, never about the fold limit.
+
+    ``assembly_fragments`` drops **every** fragment with ``len(f) <= maxlink``
+    and folds it into its neighbours' primers -- its own neighbours included,
+    whatever their type.  So a ``maxlink`` taken from the spec's fold limit
+    quietly swallows any *amplified* part shorter than that limit: the part
+    ends up inside two neighbours' tails, its own two primers come back as
+    bare footprints, and the PCR that was supposed to make it has no product.
+
+    Measured on FLOW's own integration document, where a 40 bp homology and
+    ``primer_len_max`` 90 derive a 104 bp limit and a real 60 bp linker part
+    sits in the middle of the construct.  So: a 60 bp part between two long
+    ones, with a fold limit far above 60, still gets its own PCR.
+    """
+    import teemi.design.combinatorial as cb
+    from teemi.design.combinatorial.sources import SourceResolver
+
+    short = _random_dna(31, 60)
+    raw = {
+        "design": {"name": "absorb", "topology": "linear"},
+        "positions": [
+            {
+                "id": f"at_{name}",
+                "parts": [
+                    {"id": name, "source": {"type": "inline", "sequence": seq}}
+                ],
+            }
+            for name, seq in (
+                ("long_a", _random_dna(32, 600)),
+                ("short_b", short),
+                ("long_c", _random_dna(33, 600)),
+            )
+        ],
+        "primer_design": {
+            "target_tm": 57.0,
+            "junction": {"homology_length": 40},
+        },
+        "constraints": {"primer_len_max": 90, "in_tail_max_bp": None},
+    }
+    spec = load_spec(raw)
+    assert spec.in_tail_limit() > len(short), "the limit that used to be maxlink"
+
+    result = cb.plan(
+        raw, sources=SourceResolver(), offline=True, include_designs=True
+    )
+    variant = result.variants[0]
+    assert variant.verification.verdict == "verified", variant.verification.message
+    assert variant.fragment_ids == ("long_a", "short_b", "long_c"), "three PCRs"
+    assert len(result.pcrs) == 3
+    assert "short_b" in {pcr.part_id for pcr in result.pcrs}
+
+    # Its own two primers carry real tails, rather than the bare footprints
+    # left behind when a neighbour absorbs it.
+    mine = [pr for pr in result.primers if "short_b" in pr.part_ids]
+    assert len(mine) == 2
+    assert all(len(pr.sequence) > len(pr.footprint) for pr in mine), [
+        (pr.id, len(pr.sequence), len(pr.footprint)) for pr in mine
+    ]
 
 
 # --------------------------------------------------------------------------- #

@@ -50,7 +50,7 @@ from pydna.dseqrecord import Dseqrecord
 from pydna.utils import smallest_rotation
 
 from teemi.design.combinatorial.design import OligoPair, Variant
-from teemi.design.combinatorial.spec import DesignSpec
+from teemi.design.combinatorial.spec import DesignSpec, Part
 
 __all__ = [
     "PYDNA_ASSEMBLY_LIMIT",
@@ -132,6 +132,13 @@ def verify_variant(
     The fragments are handed to pydna in the design's order, which is what the
     spec's ordered positions mean; the question answered is whether that order
     closes into exactly the intended construct and does so uniquely.
+
+    An ``ordered`` part has no PCR, so it enters the assembly as the plain
+    :class:`~pydna.dseqrecord.Dseqrecord` it will be bought as, in its place
+    between the amplicons.  That is the whole point of the mode and it is what
+    is checked here: the synthetic fragment is joined by its neighbours' tails
+    without ever being a template, and the product still has to equal the
+    intended construct base for base.
     """
     circular = spec.design.topology == "circular"
     expected = "".join(str(records[part.id].seq) for part in variant.parts)
@@ -156,8 +163,9 @@ def verify_variant(
     except ValueError as exc:
         return outcome("no_product", str(exc)), None
 
+    pieces = _assembly_pieces(variant, amplicons, records, circular=circular)
     limit = min(PYDNA_ASSEMBLY_LIMIT, spec.primer_design.junction.homology_length)
-    assembly = Assembly(list(amplicons), limit=limit)
+    assembly = Assembly(list(pieces), limit=limit)
     try:
         products = (
             assembly.assemble_circular() if circular else assembly.assemble_linear()
@@ -169,7 +177,7 @@ def verify_variant(
         return (
             outcome(
                 "no_product",
-                f"pydna could not assemble the {len(amplicons)} amplicons at "
+                f"pydna could not assemble the {len(pieces)} fragments at "
                 f"{limit} bp of homology ({exc})",
             ),
             None,
@@ -180,7 +188,7 @@ def verify_variant(
     # one, which made every two-fragment linear design report an ambiguity it
     # does not have.  A real join of n amplicons is at least as long as its
     # longest member, so anything shorter is that artefact and not a product.
-    floor = max((len(amplicon) for amplicon in amplicons), default=0)
+    floor = max((len(piece) for piece in pieces), default=0)
     distinct: Dict[str, Dseqrecord] = {}
     for product in products:
         if len(product) < floor:
@@ -193,7 +201,7 @@ def verify_variant(
         return (
             outcome(
                 "no_product",
-                f"the {len(amplicons)} amplicons do not assemble at {limit} bp "
+                f"the {len(pieces)} fragments do not assemble at {limit} bp "
                 "of homology",
             ),
             None,
@@ -236,6 +244,82 @@ def verify_variant(
         ),
         product,
     )
+
+
+def _assembly_pieces(
+    variant: Variant,
+    amplicons: Sequence[Amplicon],
+    records: Mapping[str, Dseqrecord],
+    *,
+    circular: bool,
+) -> Tuple[Dseqrecord, ...]:
+    """The molecules the reaction actually contains, in construct order.
+
+    Two kinds, interleaved: an amplicon for every amplified fragment, and one
+    record for every run of ``ordered`` parts, which are bought rather than
+    made and so enter the tube as themselves.  An ``in_tail`` part is neither
+    -- it is inside its neighbours' primers -- so it contributes no molecule
+    here while still being in :attr:`Variant.parts`, which is what the product
+    is compared against.
+
+    **A run of ordered parts is ONE molecule.**  Two synthetic fragments side
+    by side share no sequence, so handing them over separately asks pydna to
+    join them on nothing and it correctly refuses; they are adjacent in the
+    construct, so they are bought and assembled as a single piece.  That is the
+    same grouping the primers were designed against, where the run's
+    concatenation is what the two flanking tails reach across.
+
+    Walked over :attr:`Variant.parts`, so the order is the construct's and not
+    the order two separate lists happened to be built in.  Part ids are unique
+    across a whole spec, which is what makes the membership test here
+    unambiguous: one id cannot be amplified at one slot and ordered at another.
+    """
+    amplified = iter(amplicons)
+    ordered = {part.id for part in variant.ordered}
+    fragments = {part.id for part in (variant.fragments or variant.parts)}
+    pieces: List[Dseqrecord] = []
+    # (first part id, joined sequence) per run of ordered parts, in order.
+    runs: List[Tuple[str, str]] = []
+    slots: List[Optional[int]] = []
+    run: List[Part] = []
+
+    def flush() -> None:
+        if not run:
+            return
+        slots.append(len(runs))
+        runs.append(
+            (run[0].id, "".join(str(records[part.id].seq) for part in run))
+        )
+        run.clear()
+
+    for part in variant.parts:
+        if part.id in ordered:
+            run.append(part)
+            continue
+        flush()
+        if part.id in fragments:
+            slots.append(None)
+    flush()
+
+    # A circular construct has no first base, so a run at each end is one run
+    # spanning the join: the trailing one comes first, as the circle reads it.
+    wraps = bool(slots) and slots[0] == 0 and slots[-1] == len(runs) - 1
+    if circular and len(runs) > 1 and wraps:
+        last_id, last_seq = runs.pop()
+        first_id, first_seq = runs[0]
+        runs[0] = (last_id, last_seq + first_seq)
+        slots = slots[:-1]
+
+    for slot in slots:
+        if slot is None:
+            pieces.append(next(amplified))
+            continue
+        part_id, sequence = runs[slot]
+        record = Dseqrecord(sequence)
+        record.id = part_id
+        record.name = part_id[:16]
+        pieces.append(record)
+    return tuple(pieces)
 
 
 def _amplify(
